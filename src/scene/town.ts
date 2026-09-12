@@ -175,6 +175,38 @@ function buildTree(x: number, z: number): THREE.Group {
   return group;
 }
 
+const ROCK_COLORS = [0xb08f86, 0x9c7d74, 0xc4a196, 0xa88a7f];
+
+function buildRock(x: number, z: number, scale: number): THREE.Mesh {
+  const color = ROCK_COLORS[Math.floor(Math.random() * ROCK_COLORS.length)];
+  const rock = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.32 * scale, 0),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.95 }),
+  );
+  rock.position.set(x, 0.15 * scale, z);
+  rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+  rock.castShadow = true;
+  rock.receiveShadow = true;
+  return rock;
+}
+
+/** Scatters small rocks across the empty ground — otherwise a lot of flat, empty
+ * space between zones that reads as bare rather than an intentionally built town. */
+function scatterRocks(scene: THREE.Scene) {
+  const clearPoints = [GATE_POSITION, ...ZONES.map((z) => z.position)];
+  let placed = 0;
+  let attempts = 0;
+  while (placed < 45 && attempts < 900) {
+    attempts++;
+    const x = THREE.MathUtils.randFloat(-32, 34);
+    const z = THREE.MathUtils.randFloat(-86, 8);
+    if (distanceToNearestRoad(x, z) < 2.4) continue;
+    if (clearPoints.some((p) => Math.hypot(x - p.x, z - p.z) < 7.5)) continue;
+    scene.add(buildRock(x, z, THREE.MathUtils.randFloat(0.6, 1.7)));
+    placed++;
+  }
+}
+
 const ROAD_CLEARANCE = 1.9; // half road width (1.6) + outline + a small margin
 
 function distanceToSegment(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
@@ -238,4 +270,6 @@ export function buildTown(scene: THREE.Scene) {
     if (lampOffset) scene.add(buildLampPost(zone.position.x + lampOffset.x, zone.position.z + lampOffset.z));
     if (treeOffset) scene.add(buildTree(zone.position.x + treeOffset.x, zone.position.z + treeOffset.z));
   }
+
+  scatterRocks(scene);
 }

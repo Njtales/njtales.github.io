@@ -11,6 +11,7 @@ import { buildTown } from './scene/town';
 import { buildRoads } from './scene/roads';
 import { Character } from './scene/character';
 import { IsoCamera } from './scene/camera';
+import { DustTrail } from './scene/dust';
 import { InputController } from './systems/input';
 import { clampToTownBounds } from './systems/collision';
 import { findActiveZone } from './systems/proximity';
@@ -41,6 +42,8 @@ buildRoads(scene);
 const character = new Character();
 character.position.set(GATE_POSITION.x, 0, GATE_POSITION.z);
 scene.add(character.group);
+
+const dustTrail = new DustTrail(scene);
 
 const isoCamera = new IsoCamera(window.innerWidth / window.innerHeight);
 const { forward, right } = isoCamera.getGroundAxes();
@@ -82,9 +85,12 @@ const input = new InputController(canvas);
 input.notifyFirstMove(() => hero.classList.add('hidden'));
 
 // ---------- Game loop ----------
-const MOVE_SPEED = 9; // world units per second
+const MOVE_SPEED = 9; // world units per second, top speed
+const ACCEL = 26; // units/s^2 ramping up to top speed
+const DECEL = 34; // units/s^2 coasting to a stop — brakes a bit harder than it accelerates
 const clock = new THREE.Clock();
 let activeZoneId: string | null = null;
+const velocity = new THREE.Vector2(); // persists across frames for momentum
 
 function stepFrame(delta: number) {
   const { right: r, forward: f } = input.getIntent();
@@ -94,16 +100,26 @@ function stepFrame(delta: number) {
     right.z * r + forward.z * f,
   );
   if (moveDir.length() > 1) moveDir.normalize();
-  const velocityPerSecond = moveDir.clone().multiplyScalar(MOVE_SPEED);
+  const targetVelocity = moveDir.multiplyScalar(MOVE_SPEED);
+
+  // Ease current velocity toward the target instead of snapping to it — an
+  // instant on/off felt robotic; ramping up/down reads as an actual vehicle
+  // with weight, closer to the physically-simulated feel of a car controller.
+  const rate = targetVelocity.lengthSq() > velocity.lengthSq() ? ACCEL : DECEL;
+  const diff = targetVelocity.clone().sub(velocity);
+  const maxStep = rate * delta;
+  if (diff.length() > maxStep) diff.setLength(maxStep);
+  velocity.add(diff);
 
   const next = clampToTownBounds(
-    character.position.x + velocityPerSecond.x * delta,
-    character.position.z + velocityPerSecond.y * delta,
+    character.position.x + velocity.x * delta,
+    character.position.z + velocity.y * delta,
   );
   character.position.set(next.x, 0, next.z);
-  character.update(delta, velocityPerSecond);
+  character.update(delta, velocity);
+  dustTrail.update(delta, character.position, velocity.length());
 
-  isoCamera.follow(character.position);
+  isoCamera.follow(character.position, delta);
 
   const zone = findActiveZone(character.position.x, character.position.z);
   if (zone?.id !== activeZoneId) {

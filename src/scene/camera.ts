@@ -8,6 +8,8 @@ import * as THREE from 'three';
 export class IsoCamera {
   readonly camera: THREE.OrthographicCamera;
   private readonly offset: THREE.Vector3;
+  private readonly currentLookAt = new THREE.Vector3();
+  private hasLookAt = false;
   private viewSize = 22;
 
   constructor(aspect: number) {
@@ -41,9 +43,21 @@ export class IsoCamera {
     };
   }
 
-  follow(target: THREE.Vector3) {
-    this.camera.position.copy(target).add(this.offset);
-    this.camera.lookAt(target);
+  /**
+   * Eases toward the target instead of snapping to it every frame — a small
+   * amount of camera lag reads as weight/momentum rather than a rigidly
+   * attached rig, closer to how physically-simulated third-person cameras
+   * (e.g. bruno-simon.com's) feel even though ours is still a fixed angle.
+   */
+  follow(target: THREE.Vector3, delta: number) {
+    if (!this.hasLookAt) {
+      this.currentLookAt.copy(target);
+      this.hasLookAt = true;
+    }
+    const smoothing = 1 - Math.pow(0.0025, delta);
+    this.currentLookAt.lerp(target, smoothing);
+    this.camera.position.copy(this.currentLookAt).add(this.offset);
+    this.camera.lookAt(this.currentLookAt);
   }
 
   onResize(aspect: number) {
