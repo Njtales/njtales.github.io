@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ZONES, GATE_POSITION, type Zone } from '../data/zones';
 import { ROAD_SEGMENTS, ROAD_WIDTH } from './roads';
-import { createRoofIconTexture } from './roofIcons';
+import { createRoofIconTexture, createSignTexture } from './roofIcons';
 
 // Shared with systems/collision.ts so the arch's solid legs actually block
 // movement (and the opening between them doesn't).
@@ -123,30 +123,23 @@ function buildBuilding(zone: Zone): THREE.Group {
   door.position.set(0, 0.85, depth / 2 + 0.03);
   group.add(door);
 
-  // Signboard — a small accent-colored plaque above the door, market-street style.
-  const sign = new THREE.Mesh(
-    new THREE.PlaneGeometry(Math.min(width * 0.7, 3.4), 0.6),
-    new THREE.MeshStandardMaterial({
-      color: shadeColor(zone.accentColor, 1.3),
-      emissive: new THREE.Color(zone.accentColor),
-      emissiveIntensity: 0.35,
-    }),
-  );
-  sign.position.set(0, Math.min(height - 0.6, 2.6), depth / 2 + 0.03);
+  // Signboard — a small box (not a flat plane) that actually sticks out from
+  // the wall above the door, with the zone's name lettered on its front face.
+  const signWidth = Math.min(width * 0.7, 3.4);
+  const signMat = new THREE.MeshStandardMaterial({ color: shadeColor(zone.accentColor, 0.55), roughness: 0.7 });
+  const signFaceMat = new THREE.MeshBasicMaterial({ map: createSignTexture(zone.title, zone.accentColor) });
+  // Face order: +x, -x, +y, -y, +z, -z — only the outward +z face gets the lettering.
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(signWidth, 0.55, 0.14), [
+    signMat,
+    signMat,
+    signMat,
+    signMat,
+    signFaceMat,
+    signMat,
+  ]);
+  sign.position.set(0, Math.min(height - 0.6, 2.6), depth / 2 + 0.1);
+  sign.castShadow = true;
   group.add(sign);
-
-  // Beacon glow above the roof — brighter for the Station and the Skill Tower landmark.
-  const beaconIntensity = zone.id === 'contact' ? 1.4 : zone.id === 'skills' ? 1.1 : 0.5;
-  const beacon = new THREE.PointLight(zone.accentColor, beaconIntensity, zone.id === 'skills' ? 40 : 14);
-  beacon.position.y = height + 1.8;
-  group.add(beacon);
-
-  const beaconDot = new THREE.Mesh(
-    new THREE.SphereGeometry(0.35, 12, 12),
-    new THREE.MeshBasicMaterial({ color: zone.accentColor }),
-  );
-  beaconDot.position.y = height + 1.8;
-  group.add(beaconDot);
 
   group.position.set(zone.position.x, 0, zone.position.z);
   group.userData.zoneId = zone.id;

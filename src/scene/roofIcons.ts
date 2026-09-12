@@ -110,3 +110,24 @@ export function createRoofIconTexture(id: ZoneId, color: string): THREE.Texture 
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
+
+/** A shop-sign texture: the zone's title in dark lettering on its accent color. */
+export function createSignTexture(title: string, accentColor: string): THREE.Texture {
+  const width = 512;
+  const height = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = accentColor;
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = '#171019';
+  ctx.font = 'bold 60px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(title, width / 2, height / 2 + 4);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
