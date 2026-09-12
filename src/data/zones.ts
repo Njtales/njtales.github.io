@@ -78,15 +78,17 @@ export const ZONES: Zone[] = [
     kicker: 'Work History',
     title: 'Tech Lane',
     description:
-      'ETL and Python developer at Syntel, then software developer through three years at Addicor Tech, freelance data engineering alongside an MSc, and onward from there. Recruiters at Bloomberg responded well to how interactive the last version of this site was — this one leans in further.',
+      "Joined Bloomberg in February 2024 as Enterprise Data Support, promoted to Generalist in 2025 and Specialist in 2026. Before that: an MSc in Big Data Science at Queen Mary University of London, three years at Addicor Tech, and ETL/Python work at Syntel. Recruiters at Bloomberg responded well to how interactive the last version of this site was — this one leans in further.",
     accentColor: '#5ab0f0',
     position: { x: 0, z: -38 },
     footprint: { width: 7, depth: 6, height: 5.5 },
     triggerRadius: 8,
-    // TODO: current role/title is still unconfirmed here — old portfolio data stops at 2023
-    // freelance work and doesn't mention Bloomberg or a fintech/e-commerce employer by name.
-    // Replace with the real current + most recent role, company, and one-line impact.
-    stackChips: ['Syntel', 'Addicor Tech', 'Freelance'],
+    metrics: [
+      { value: 'Feb 2024', label: 'joined Bloomberg' },
+      { value: '2 promotions', label: 'in under 2 years' },
+    ],
+    // TODO: day-to-day scope/impact of the Bloomberg role is intentionally left blank for now
+    stackChips: ['Bloomberg', 'Addicor Tech', 'Syntel'],
   },
   {
     id: 'projects',
