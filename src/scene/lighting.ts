@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-/** Warm twilight mood: cool ambient fill, warm key light, near-black fog for depth. */
+/** Warm twilight mood: cool ambient fill, warm key light casting soft shadows, near-black fog for depth. */
 export function addLighting(scene: THREE.Scene) {
   scene.background = new THREE.Color(0x0e0b12);
   scene.fog = new THREE.Fog(0x0e0b12, 60, 140);
@@ -8,9 +8,23 @@ export function addLighting(scene: THREE.Scene) {
   const ambient = new THREE.AmbientLight(0x3a3048, 1.1);
   scene.add(ambient);
 
-  const key = new THREE.DirectionalLight(0xffb877, 0.9);
-  key.position.set(30, 45, 20);
+  // Town spans roughly x:[-34,36] z:[-88,10] — center the shadow frustum over
+  // it (not the origin) so buildings near the Station/Skill Tower aren't clipped.
+  const townCenter = new THREE.Vector3(1, 0, -39);
+  const key = new THREE.DirectionalLight(0xffb877, 1.0);
+  key.position.copy(townCenter).add(new THREE.Vector3(30, 45, 20));
+  key.target.position.copy(townCenter);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -70;
+  key.shadow.camera.right = 70;
+  key.shadow.camera.top = 70;
+  key.shadow.camera.bottom = -70;
+  key.shadow.camera.near = 1;
+  key.shadow.camera.far = 150;
+  key.shadow.bias = -0.0015;
   scene.add(key);
+  scene.add(key.target);
 
   const rim = new THREE.DirectionalLight(0x7c93ff, 0.35);
   rim.position.set(-25, 20, -30);

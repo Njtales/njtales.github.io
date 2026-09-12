@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import './styles/main.css';
 
 import { GATE_POSITION } from './data/zones';
@@ -44,9 +48,26 @@ const { forward, right } = isoCamera.getGroundAxes();
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, isoCamera.camera));
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.55, // strength — tuned for the emissive windows/beacons/lane markings, not overpowering
+  0.4, // radius
+  0.6, // threshold
+);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
 
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
   isoCamera.onResize(window.innerWidth / window.innerHeight);
 });
 
@@ -98,7 +119,7 @@ function tick() {
 
   minimap.update(character.position.x, character.position.z);
 
-  renderer.render(scene, isoCamera.camera);
+  composer.render();
   requestAnimationFrame(tick);
 }
 
