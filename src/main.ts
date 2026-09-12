@@ -12,7 +12,7 @@ import { buildRoads } from './scene/roads';
 import { Character } from './scene/character';
 import { IsoCamera } from './scene/camera';
 import { InputController } from './systems/input';
-import { clampToTownBounds } from './systems/collision';
+import { clampToTownBounds, resolveBuildingCollisions } from './systems/collision';
 import { findActiveZone } from './systems/proximity';
 import { Boot } from './ui/boot';
 import { Legend } from './ui/legend';
@@ -108,10 +108,11 @@ function stepFrame(delta: number) {
   if (diff.length() > maxStep) diff.setLength(maxStep);
   velocity.add(diff);
 
-  const next = clampToTownBounds(
+  const moved = resolveBuildingCollisions(
     character.position.x + velocity.x * delta,
     character.position.z + velocity.y * delta,
   );
+  const next = clampToTownBounds(moved.x, moved.z);
   character.position.set(next.x, 0, next.z);
   character.update(delta, velocity);
 

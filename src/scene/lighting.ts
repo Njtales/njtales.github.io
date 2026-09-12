@@ -15,14 +15,18 @@ export function addLighting(scene: THREE.Scene) {
   key.position.copy(townCenter).add(new THREE.Vector3(30, 45, 20));
   key.target.position.copy(townCenter);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.set(4096, 4096);
   key.shadow.camera.left = -70;
   key.shadow.camera.right = 70;
   key.shadow.camera.top = 70;
   key.shadow.camera.bottom = -70;
   key.shadow.camera.near = 1;
   key.shadow.camera.far = 150;
-  key.shadow.bias = -0.0015;
+  // normalBias (offsets the shadow lookup along the surface normal) clears up
+  // the acne/hatching artifact that plain depth bias alone left visible on
+  // large flat surfaces like the ground, especially in the gate's shadow.
+  key.shadow.bias = -0.0004;
+  key.shadow.normalBias = 0.06;
   scene.add(key);
   scene.add(key.target);
 

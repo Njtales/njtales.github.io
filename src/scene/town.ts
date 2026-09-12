@@ -3,6 +3,12 @@ import { ZONES, GATE_POSITION, type Zone } from '../data/zones';
 import { ROAD_SEGMENTS } from './roads';
 import { createRoofIconTexture } from './roofIcons';
 
+// Shared with systems/collision.ts so the arch's solid legs actually block
+// movement (and the opening between them doesn't).
+export const GATE_BLOCK_WIDTH = 7.4;
+export const GATE_BLOCK_DEPTH = 2.4;
+export const GATE_OPENING_WIDTH = 4.2;
+
 function shadeColor(hex: string, factor: number): THREE.Color {
   const c = new THREE.Color(hex);
   c.multiplyScalar(factor);
@@ -273,10 +279,10 @@ function buildGateArch(): THREE.Group {
   const trimMat = new THREE.MeshStandardMaterial({ color: 0xe8d3ab, roughness: 0.8 });
   const plinthMat = new THREE.MeshStandardMaterial({ color: 0x7a4530, roughness: 0.9 });
 
-  const blockWidth = 7.4;
+  const blockWidth = GATE_BLOCK_WIDTH;
   const blockHeight = 9.5;
-  const blockDepth = 2.4;
-  const openingWidth = 4.2; // comfortably wider than the 3.2-wide road
+  const blockDepth = GATE_BLOCK_DEPTH;
+  const openingWidth = GATE_OPENING_WIDTH; // comfortably wider than the 3.2-wide road
   const archSpringHeight = 5.6; // where the straight sides end and the curve begins
 
   // Raised plinth the whole monument stands on.
@@ -364,8 +370,10 @@ function buildGateArch(): THREE.Group {
 
 export function buildTown(scene: THREE.Scene) {
   const groundGeo = new THREE.PlaneGeometry(140, 140);
-  // Light matte maroon — flat, no texture, no shine.
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0xdcb0a7, roughness: 1, metalness: 0 });
+  // Earthy soil brown — still a flat matte color, not a texture map (a texture
+  // wouldn't cause render problems on its own, but a flat color keeps the look
+  // consistent with the rest of the palette and is simpler to keep matte).
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x8f6a48, roughness: 1, metalness: 0 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, -0.01, -35);
