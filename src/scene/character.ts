@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 const MAX_LEAN = 0.32; // radians (~18°) — how far the scooter banks into a turn
 const LEAN_RESPONSE = 10; // higher = snappier lean transitions
@@ -22,7 +23,8 @@ export class Character {
     this.visual = new THREE.Group();
     this.group.add(this.visual);
 
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd8483d, roughness: 0.45, metalness: 0.15 });
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xe2523f, roughness: 0.4, metalness: 0.1 });
+    const trimMat = new THREE.MeshStandardMaterial({ color: 0xf5ecd9, roughness: 0.45, metalness: 0.1 });
     const chromeMat = new THREE.MeshStandardMaterial({ color: 0xcfcfd6, roughness: 0.3, metalness: 0.7 });
     const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1420, roughness: 0.9 });
     const kurtaMat = new THREE.MeshStandardMaterial({ color: 0xf2e8d8, roughness: 0.7 });
@@ -40,43 +42,83 @@ export class Character {
       return mesh;
     };
 
-    // Scooter footboard + body
-    const footboard = castAll(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 1.6), bodyMat));
-    footboard.position.y = 0.5;
+    // --- Cartoon Vespa-style scooter body: rounded panels instead of boxes,
+    // a curved legshield with an integrated headlight, and a rounded rear
+    // hump over the engine bay — the classic scooter silhouette, chunky and
+    // toy-like rather than a flat-sided block.
+
+    const footboard = castAll(new THREE.Mesh(new RoundedBoxGeometry(0.58, 0.12, 1.5, 3, 0.06), bodyMat));
+    footboard.position.y = 0.42;
     this.visual.add(footboard);
 
-    const seat = castAll(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.7), darkMat));
-    seat.position.set(0, 0.68, 0.35);
-    this.visual.add(seat);
+    // Legshield: a tall rounded dome (stretched, flattened capsule) standing
+    // in front of the rider's legs, curving up toward the handlebar.
+    const legshield = castAll(
+      new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.35, 6, 12), bodyMat),
+    );
+    legshield.scale.set(1, 1.25, 0.42);
+    legshield.position.set(0, 0.86, -0.68);
+    this.visual.add(legshield);
 
-    const frontPanel = castAll(new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.6, 0.2), bodyMat));
-    frontPanel.position.set(0, 0.75, -0.75);
-    this.visual.add(frontPanel);
+    // Cream trim band across the legshield for a two-tone paint job.
+    const trimBand = castAll(new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16, 1, true), trimMat));
+    trimBand.scale.set(1, 1, 0.42);
+    trimBand.position.set(0, 0.66, -0.68);
+    this.visual.add(trimBand);
 
+    // Headlight, recessed into the top of the legshield with a chrome ring.
     const headlight = new THREE.Mesh(
-      new THREE.SphereGeometry(0.08, 10, 10),
+      new THREE.SphereGeometry(0.11, 12, 12),
       new THREE.MeshBasicMaterial({ color: 0xfff6d8 }),
     );
-    headlight.position.set(0, 0.78, -0.86);
+    headlight.position.set(0, 1.02, -0.9);
     this.visual.add(headlight);
+    const headlightRing = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.025, 8, 16), chromeMat);
+    headlightRing.position.set(0, 1.02, -0.88);
+    this.visual.add(headlightRing);
 
-    // Handlebar with mirrors
-    const handleStem = castAll(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.55, 8), chromeMat));
-    handleStem.position.set(0, 1.05, -0.75);
+    // Rear hump — the rounded bump over the engine bay behind the seat,
+    // tapering down toward the rear wheel.
+    const rearHump = castAll(new THREE.Mesh(new THREE.CapsuleGeometry(0.33, 0.3, 6, 12), bodyMat));
+    rearHump.scale.set(1, 0.85, 0.62);
+    rearHump.rotation.x = -0.15;
+    rearHump.position.set(0, 0.62, 0.62);
+    this.visual.add(rearHump);
+
+    const tailLight = new THREE.Mesh(
+      new THREE.SphereGeometry(0.05, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xc0392b, emissive: new THREE.Color(0xc0392b), emissiveIntensity: 0.6 }),
+    );
+    tailLight.position.set(0, 0.62, 0.98);
+    this.visual.add(tailLight);
+
+    // Seat — rounded bench spanning between the legshield and rear hump.
+    const seat = castAll(new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.14, 0.68, 3, 0.06), darkMat));
+    seat.position.set(0, 0.68, 0.28);
+    this.visual.add(seat);
+
+    // Handlebar with rounded rubber grips and mirrors
+    const handleStem = castAll(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.4, 8), chromeMat));
+    handleStem.position.set(0, 1.18, -0.72);
     this.visual.add(handleStem);
 
-    const handleBar = castAll(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.6, 8), chromeMat));
+    const handleBar = castAll(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 8), chromeMat));
     handleBar.rotation.z = Math.PI / 2;
-    handleBar.position.set(0, 1.3, -0.75);
+    handleBar.position.set(0, 1.38, -0.74);
     this.visual.add(handleBar);
 
     for (const side of [-1, 1]) {
+      const grip = new THREE.Mesh(new THREE.CapsuleGeometry(0.035, 0.08, 4, 8), darkMat);
+      grip.rotation.z = Math.PI / 2;
+      grip.position.set(side * 0.26, 1.38, -0.74);
+      this.visual.add(grip);
+
       const mirrorArm = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.14, 6), chromeMat);
-      mirrorArm.position.set(side * 0.32, 1.4, -0.75);
+      mirrorArm.position.set(side * 0.3, 1.46, -0.74);
       mirrorArm.rotation.x = Math.PI / 2.2;
       this.visual.add(mirrorArm);
       const mirror = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), chromeMat);
-      mirror.position.set(side * 0.34, 1.46, -0.82);
+      mirror.position.set(side * 0.32, 1.52, -0.81);
       this.visual.add(mirror);
     }
 
@@ -88,7 +130,7 @@ export class Character {
     );
     flagGeo.computeVertexNormals();
     const flag = new THREE.Mesh(flagGeo, flagMat);
-    flag.position.set(0.03, 1.38, -0.75);
+    flag.position.set(0.03, 1.46, -0.74);
     this.visual.add(flag);
 
     // Wheels — the tilt is baked into the GEOMETRY (not the mesh's own rotation),
@@ -113,6 +155,18 @@ export class Character {
       hub.rotation.z = Math.PI / 2; // match the wheel's own axle orientation
       hub.position.copy(wheel.position);
       this.visual.add(hub);
+
+      // Fender arcing over the top of the wheel. Built the same way as the wheel
+      // itself (an open cylinder shell, rotated 90° about Z to bake the axle onto
+      // local X) — a rim point at angle 0 maps to local +Y under that rotation, so
+      // a thetaStart/thetaLength arc centered on 0 lands centered on the wheel's
+      // top, which is exactly where a fender should sit.
+      const arc = Math.PI * 0.9;
+      const fenderGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.2, 16, 1, true, -arc / 2, arc);
+      fenderGeo.rotateZ(Math.PI / 2);
+      const fender = castAll(new THREE.Mesh(fenderGeo, bodyMat));
+      fender.position.copy(wheel.position);
+      this.visual.add(fender);
     }
 
     // Rider — seated torso, head, kurta, sash

@@ -11,7 +11,6 @@ import { buildTown } from './scene/town';
 import { buildRoads } from './scene/roads';
 import { Character } from './scene/character';
 import { IsoCamera } from './scene/camera';
-import { DustTrail } from './scene/dust';
 import { InputController } from './systems/input';
 import { clampToTownBounds } from './systems/collision';
 import { findActiveZone } from './systems/proximity';
@@ -42,8 +41,6 @@ buildRoads(scene);
 const character = new Character();
 character.position.set(GATE_POSITION.x, 0, GATE_POSITION.z);
 scene.add(character.group);
-
-const dustTrail = new DustTrail(scene);
 
 const isoCamera = new IsoCamera(window.innerWidth / window.innerHeight);
 const { forward, right } = isoCamera.getGroundAxes();
@@ -117,7 +114,6 @@ function stepFrame(delta: number) {
   );
   character.position.set(next.x, 0, next.z);
   character.update(delta, velocity);
-  dustTrail.update(delta, character.position, velocity.length());
 
   isoCamera.follow(character.position, delta);
 
