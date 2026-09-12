@@ -58,9 +58,9 @@ const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, isoCamera.camera));
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.55, // strength — tuned for the emissive windows/beacons/lane markings, not overpowering
+  0.35, // strength — dialed back so warm window/beacon glow reads soft, not glaring
   0.4, // radius
-  0.6, // threshold
+  0.72, // threshold — only the brightest beacons bloom now, not every window
 );
 composer.addPass(bloomPass);
 composer.addPass(new OutputPass());

@@ -142,7 +142,10 @@ export class Character {
     const speed = velocityXZ.length();
     if (speed > 0.001) {
       this.facing.set(velocityXZ.x, 0, velocityXZ.y).normalize();
-      const targetAngle = Math.atan2(this.facing.x, this.facing.z);
+      // The model's front (headlight/handlebar) sits at local -Z, so the angle that
+      // points -Z at the travel direction is atan2(x,z) + π, not atan2(x,z) — without
+      // the offset the scooter drives visually backwards (front trailing the motion).
+      const targetAngle = Math.atan2(this.facing.x, this.facing.z) + Math.PI;
       this.group.rotation.y = targetAngle;
     }
     // Wheels are tilted 90° on X so their disc lies flat (axle along Z) — spin must be

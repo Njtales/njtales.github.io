@@ -28,8 +28,10 @@ export const ROAD_SEGMENTS: [Point, Point][] = [
 const ROAD_WIDTH = 3.2;
 const OUTLINE_WIDTH = 0.12;
 
-const outlineMat = new THREE.MeshStandardMaterial({ color: 0x8a8390, roughness: 1, metalness: 0 });
-const fillMat = new THREE.MeshStandardMaterial({ color: 0xc9c2c2, roughness: 1, metalness: 0 });
+// Warm, muted tones close in value to both the fill and the maroon ground, so the
+// road's edge reads as a soft border rather than a hard-contrast line.
+const outlineMat = new THREE.MeshStandardMaterial({ color: 0x9e8f8c, roughness: 1, metalness: 0 });
+const fillMat = new THREE.MeshStandardMaterial({ color: 0xcfc0ba, roughness: 1, metalness: 0 });
 const paintMat = new THREE.MeshStandardMaterial({ color: 0xf5efe6, roughness: 1, metalness: 0 });
 
 function buildRoadBed(a: Point, b: Point): THREE.Group {
@@ -59,6 +61,23 @@ function buildRoadBed(a: Point, b: Point): THREE.Group {
   fill.position.set(midX, 0.006, midZ);
   fill.receiveShadow = true;
   group.add(fill);
+
+  // Rounded caps at both ends soften the rectangle's sharp corners, and blend
+  // smoothly into each other where multiple road segments meet at a zone.
+  for (const p of [a, b]) {
+    const outlineCap = new THREE.Mesh(
+      new THREE.CircleGeometry(ROAD_WIDTH / 2 + OUTLINE_WIDTH, 24),
+      outlineMat,
+    );
+    outlineCap.rotation.x = -Math.PI / 2;
+    outlineCap.position.set(p.x, 0.004, p.z);
+    group.add(outlineCap);
+
+    const fillCap = new THREE.Mesh(new THREE.CircleGeometry(ROAD_WIDTH / 2, 24), fillMat);
+    fillCap.rotation.x = -Math.PI / 2;
+    fillCap.position.set(p.x, 0.006, p.z);
+    group.add(fillCap);
+  }
 
   return group;
 }

@@ -18,9 +18,9 @@ function addWindows(
   const rows = Math.max(1, Math.floor((height - 1.5) / 1.6));
   const cols = Math.max(1, Math.floor(faceWidth / 1.4));
   const winMat = new THREE.MeshStandardMaterial({
-    color: 0xfff2c9,
-    emissive: new THREE.Color(0xffcf7a),
-    emissiveIntensity: 1.4,
+    color: 0xe8c98f,
+    emissive: new THREE.Color(0xd9a25f),
+    emissiveIntensity: 0.5,
   });
   const winGeo = new THREE.PlaneGeometry(0.55, 0.7);
 
