@@ -21,7 +21,10 @@ export class DetailPanel {
       zone.id === 'projects'
         ? PROJECTS.map((p) => ({ value: p.metricValue, label: p.metricLabel }))
         : zone.id === 'skills'
-          ? SKILLS.map((s) => ({ value: `${s.years} yrs`, label: `${s.name} — ${s.metaphor}` }))
+          ? SKILLS.map((s) => ({
+              value: s.years ? `${s.years} yrs` : s.level === 'learning' ? 'Learning' : 'Hands-on',
+              label: `${s.name} — ${s.metaphor}`,
+            }))
           : (zone.metrics ?? []);
 
     const stackChips =

@@ -11,10 +11,12 @@ npm run dev
 
 ## Before this goes live
 
-Real bio, historical roles (Syntel, Addicor Tech), and a real (but 2023-era) CV link are filled in from the old portfolio. Still open, each marked `// TODO`:
+Real bio, work history (Orbit Tree → Syntel → Addicor Tech → freelance → Bloomberg, Feb 2024–present, promoted twice, top performer on the team), and skills are filled in from Nikhil directly. Still open, each marked `// TODO`:
 
-- `src/data/zones.ts` — Tech Lane's current/most recent role and employer (the old portfolio data stops at 2023 freelance work and doesn't mention Bloomberg or a fintech/e-commerce employer by name); the Station's résumé link is a 2023 CV and should be swapped for a current one
-- `src/data/projects.ts` — all four Workshop District case studies are illustrative placeholders — nothing in the old portfolio covers this era of work, so these need real numbers from scratch
+- `src/data/zones.ts` — Station's résumé link is a 2023 CV, swap for a current one when available
+- `src/data/projects.ts` — all four Workshop District case studies are still illustrative placeholders and need real numbers
+
+**Skill honesty constraint**: Nikhil's real strength is Python/SQL, enterprise data support, orchestration (Airflow), and BI (Power BI/Tableau) — built over ~8 years. AWS/Terraform/cloud infra are explicitly *in progress*, not established (see `src/data/skills.ts` — entries without a `years` value render as "Learning" rather than a fabricated tenure). Keep that distinction when writing the real Workshop District case studies — don't imply years of cloud/IaC mastery in project descriptions or stack chips that the Skill Tower doesn't claim.
 
 ## Deploy
 

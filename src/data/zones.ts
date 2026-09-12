@@ -78,17 +78,17 @@ export const ZONES: Zone[] = [
     kicker: 'Work History',
     title: 'Tech Lane',
     description:
-      "Joined Bloomberg in February 2024 as Enterprise Data Support, promoted to Generalist in 2025 and Specialist in 2026. Before that: an MSc in Big Data Science at Queen Mary University of London, three years at Addicor Tech, and ETL/Python work at Syntel. Recruiters at Bloomberg responded well to how interactive the last version of this site was — this one leans in further.",
+      "Joined Bloomberg in February 2024 supporting Enterprise Data products — Data License, BPIPE, SAPI — handling troubleshooting and connectivity for enterprise clients, promoted twice since. Before that: an MSc in Big Data Science at Queen Mary University of London, freelance ML work, and data/ETL roles at Addicor Tech, Syntel, and Orbit Tree.",
     accentColor: '#5ab0f0',
     position: { x: 0, z: -38 },
     footprint: { width: 7, depth: 6, height: 5.5 },
     triggerRadius: 8,
     metrics: [
-      { value: 'Feb 2024', label: 'joined Bloomberg' },
-      { value: '2 promotions', label: 'in under 2 years' },
+      { value: '2 promotions', label: 'since joining Feb 2024' },
+      { value: 'Top performer', label: 'highest-rated on the team, globally' },
     ],
     // TODO: day-to-day scope/impact of the Bloomberg role is intentionally left blank for now
-    stackChips: ['Bloomberg', 'Addicor Tech', 'Syntel'],
+    stackChips: ['Bloomberg', 'Data License', 'BPIPE', 'SAPI'],
   },
   {
     id: 'projects',
@@ -114,16 +114,12 @@ export const ZONES: Zone[] = [
     kicker: 'Skill Tower',
     title: 'The Tower',
     description:
-      'Skills as physical landmarks: AWS as the power node, SQL as the data-table board, Terraform as the blueprint desk, Airflow as the route planner.',
+      'Skills as physical landmarks — the ones already load-bearing, and the one still under construction: Python & SQL as the foundation, data support and orchestration and BI holding up the middle, cloud infrastructure being built out at the top.',
     accentColor: '#f2ac4a',
     position: { x: 6, z: -58 },
     footprint: { width: 5, depth: 5, height: 16 },
     triggerRadius: 9,
-    metrics: [
-      { value: '7 yrs', label: 'AWS' },
-      { value: '6 yrs', label: 'Terraform' },
-      { value: '8 yrs', label: 'Python / SQL' },
-    ],
+    // Tower metrics are derived from src/data/skills.ts (see DetailPanel), not listed here.
   },
   {
     id: 'contact',

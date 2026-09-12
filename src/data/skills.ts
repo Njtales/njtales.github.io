@@ -1,7 +1,10 @@
 export interface SkillEntry {
   id: string;
   name: string;
-  years: number;
+  /** Set only when a real start date backs it up — never estimated for effect. */
+  years?: number;
+  /** For a skill with no clean "years" figure: 'hands-on' (established, just undated) vs 'learning' (genuinely new). */
+  level?: 'hands-on' | 'learning';
   metaphor: string;
   description: string;
 }
@@ -10,30 +13,37 @@ export interface SkillEntry {
 export const SKILLS: SkillEntry[] = [
   {
     id: 'python-sql',
-    name: 'Python / SQL',
+    name: 'Python & SQL',
     years: 8,
     metaphor: 'Data-table board',
-    description: 'The floor everything else stands on — querying, scripting, gluing systems together.',
+    description: 'The floor everything else stands on — ETL, stored procedures, scripting, querying, since the first job in 2017.',
   },
   {
-    id: 'aws',
-    name: 'AWS',
-    years: 7,
-    metaphor: 'Power node',
-    description: 'EC2, S3, Glue, Redshift, IAM, Kinesis — the grid the rest of the town runs on.',
-  },
-  {
-    id: 'terraform',
-    name: 'Terraform',
-    years: 6,
-    metaphor: 'Blueprint desk',
-    description: 'Infrastructure as a drawing you can diff, review, and reproduce exactly.',
+    id: 'data-support',
+    name: 'Enterprise data support',
+    years: 2.5,
+    metaphor: 'Switchboard',
+    description: 'Troubleshooting and connectivity for enterprise clients on Bloomberg\'s Data License, BPIPE, and SAPI products, since Feb 2024.',
   },
   {
     id: 'airflow',
-    name: 'Airflow',
-    years: 5,
+    name: 'Airflow & orchestration',
+    level: 'hands-on',
     metaphor: 'Route planner',
     description: 'Scheduling and orchestration — making sure the right thing runs after the right thing.',
+  },
+  {
+    id: 'bi-reporting',
+    name: 'BI & reporting',
+    level: 'hands-on',
+    metaphor: 'Dashboard wall',
+    description: 'Power BI and Tableau — turning raw data into something people actually read.',
+  },
+  {
+    id: 'cloud-infra',
+    name: 'AWS, infra & Terraform',
+    level: 'learning',
+    metaphor: 'Power node — under construction',
+    description: 'The current frontier: actively building hands-on depth in cloud and infrastructure-as-code.',
   },
 ];
