@@ -1,4 +1,5 @@
 import { ZONES, GATE_POSITION } from '../data/zones';
+import { ROAD_SEGMENTS } from '../scene/roads';
 
 const MARGIN = 10;
 
@@ -40,6 +41,20 @@ export class Minimap {
   update(playerX: number, playerZ: number) {
     const { ctx, canvas } = this;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Roads, drawn beneath the zone dots so the map reads as a connected
+    // network rather than a scatter of unrelated points.
+    ctx.strokeStyle = 'rgba(245, 239, 230, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    for (const [a, b] of ROAD_SEGMENTS) {
+      const [ax, ay] = this.toCanvas(a.x, a.z);
+      const [bx, by] = this.toCanvas(b.x, b.z);
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
+    }
 
     const [gx, gy] = this.toCanvas(GATE_POSITION.x, GATE_POSITION.z);
     ctx.fillStyle = '#f2ac4a';

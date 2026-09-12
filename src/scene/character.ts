@@ -113,12 +113,13 @@ export class Character {
       grip.position.set(side * 0.26, 1.38, -0.74);
       this.visual.add(grip);
 
-      const mirrorArm = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.14, 6), chromeMat);
-      mirrorArm.position.set(side * 0.3, 1.46, -0.74);
+      const mirrorArm = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.16, 6), chromeMat);
+      mirrorArm.position.set(side * 0.31, 1.47, -0.75);
       mirrorArm.rotation.x = Math.PI / 2.2;
       this.visual.add(mirrorArm);
-      const mirror = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), chromeMat);
-      mirror.position.set(side * 0.32, 1.52, -0.81);
+      const mirror = new THREE.Mesh(new THREE.SphereGeometry(0.085, 10, 10), chromeMat);
+      mirror.scale.set(1, 1, 0.6);
+      mirror.position.set(side * 0.35, 1.55, -0.84);
       this.visual.add(mirror);
     }
 

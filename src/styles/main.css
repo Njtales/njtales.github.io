@@ -167,22 +167,20 @@ html, body {
   transition: color 0.3s ease;
 }
 
-#legend li .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--hairline);
+#legend li .zone-icon {
   flex-shrink: 0;
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  color: var(--hairline);
+  filter: none;
+  transition: color 0.3s ease, filter 0.3s ease;
 }
 
 #legend li.visited {
   color: var(--text);
 }
 
-#legend li.visited .dot {
-  background: var(--zone-color, var(--accent-skills));
-  box-shadow: 0 0 6px var(--zone-color, var(--accent-skills));
+#legend li.visited .zone-icon {
+  color: var(--zone-color, var(--accent-skills));
+  filter: drop-shadow(0 0 4px var(--zone-color, var(--accent-skills)));
 }
 
 /* ---------- Minimap (bottom-left) ---------- */
@@ -196,8 +194,13 @@ html, body {
   height: 150px;
   background: color-mix(in srgb, var(--panel) 88%, transparent);
   border: 1px solid var(--hairline);
-  border-radius: 10px;
+  border-radius: 50%;
   backdrop-filter: blur(6px);
+  overflow: hidden;
+}
+
+#minimap canvas {
+  border-radius: 50%;
 }
 
 /* ---------- Detail panel (right slide-out) ---------- */

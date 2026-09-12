@@ -243,6 +243,71 @@ function pickPropOffsets(zone: Zone, count: number): { x: number; z: number }[] 
   return candidates.filter((c) => c.dist >= ROAD_CLEARANCE).slice(0, count);
 }
 
+/**
+ * The town entrance, styled after India Gate: a monumental sandstone arch
+ * straddling the road, with a small eternal-flame-style beacon on top —
+ * the character spawns standing directly beneath it.
+ */
+function buildGateArch(): THREE.Group {
+  const group = new THREE.Group();
+  const stoneMat = new THREE.MeshStandardMaterial({ color: 0xd9c7a3, roughness: 0.9 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: 0xb89b6e, roughness: 0.85 });
+
+  const pillarHeight = 6;
+  const pillarWidth = 1.1;
+  const pillarDepth = 1.3;
+  const pillarGap = 4.8; // clear opening the road passes through
+
+  for (const side of [-1, 1]) {
+    const pillar = new THREE.Mesh(
+      new THREE.BoxGeometry(pillarWidth, pillarHeight, pillarDepth),
+      stoneMat,
+    );
+    pillar.position.set(side * (pillarGap / 2 + pillarWidth / 2), pillarHeight / 2, 0);
+    pillar.castShadow = true;
+    pillar.receiveShadow = true;
+    group.add(pillar);
+
+    // Vertical trim band facing the road, echoing the fluted-pillar look.
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.18, pillarHeight - 0.6, 0.05), trimMat);
+    band.position.set(side * (pillarGap / 2 + pillarWidth / 2), pillarHeight / 2, pillarDepth / 2 + 0.03);
+    group.add(band);
+  }
+
+  const lintelWidth = pillarGap + pillarWidth * 2 + 0.6;
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(lintelWidth, 0.9, 1.5), stoneMat);
+  lintel.position.set(0, pillarHeight + 0.45, 0);
+  lintel.castShadow = true;
+  group.add(lintel);
+
+  const cornice = new THREE.Mesh(new THREE.BoxGeometry(lintelWidth + 0.4, 0.28, 1.7), trimMat);
+  cornice.position.set(0, pillarHeight + 0.9 + 0.14, 0);
+  cornice.castShadow = true;
+  group.add(cornice);
+
+  // A small eternal-flame-style beacon on top, echoing India Gate's Amar
+  // Jawan Jyoti — warm and glowing, consistent with the town's lantern mood.
+  const bowl = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.16, 0.22, 12),
+    trimMat,
+  );
+  bowl.position.set(0, pillarHeight + 0.9 + 0.28 + 0.11, 0);
+  group.add(bowl);
+
+  const flame = new THREE.Mesh(
+    new THREE.SphereGeometry(0.14, 10, 10),
+    new THREE.MeshBasicMaterial({ color: 0xffc36b }),
+  );
+  flame.position.set(0, bowl.position.y + 0.16, 0);
+  group.add(flame);
+
+  const flameLight = new THREE.PointLight(0xffab5c, 1.2, 16);
+  flameLight.position.copy(flame.position);
+  group.add(flameLight);
+
+  return group;
+}
+
 export function buildTown(scene: THREE.Scene) {
   const groundGeo = new THREE.PlaneGeometry(140, 140);
   // Light matte maroon — flat, no texture, no shine.
@@ -253,7 +318,7 @@ export function buildTown(scene: THREE.Scene) {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Gate marker — a simple ring on the ground at the spawn point, no building.
+  // Gate marker — a glowing ring on the ground, under the entrance arch.
   const gateRing = new THREE.Mesh(
     new THREE.RingGeometry(2.4, 2.8, 32),
     new THREE.MeshBasicMaterial({ color: 0xf2ac4a, side: THREE.DoubleSide, transparent: true, opacity: 0.6 }),
@@ -261,6 +326,10 @@ export function buildTown(scene: THREE.Scene) {
   gateRing.rotation.x = -Math.PI / 2;
   gateRing.position.set(GATE_POSITION.x, 0.02, GATE_POSITION.z);
   scene.add(gateRing);
+
+  const gateArch = buildGateArch();
+  gateArch.position.set(GATE_POSITION.x, 0, GATE_POSITION.z);
+  scene.add(gateArch);
 
   for (const zone of ZONES) {
     scene.add(buildBuilding(zone));
