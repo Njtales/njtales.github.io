@@ -58,9 +58,9 @@ const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, isoCamera.camera));
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.35, // strength — dialed back so warm window/beacon glow reads soft, not glaring
+  0.42, // strength — nudged back up a touch from the last pass, which read too dim
   0.4, // radius
-  0.72, // threshold — only the brightest beacons bloom now, not every window
+  0.68, // threshold
 );
 composer.addPass(bloomPass);
 composer.addPass(new OutputPass());
@@ -86,8 +86,7 @@ const MOVE_SPEED = 9; // world units per second
 const clock = new THREE.Clock();
 let activeZoneId: string | null = null;
 
-function tick() {
-  const delta = Math.min(clock.getDelta(), 0.05);
+function stepFrame(delta: number) {
   const { right: r, forward: f } = input.getIntent();
 
   const moveDir = new THREE.Vector2(
@@ -118,8 +117,11 @@ function tick() {
   }
 
   minimap.update(character.position.x, character.position.z);
-
   composer.render();
+}
+
+function tick() {
+  stepFrame(Math.min(clock.getDelta(), 0.05));
   requestAnimationFrame(tick);
 }
 

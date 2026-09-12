@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ZONES, GATE_POSITION, type Zone } from '../data/zones';
+import { ROAD_SEGMENTS } from './roads';
 
 function shadeColor(hex: string, factor: number): THREE.Color {
   const c = new THREE.Color(hex);
@@ -7,31 +8,53 @@ function shadeColor(hex: string, factor: number): THREE.Color {
   return c;
 }
 
-/** A row of small emissive window quads on one vertical face of a building. */
+const winMat = new THREE.MeshStandardMaterial({
+  color: 0xecd0a0,
+  emissive: new THREE.Color(0xe0a868),
+  emissiveIntensity: 0.75,
+});
+const winGeo = new THREE.PlaneGeometry(0.55, 0.7);
+
+const ROW_SPACING = 1.6;
+const ROOF_MARGIN = 0.65;
+
+/**
+ * A grid of small emissive window quads on one vertical face of a building.
+ * `axis` is which world axis is the face's FIXED normal offset ('z' for the
+ * south/front face, 'x' for the east/side face) — the along-face spread
+ * always goes on the other axis. Getting this wrong (varying the wrong
+ * coordinate while the offset stays fixed) is what made the side face's
+ * windows float diagonally off the building instead of sitting flush on it.
+ * `floorStartY` lets the caller keep the ground-floor band clear on faces
+ * that also carry the door + signboard, so windows never overlap them.
+ */
 function addWindows(
   group: THREE.Group,
   faceWidth: number,
   height: number,
-  rotationY: number,
+  axis: 'z' | 'x',
   offset: number,
+  floorStartY: number,
 ) {
-  const rows = Math.max(1, Math.floor((height - 1.5) / 1.6));
   const cols = Math.max(1, Math.floor(faceWidth / 1.4));
-  const winMat = new THREE.MeshStandardMaterial({
-    color: 0xe8c98f,
-    emissive: new THREE.Color(0xd9a25f),
-    emissiveIntensity: 0.5,
-  });
-  const winGeo = new THREE.PlaneGeometry(0.55, 0.7);
+  const rows = Math.max(0, Math.floor((height - ROOF_MARGIN - floorStartY) / ROW_SPACING) + 1);
+  // Randomly-dark windows read as "a few lights off" on a tall, dense
+  // building, but just look broken on a small one with only a handful of
+  // windows total — so only randomize once there's enough of a grid for it.
+  const allowDarkWindows = rows * cols >= 6;
 
-  for (let r = 0; r < rows; r++) {
+  for (let y = floorStartY; y <= height - ROOF_MARGIN; y += ROW_SPACING) {
     for (let cCol = 0; cCol < cols; cCol++) {
-      if (Math.random() < 0.18) continue; // a few dark windows for variety
+      if (allowDarkWindows && Math.random() < 0.18) continue;
       const win = new THREE.Mesh(winGeo, winMat);
-      const x = (cCol - (cols - 1) / 2) * 1.4;
-      const y = 1.1 + r * 1.6;
-      win.position.set(x, y, offset);
-      win.rotation.y = rotationY;
+      const along = (cCol - (cols - 1) / 2) * 1.4;
+      if (axis === 'z') {
+        win.position.set(along, y, offset);
+        win.rotation.y = 0;
+      } else {
+        win.position.set(offset, y, along);
+        win.rotation.y = Math.PI / 2;
+      }
       group.add(win);
     }
   }
@@ -64,8 +87,10 @@ function buildBuilding(zone: Zone): THREE.Group {
   group.add(parapet);
 
   // Windows on the two faces most visible from the fixed isometric angle.
-  addWindows(group, width, height, 0, depth / 2 + 0.02);
-  addWindows(group, depth, height, Math.PI / 2, width / 2 + 0.02);
+  // The front face carries the door + signboard, so its windows start well
+  // above them (3.0) instead of at ground level, or the two would overlap.
+  addWindows(group, width, height, 'z', depth / 2 + 0.02, 3.0);
+  addWindows(group, depth, height, 'x', width / 2 + 0.02, 1.1);
 
   // Entrance door — dark inset at ground level on the south-facing wall.
   const door = new THREE.Mesh(
@@ -150,6 +175,42 @@ function buildTree(x: number, z: number): THREE.Group {
   return group;
 }
 
+const ROAD_CLEARANCE = 1.9; // half road width (1.6) + outline + a small margin
+
+function distanceToSegment(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
+  const dx = bx - ax;
+  const dz = bz - az;
+  const len2 = dx * dx + dz * dz;
+  const t = len2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / len2)) : 0;
+  return Math.hypot(px - (ax + t * dx), pz - (az + t * dz));
+}
+
+function distanceToNearestRoad(x: number, z: number): number {
+  let min = Infinity;
+  for (const [a, b] of ROAD_SEGMENTS) {
+    min = Math.min(min, distanceToSegment(x, z, a.x, a.z, b.x, b.z));
+  }
+  return min;
+}
+
+/**
+ * Picks offsets around a zone for street props, ranked by clearance from
+ * every road segment — a fixed left/right split (the earlier approach) put
+ * Arcade Corner's lamp post almost exactly on the road, since it didn't
+ * account for which direction the connecting roads actually run.
+ */
+function pickPropOffsets(zone: Zone, count: number): { x: number; z: number }[] {
+  const clearance = Math.max(zone.footprint.width, zone.footprint.depth) / 2 + 2.2;
+  const candidates = [0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
+    const rad = (deg * Math.PI) / 180;
+    const x = Math.cos(rad) * clearance;
+    const z = Math.sin(rad) * clearance;
+    return { x, z, dist: distanceToNearestRoad(zone.position.x + x, zone.position.z + z) };
+  });
+  candidates.sort((a, b) => b.dist - a.dist);
+  return candidates.filter((c) => c.dist >= ROAD_CLEARANCE).slice(0, count);
+}
+
 export function buildTown(scene: THREE.Scene) {
   const groundGeo = new THREE.PlaneGeometry(140, 140);
   // Light matte maroon — flat, no texture, no shine.
@@ -172,9 +233,9 @@ export function buildTown(scene: THREE.Scene) {
   for (const zone of ZONES) {
     scene.add(buildBuilding(zone));
 
-    // A couple of street props flanking each building for life, offset off the road.
-    const side = zone.footprint.width / 2 + 2.2;
-    scene.add(buildLampPost(zone.position.x + side, zone.position.z + 1.5));
-    scene.add(buildTree(zone.position.x - side, zone.position.z - 1.2));
+    // Street props flanking each building, placed wherever is clearest of the roads.
+    const [lampOffset, treeOffset] = pickPropOffsets(zone, 2);
+    if (lampOffset) scene.add(buildLampPost(zone.position.x + lampOffset.x, zone.position.z + lampOffset.z));
+    if (treeOffset) scene.add(buildTree(zone.position.x + treeOffset.x, zone.position.z + treeOffset.z));
   }
 }
