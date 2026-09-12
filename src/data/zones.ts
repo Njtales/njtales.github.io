@@ -42,14 +42,15 @@ export const ZONES: Zone[] = [
     id: 'about',
     kicker: 'About',
     title: 'Market Street',
-    description: 'Eight years, one habit: make the boring parts invisible.',
+    description:
+      'Since 2017, one habit: make the boring parts invisible. Real-time sign language recognition, an S&P 500 data pipeline, two Employee of the Month awards along the way — and a lot of pipelines nobody had to think about twice.',
     accentColor: '#5adbb0',
     position: { x: 0, z: -18 },
     footprint: { width: 6, depth: 5, height: 4 },
     triggerRadius: 7,
     metrics: [
-      { value: '8 yrs', label: 'in production systems' },
-      { value: '99.98%', label: 'best sustained uptime' },
+      { value: '9 yrs', label: 'in production systems' },
+      { value: '99%', label: 'sustained pipeline uptime' },
     ],
   },
   {
@@ -77,13 +78,15 @@ export const ZONES: Zone[] = [
     kicker: 'Work History',
     title: 'Tech Lane',
     description:
-      'Bloomberg, plus past roles across fintech and e-commerce. Recruiters at Bloomberg responded well to how interactive the last version of this site was — this one leans in further.',
+      'ETL and Python developer at Syntel, then software developer through three years at Addicor Tech, freelance data engineering alongside an MSc, and onward from there. Recruiters at Bloomberg responded well to how interactive the last version of this site was — this one leans in further.',
     accentColor: '#5ab0f0',
     position: { x: 0, z: -38 },
     footprint: { width: 7, depth: 6, height: 5.5 },
     triggerRadius: 8,
-    // TODO: replace with real role history (company, title, years, one-line impact per stop)
-    stackChips: ['Bloomberg', 'Fintech', 'E-commerce'],
+    // TODO: current role/title is still unconfirmed here — old portfolio data stops at 2023
+    // freelance work and doesn't mention Bloomberg or a fintech/e-commerce employer by name.
+    // Replace with the real current + most recent role, company, and one-line impact.
+    stackChips: ['Syntel', 'Addicor Tech', 'Freelance'],
   },
   {
     id: 'projects',
@@ -132,8 +135,9 @@ export const ZONES: Zone[] = [
     links: [
       { label: 'Email', url: 'mailto:nikhiljatale@gmail.com' },
       { label: 'LinkedIn', url: 'https://www.linkedin.com/in/nikhil-jatale/' },
-      { label: 'GitHub', url: 'https://github.com/njtales' },
-      { label: 'Résumé', url: '/assets/resume.pdf' },
+      { label: 'GitHub', url: 'https://github.com/Njtales' },
+      // TODO: this CV link is from the 2023 portfolio — swap for a current résumé before go-live
+      { label: 'Résumé', url: 'https://drive.google.com/u/0/uc?id=13-tDlVWG-pxoFauC-3F4306K1yCmPcGt&export=download' },
     ],
   },
 ];

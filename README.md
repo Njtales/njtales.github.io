@@ -11,13 +11,10 @@ npm run dev
 
 ## Before this goes live
 
-Placeholder content lives in three files, each marked `// TODO`:
+Real bio, historical roles (Syntel, Addicor Tech), and a real (but 2023-era) CV link are filled in from the old portfolio. Still open, each marked `// TODO`:
 
-- `src/data/zones.ts` — Tech Lane's company/role chips
-- `src/data/projects.ts` — the four Workshop District case studies (all four metrics are illustrative placeholders)
-- `src/data/skills.ts` — Skill Tower entries (years currently carried over from the design brief)
-
-Also drop a real `resume.pdf` into `public/assets/` — the Station's résumé link expects it there.
+- `src/data/zones.ts` — Tech Lane's current/most recent role and employer (the old portfolio data stops at 2023 freelance work and doesn't mention Bloomberg or a fintech/e-commerce employer by name); the Station's résumé link is a 2023 CV and should be swapped for a current one
+- `src/data/projects.ts` — all four Workshop District case studies are illustrative placeholders — nothing in the old portfolio covers this era of work, so these need real numbers from scratch
 
 ## Deploy
 
