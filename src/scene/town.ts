@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ZONES, GATE_POSITION, type Zone } from '../data/zones';
 import { ROAD_SEGMENTS } from './roads';
+import { createRoofIconTexture } from './roofIcons';
 
 function shadeColor(hex: string, factor: number): THREE.Color {
   const c = new THREE.Color(hex);
@@ -85,6 +86,22 @@ function buildBuilding(zone: Zone): THREE.Group {
   parapet.position.y = height + 0.18;
   parapet.castShadow = true;
   group.add(parapet);
+
+  // Roof-mounted icon sign, matching the legend's symbol for this zone so
+  // buildings are identifiable from above while exploring, not just once
+  // the detail panel opens.
+  const iconSize = Math.min(width, depth) * 0.55;
+  const roofIcon = new THREE.Mesh(
+    new THREE.PlaneGeometry(iconSize, iconSize),
+    new THREE.MeshBasicMaterial({
+      map: createRoofIconTexture(zone.id, zone.accentColor),
+      transparent: true,
+      depthWrite: false,
+    }),
+  );
+  roofIcon.rotation.x = -Math.PI / 2;
+  roofIcon.position.y = height + 0.362;
+  group.add(roofIcon);
 
   // Windows on the two faces most visible from the fixed isometric angle.
   // The front face carries the door + signboard, so its windows start well
@@ -244,64 +261,101 @@ function pickPropOffsets(zone: Zone, count: number): { x: number; z: number }[] 
 }
 
 /**
- * The town entrance, styled after India Gate: a monumental sandstone arch
- * straddling the road, with a small eternal-flame-style beacon on top —
- * the character spawns standing directly beneath it.
+ * The town entrance, styled after India Gate: a single monumental sandstone
+ * mass with a true arched opening punched through it (not two separate
+ * pillars under a floating lintel), sitting on a raised plinth with small
+ * corner chhatris and a glowing beacon on top. The character spawns
+ * standing directly beneath the arch.
  */
 function buildGateArch(): THREE.Group {
   const group = new THREE.Group();
-  const stoneMat = new THREE.MeshStandardMaterial({ color: 0xd9c7a3, roughness: 0.9 });
-  const trimMat = new THREE.MeshStandardMaterial({ color: 0xb89b6e, roughness: 0.85 });
+  const stoneMat = new THREE.MeshStandardMaterial({ color: 0xaa5f3d, roughness: 0.92 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: 0xe8d3ab, roughness: 0.8 });
+  const plinthMat = new THREE.MeshStandardMaterial({ color: 0x7a4530, roughness: 0.9 });
 
-  const pillarHeight = 6;
-  const pillarWidth = 1.1;
-  const pillarDepth = 1.3;
-  const pillarGap = 4.8; // clear opening the road passes through
+  const blockWidth = 7.4;
+  const blockHeight = 9.5;
+  const blockDepth = 2.4;
+  const openingWidth = 4.2; // comfortably wider than the 3.2-wide road
+  const archSpringHeight = 5.6; // where the straight sides end and the curve begins
 
-  for (const side of [-1, 1]) {
-    const pillar = new THREE.Mesh(
-      new THREE.BoxGeometry(pillarWidth, pillarHeight, pillarDepth),
-      stoneMat,
-    );
-    pillar.position.set(side * (pillarGap / 2 + pillarWidth / 2), pillarHeight / 2, 0);
-    pillar.castShadow = true;
-    pillar.receiveShadow = true;
-    group.add(pillar);
+  // Raised plinth the whole monument stands on.
+  const plinth = new THREE.Mesh(new THREE.BoxGeometry(blockWidth + 1.2, 0.5, blockDepth + 1.2), plinthMat);
+  plinth.position.y = 0.25;
+  plinth.castShadow = true;
+  plinth.receiveShadow = true;
+  group.add(plinth);
 
-    // Vertical trim band facing the road, echoing the fluted-pillar look.
-    const band = new THREE.Mesh(new THREE.BoxGeometry(0.18, pillarHeight - 0.6, 0.05), trimMat);
-    band.position.set(side * (pillarGap / 2 + pillarWidth / 2), pillarHeight / 2, pillarDepth / 2 + 0.03);
-    group.add(band);
-  }
+  // The main mass, with a true arched hole punched through it via an
+  // extruded shape rather than an assembly of separate pillar/lintel boxes —
+  // this is what actually reads as "an arch" instead of "two posts".
+  const outline = new THREE.Shape();
+  outline.moveTo(-blockWidth / 2, 0);
+  outline.lineTo(blockWidth / 2, 0);
+  outline.lineTo(blockWidth / 2, blockHeight);
+  outline.lineTo(-blockWidth / 2, blockHeight);
+  outline.closePath();
 
-  const lintelWidth = pillarGap + pillarWidth * 2 + 0.6;
-  const lintel = new THREE.Mesh(new THREE.BoxGeometry(lintelWidth, 0.9, 1.5), stoneMat);
-  lintel.position.set(0, pillarHeight + 0.45, 0);
-  lintel.castShadow = true;
-  group.add(lintel);
+  const archHole = new THREE.Path();
+  archHole.moveTo(-openingWidth / 2, 0);
+  archHole.lineTo(-openingWidth / 2, archSpringHeight);
+  archHole.absarc(0, archSpringHeight, openingWidth / 2, Math.PI, 0, true);
+  archHole.lineTo(openingWidth / 2, 0);
+  archHole.lineTo(-openingWidth / 2, 0);
+  outline.holes.push(archHole);
 
-  const cornice = new THREE.Mesh(new THREE.BoxGeometry(lintelWidth + 0.4, 0.28, 1.7), trimMat);
-  cornice.position.set(0, pillarHeight + 0.9 + 0.14, 0);
+  const blockGeo = new THREE.ExtrudeGeometry(outline, { depth: blockDepth, bevelEnabled: false });
+  blockGeo.translate(0, 0, -blockDepth / 2);
+  const block = new THREE.Mesh(blockGeo, stoneMat);
+  block.position.y = 0.5;
+  block.castShadow = true;
+  block.receiveShadow = true;
+  group.add(block);
+
+  const topY = 0.5 + blockHeight;
+
+  // Cream cornice band wrapping the top edge.
+  const cornice = new THREE.Mesh(new THREE.BoxGeometry(blockWidth + 0.3, 0.4, blockDepth + 0.3), trimMat);
+  cornice.position.y = topY - 0.2;
   cornice.castShadow = true;
   group.add(cornice);
 
-  // A small eternal-flame-style beacon on top, echoing India Gate's Amar
-  // Jawan Jyoti — warm and glowing, consistent with the town's lantern mood.
-  const bowl = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.22, 0.16, 0.22, 12),
-    trimMat,
-  );
-  bowl.position.set(0, pillarHeight + 0.9 + 0.28 + 0.11, 0);
+  // Small domed chhatris at the two front top corners — the small-pavilion
+  // silhouette detail that reads as distinctly Indian-monument rather than
+  // a generic triumphal arch.
+  for (const side of [-1, 1]) {
+    const chhatriX = side * (blockWidth / 2 - 0.6);
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.25, 12), trimMat);
+    base.position.set(chhatriX, topY + 0.12, 0);
+    group.add(base);
+    for (const p of [-0.22, 0.22]) {
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.5, 8), trimMat);
+      pillar.position.set(chhatriX + p, topY + 0.37, 0);
+      group.add(pillar);
+    }
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), stoneMat);
+    dome.position.set(chhatriX, topY + 0.62, 0);
+    group.add(dome);
+    const finial = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.16, 6), trimMat);
+    finial.position.set(chhatriX, topY + 0.62 + 0.24, 0);
+    group.add(finial);
+  }
+
+  // A small eternal-flame-style beacon at the centre top, echoing India
+  // Gate's Amar Jawan Jyoti — warm and glowing, consistent with the town's
+  // lantern mood.
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.19, 0.24, 12), trimMat);
+  bowl.position.set(0, topY + 0.32, 0);
   group.add(bowl);
 
   const flame = new THREE.Mesh(
-    new THREE.SphereGeometry(0.14, 10, 10),
+    new THREE.SphereGeometry(0.17, 10, 10),
     new THREE.MeshBasicMaterial({ color: 0xffc36b }),
   );
-  flame.position.set(0, bowl.position.y + 0.16, 0);
+  flame.position.set(0, bowl.position.y + 0.19, 0);
   group.add(flame);
 
-  const flameLight = new THREE.PointLight(0xffab5c, 1.2, 16);
+  const flameLight = new THREE.PointLight(0xffab5c, 1.6, 20);
   flameLight.position.copy(flame.position);
   group.add(flameLight);
 
@@ -318,15 +372,9 @@ export function buildTown(scene: THREE.Scene) {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Gate marker — a glowing ring on the ground, under the entrance arch.
-  const gateRing = new THREE.Mesh(
-    new THREE.RingGeometry(2.4, 2.8, 32),
-    new THREE.MeshBasicMaterial({ color: 0xf2ac4a, side: THREE.DoubleSide, transparent: true, opacity: 0.6 }),
-  );
-  gateRing.rotation.x = -Math.PI / 2;
-  gateRing.position.set(GATE_POSITION.x, 0.02, GATE_POSITION.z);
-  scene.add(gateRing);
-
+  // The India Gate arch itself is the spawn-point landmark now — the flat
+  // amber ring used to sit at the same height as the road's lane-paint ticks
+  // right where the road meets the gate, causing z-fighting/flicker there.
   const gateArch = buildGateArch();
   gateArch.position.set(GATE_POSITION.x, 0, GATE_POSITION.z);
   scene.add(gateArch);
