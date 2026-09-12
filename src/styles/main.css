@@ -1,0 +1,323 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0e0b12;
+  --panel: #171019;
+  --hairline: #2c2333;
+  --text: #ece7ee;
+  --text-dim: #a99fb0;
+
+  --accent-about: #5adbb0;
+  --accent-work: #5ab0f0;
+  --accent-projects: #e08fd7;
+  --accent-skills: #f2ac4a;
+  --accent-contact: #7c93ff;
+  --accent-arcade: #7c93ff;
+  --accent-sketch: #c9536b;
+
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+#scene {
+  position: absolute;
+  inset: 0;
+  display: block;
+  touch-action: none;
+}
+
+/* ---------- Boot sequence ---------- */
+
+#boot {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: opacity 0.8s ease;
+}
+
+#boot.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#boot-text {
+  font-family: var(--font-mono);
+  color: var(--accent-skills);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+#boot-text::after {
+  content: '';
+  display: inline-block;
+  width: 1ch;
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ---------- Hero (Gate) ---------- */
+
+#hero {
+  position: fixed;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 20;
+  transition: opacity 1s ease;
+  pointer-events: none;
+  width: min(90vw, 640px);
+}
+
+#hero.hidden {
+  opacity: 0;
+}
+
+#hero h1 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: clamp(24px, 4vw, 38px);
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+#hero p {
+  font-family: var(--font-mono);
+  font-size: clamp(12px, 1.6vw, 15px);
+  color: var(--accent-skills);
+  margin: 0 0 20px;
+}
+
+#hero .hint {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* ---------- Legend (top-left) ---------- */
+
+#legend {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 12px 14px;
+  width: 190px;
+  backdrop-filter: blur(6px);
+}
+
+#legend h2 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 0 0 8px;
+}
+
+#legend ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  transition: color 0.3s ease;
+}
+
+#legend li .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hairline);
+  flex-shrink: 0;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+#legend li.visited {
+  color: var(--text);
+}
+
+#legend li.visited .dot {
+  background: var(--zone-color, var(--accent-skills));
+  box-shadow: 0 0 6px var(--zone-color, var(--accent-skills));
+}
+
+/* ---------- Minimap (bottom-left) ---------- */
+
+#minimap {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 10;
+  width: 150px;
+  height: 150px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+}
+
+/* ---------- Detail panel (right slide-out) ---------- */
+
+#detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(360px, 88vw);
+  background: var(--panel);
+  border-left: 1px solid var(--hairline);
+  z-index: 15;
+  padding: 28px 26px;
+  transform: translateX(100%);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow-y: auto;
+}
+
+#detail-panel.open {
+  transform: translateX(0);
+}
+
+#detail-panel .kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--zone-color, var(--accent-skills));
+  margin: 0 0 10px;
+}
+
+#detail-panel h2 {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  margin: 0 0 14px;
+  color: var(--text);
+}
+
+#detail-panel .description {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin: 0 0 20px;
+}
+
+#detail-panel .metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+#detail-panel .metric {
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+#detail-panel .metric .value {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  color: var(--zone-color, var(--accent-skills));
+  display: block;
+}
+
+#detail-panel .metric .label {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  display: block;
+}
+
+#detail-panel .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 22px;
+}
+
+#detail-panel .chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+#detail-panel .links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#detail-panel .links a {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--zone-color, var(--accent-skills));
+  text-decoration: none;
+}
+
+#detail-panel .links a:hover {
+  text-decoration: underline;
+}
+
+#detail-panel .close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  #legend { width: 150px; padding: 10px 12px; }
+  #minimap { width: 110px; height: 110px; }
+}
