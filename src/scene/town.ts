@@ -35,39 +35,58 @@ const ROOF_MARGIN = 0.65;
  * `floorStartY` lets the caller keep the ground-floor band clear on faces
  * that also carry the door + signboard, so windows never overlap them.
  */
-function addWindows(
-  group: THREE.Group,
+const IDENTITY_SCALE = new THREE.Vector3(1, 1, 1);
+const FACE_Z_ROTATION = new THREE.Quaternion(); // identity — kept for clarity at call sites
+const FACE_X_ROTATION = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0));
+
+/**
+ * Computes transforms for a grid of window instances on one vertical face of
+ * a building, in WORLD space (originX/originZ is the building's position) —
+ * these all get folded into one InstancedMesh for the whole town rather than
+ * one Mesh object per window, since a dense town could otherwise mean
+ * several hundred individual window meshes.
+ *
+ * `axis` is which world axis is the face's FIXED normal offset ('z' for the
+ * south/front face, 'x' for the east/side face) — the along-face spread
+ * always goes on the other axis. Getting this wrong (varying the wrong
+ * coordinate while the offset stays fixed) is what made the side face's
+ * windows float diagonally off the building instead of sitting flush on it.
+ * `floorStartY` lets the caller keep the ground-floor band clear on faces
+ * that also carry the door + signboard, so windows never overlap them.
+ */
+function computeWindowMatrices(
+  originX: number,
+  originZ: number,
   faceWidth: number,
   height: number,
   axis: 'z' | 'x',
   offset: number,
   floorStartY: number,
-) {
+): THREE.Matrix4[] {
   const cols = Math.max(1, Math.floor(faceWidth / 1.4));
   const rows = Math.max(0, Math.floor((height - ROOF_MARGIN - floorStartY) / ROW_SPACING) + 1);
   // Randomly-dark windows read as "a few lights off" on a tall, dense
   // building, but just look broken on a small one with only a handful of
   // windows total — so only randomize once there's enough of a grid for it.
   const allowDarkWindows = rows * cols >= 6;
+  const matrices: THREE.Matrix4[] = [];
 
   for (let y = floorStartY; y <= height - ROOF_MARGIN; y += ROW_SPACING) {
     for (let cCol = 0; cCol < cols; cCol++) {
       if (allowDarkWindows && Math.random() < 0.18) continue;
-      const win = new THREE.Mesh(winGeo, winMat);
       const along = (cCol - (cols - 1) / 2) * 1.4;
-      if (axis === 'z') {
-        win.position.set(along, y, offset);
-        win.rotation.y = 0;
-      } else {
-        win.position.set(offset, y, along);
-        win.rotation.y = Math.PI / 2;
-      }
-      group.add(win);
+      const position =
+        axis === 'z'
+          ? new THREE.Vector3(originX + along, y, originZ + offset)
+          : new THREE.Vector3(originX + offset, y, originZ + along);
+      const rotation = axis === 'z' ? FACE_Z_ROTATION : FACE_X_ROTATION;
+      matrices.push(new THREE.Matrix4().compose(position, rotation, IDENTITY_SCALE));
     }
   }
+  return matrices;
 }
 
-function buildBuilding(zone: Zone): THREE.Group {
+function buildBuilding(zone: Zone): { group: THREE.Group; windowMatrices: THREE.Matrix4[] } {
   const group = new THREE.Group();
   const { width, depth, height } = zone.footprint;
 
@@ -112,8 +131,10 @@ function buildBuilding(zone: Zone): THREE.Group {
   // Windows on the two faces most visible from the fixed isometric angle.
   // The front face carries the door + signboard, so its windows start well
   // above them (3.0) instead of at ground level, or the two would overlap.
-  addWindows(group, width, height, 'z', depth / 2 + 0.02, 3.0);
-  addWindows(group, depth, height, 'x', width / 2 + 0.02, 1.1);
+  const windowMatrices = [
+    ...computeWindowMatrices(zone.position.x, zone.position.z, width, height, 'z', depth / 2 + 0.02, 3.0),
+    ...computeWindowMatrices(zone.position.x, zone.position.z, depth, height, 'x', width / 2 + 0.02, 1.1),
+  ];
 
   // Entrance door — dark inset at ground level on the south-facing wall.
   const door = new THREE.Mesh(
@@ -125,11 +146,11 @@ function buildBuilding(zone: Zone): THREE.Group {
 
   // Signboard — a small box (not a flat plane) that actually sticks out from
   // the wall above the door, with the zone's name lettered on its front face.
-  const signWidth = Math.min(width * 0.7, 3.4);
+  const signWidth = Math.min(width * 0.9, 4.6);
   const signMat = new THREE.MeshStandardMaterial({ color: shadeColor(zone.accentColor, 0.55), roughness: 0.7 });
   const signFaceMat = new THREE.MeshBasicMaterial({ map: createSignTexture(zone.title, zone.accentColor) });
   // Face order: +x, -x, +y, -y, +z, -z — only the outward +z face gets the lettering.
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(signWidth, 0.55, 0.14), [
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(signWidth, 0.68, 0.22), [
     signMat,
     signMat,
     signMat,
@@ -137,13 +158,13 @@ function buildBuilding(zone: Zone): THREE.Group {
     signFaceMat,
     signMat,
   ]);
-  sign.position.set(0, Math.min(height - 0.6, 2.6), depth / 2 + 0.1);
+  sign.position.set(0, Math.min(height - 0.6, 2.6), depth / 2 + 0.17);
   sign.castShadow = true;
   group.add(sign);
 
   group.position.set(zone.position.x, 0, zone.position.z);
   group.userData.zoneId = zone.id;
-  return group;
+  return { group, windowMatrices };
 }
 
 function buildLampPost(x: number, z: number): THREE.Group {
@@ -193,34 +214,61 @@ function buildTree(x: number, z: number): THREE.Group {
 
 const ROCK_COLORS = [0xb08f86, 0x9c7d74, 0xc4a196, 0xa88a7f];
 
-function buildRock(x: number, z: number, scale: number): THREE.Mesh {
-  const color = ROCK_COLORS[Math.floor(Math.random() * ROCK_COLORS.length)];
-  const rock = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.32 * scale, 0),
-    new THREE.MeshStandardMaterial({ color, roughness: 0.95 }),
-  );
-  rock.position.set(x, 0.15 * scale, z);
-  rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-  rock.castShadow = true;
-  rock.receiveShadow = true;
-  return rock;
+interface RockPlacement {
+  x: number;
+  z: number;
+  scale: number;
 }
 
-/** Scatters small rocks across the empty ground — otherwise a lot of flat, empty
- * space between zones that reads as bare rather than an intentionally built town. */
-function scatterRocks(scene: THREE.Scene) {
+/**
+ * All rocks — ambient and roadside — collapse into one InstancedMesh instead
+ * of one Mesh (and one unique geometry, previously) per rock, since a single
+ * shared town could easily scatter 60-80 of them.
+ */
+function buildRockInstances(scene: THREE.Scene, placements: RockPlacement[]) {
+  if (placements.length === 0) return;
+  const geo = new THREE.IcosahedronGeometry(0.32, 0); // unit-ish; per-instance scale via the matrix
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.95 });
+  const mesh = new THREE.InstancedMesh(geo, mat, placements.length);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+
+  const color = new THREE.Color();
+  const matrix = new THREE.Matrix4();
+  placements.forEach((p, i) => {
+    const rotation = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI),
+    );
+    matrix.compose(
+      new THREE.Vector3(p.x, 0.15 * p.scale, p.z),
+      rotation,
+      new THREE.Vector3(p.scale, p.scale, p.scale),
+    );
+    mesh.setMatrixAt(i, matrix);
+    color.setHex(ROCK_COLORS[Math.floor(Math.random() * ROCK_COLORS.length)]);
+    mesh.setColorAt(i, color);
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  scene.add(mesh);
+}
+
+/** Ambient rocks scattered across the empty ground — otherwise a lot of flat,
+ * empty space between zones that reads as bare rather than an intentionally
+ * built town. */
+function generateAmbientRocks(): RockPlacement[] {
   const clearPoints = [GATE_POSITION, ...ZONES.map((z) => z.position)];
-  let placed = 0;
+  const placements: RockPlacement[] = [];
   let attempts = 0;
-  while (placed < 45 && attempts < 900) {
+  while (placements.length < 45 && attempts < 900) {
     attempts++;
     const x = THREE.MathUtils.randFloat(-32, 34);
     const z = THREE.MathUtils.randFloat(-86, 8);
     if (distanceToNearestRoad(x, z) < 2.4) continue;
     if (clearPoints.some((p) => Math.hypot(x - p.x, z - p.z) < 7.5)) continue;
-    scene.add(buildRock(x, z, THREE.MathUtils.randFloat(0.6, 1.7)));
-    placed++;
+    placements.push({ x, z, scale: THREE.MathUtils.randFloat(0.6, 1.7) });
   }
+  return placements;
 }
 
 const ROAD_CLEARANCE = 1.9; // half road width (1.6) + outline + a small margin
@@ -282,11 +330,74 @@ function placeStreetLamps(scene: THREE.Scene) {
   }
 }
 
+const BUNTING_HEIGHT = 3.6;
+const BUNTING_FLAG_COUNT = 7;
+const FLAG_COLORS = ZONES.map((z) => z.accentColor);
+
+/** One sagging string of small triangular flags spanning across the road, market-style. */
+function buildBuntingSpan(centerX: number, centerZ: number, dirX: number, dirZ: number, span: number): THREE.Group {
+  const group = new THREE.Group();
+  const points: THREE.Vector3[] = [];
+  for (let i = 0; i <= BUNTING_FLAG_COUNT; i++) {
+    const t = i / BUNTING_FLAG_COUNT;
+    const along = (t - 0.5) * span;
+    const sag = Math.sin(t * Math.PI) * 0.4;
+    points.push(new THREE.Vector3(centerX + dirX * along, BUNTING_HEIGHT - sag, centerZ + dirZ * along));
+  }
+
+  const rope = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(points),
+    new THREE.LineBasicMaterial({ color: 0x3a2a22 }),
+  );
+  group.add(rope);
+
+  const flagGeo = new THREE.BufferGeometry();
+  flagGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0.18, -0.24, 0, -0.18, -0.24, 0], 3));
+  flagGeo.computeVertexNormals();
+  const flagAngle = Math.atan2(dirX, dirZ);
+
+  for (let i = 0; i < BUNTING_FLAG_COUNT; i++) {
+    const mid = points[i].clone().lerp(points[i + 1], 0.5);
+    const color = FLAG_COLORS[i % FLAG_COLORS.length];
+    const flag = new THREE.Mesh(
+      flagGeo,
+      new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, roughness: 0.6 }),
+    );
+    flag.position.copy(mid);
+    flag.rotation.y = flagAngle;
+    group.add(flag);
+  }
+
+  return group;
+}
+
+/** Colorful bunting strung across the road at regular intervals — a market-street
+ * flourish that also breaks up the long empty stretches between zones. */
+function placeBunting(scene: THREE.Scene) {
+  for (const [a, b] of ROAD_SEGMENTS) {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const length = Math.hypot(dx, dz);
+    const dirX = dx / length;
+    const dirZ = dz / length;
+    const perpX = -dirZ;
+    const perpZ = dirX;
+    const span = ROAD_WIDTH + 1.4;
+
+    const count = Math.floor(length / LAMP_SPACING);
+    for (let i = 1; i < count; i++) {
+      const t = i * LAMP_SPACING;
+      scene.add(buildBuntingSpan(a.x + dirX * t, a.z + dirZ * t, perpX, perpZ, span));
+    }
+  }
+}
+
 /** A scattering of small rocks just off the road edges, distinct from the
  * general ambient rocks (which deliberately avoid roads) — these hug the
  * street the way loose stones would in a real market town. */
-function scatterRoadsideRocks(scene: THREE.Scene) {
+function generateRoadsideRocks(): RockPlacement[] {
   const clearPoints = [GATE_POSITION, ...ZONES.map((z) => z.position)];
+  const placements: RockPlacement[] = [];
   for (const [a, b] of ROAD_SEGMENTS) {
     const dx = b.x - a.x;
     const dz = b.z - a.z;
@@ -305,9 +416,10 @@ function scatterRoadsideRocks(scene: THREE.Scene) {
       const x = a.x + dirX * t + perpX * off * side;
       const z = a.z + dirZ * t + perpZ * off * side;
       if (clearPoints.some((p) => Math.hypot(x - p.x, z - p.z) < 5)) continue;
-      scene.add(buildRock(x, z, THREE.MathUtils.randFloat(0.4, 1.0)));
+      placements.push({ x, z, scale: THREE.MathUtils.randFloat(0.4, 1.0) });
     }
   }
+  return placements;
 }
 
 /**
@@ -421,8 +533,11 @@ export function buildTown(scene: THREE.Scene) {
   gateArch.position.set(GATE_POSITION.x, 0, GATE_POSITION.z);
   scene.add(gateArch);
 
+  const allWindowMatrices: THREE.Matrix4[] = [];
   for (const zone of ZONES) {
-    scene.add(buildBuilding(zone));
+    const { group, windowMatrices } = buildBuilding(zone);
+    scene.add(group);
+    allWindowMatrices.push(...windowMatrices);
 
     // Street props flanking each building, placed wherever is clearest of the roads.
     const [lampOffset, treeOffset] = pickPropOffsets(zone, 2);
@@ -430,7 +545,17 @@ export function buildTown(scene: THREE.Scene) {
     if (treeOffset) scene.add(buildTree(zone.position.x + treeOffset.x, zone.position.z + treeOffset.z));
   }
 
-  scatterRocks(scene);
+  // All windows across every building collapse into one InstancedMesh —
+  // a dense town could otherwise mean several hundred individual window
+  // meshes (one building alone can have 50+), each its own draw call.
+  if (allWindowMatrices.length > 0) {
+    const windowMesh = new THREE.InstancedMesh(winGeo, winMat, allWindowMatrices.length);
+    allWindowMatrices.forEach((m, i) => windowMesh.setMatrixAt(i, m));
+    windowMesh.instanceMatrix.needsUpdate = true;
+    scene.add(windowMesh);
+  }
+
+  buildRockInstances(scene, [...generateAmbientRocks(), ...generateRoadsideRocks()]);
   placeStreetLamps(scene);
-  scatterRoadsideRocks(scene);
+  placeBunting(scene);
 }

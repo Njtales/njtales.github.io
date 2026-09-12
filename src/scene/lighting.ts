@@ -15,7 +15,7 @@ export function addLighting(scene: THREE.Scene) {
   key.position.copy(townCenter).add(new THREE.Vector3(30, 45, 20));
   key.target.position.copy(townCenter);
   key.castShadow = true;
-  key.shadow.mapSize.set(4096, 4096);
+  key.shadow.mapSize.set(2048, 2048);
   key.shadow.camera.left = -70;
   key.shadow.camera.right = 70;
   key.shadow.camera.top = 70;
