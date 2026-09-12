@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { ZONES, GATE_POSITION, type Zone } from '../data/zones';
-import { createGroundTexture } from './textures';
 
 function shadeColor(hex: string, factor: number): THREE.Color {
   const c = new THREE.Color(hex);
@@ -153,7 +152,8 @@ function buildTree(x: number, z: number): THREE.Group {
 
 export function buildTown(scene: THREE.Scene) {
   const groundGeo = new THREE.PlaneGeometry(140, 140);
-  const groundMat = new THREE.MeshStandardMaterial({ map: createGroundTexture(), roughness: 1 });
+  // Light matte maroon — flat, no texture, no shine.
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0xdcb0a7, roughness: 1, metalness: 0 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, -0.01, -35);

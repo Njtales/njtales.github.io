@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { GATE_POSITION, getZone } from '../data/zones';
-import { createAsphaltTexture } from './textures';
 
 type Point = { x: number; z: number };
 
@@ -27,8 +26,11 @@ export const ROAD_SEGMENTS: [Point, Point][] = [
 ];
 
 const ROAD_WIDTH = 3.2;
-const CURB_WIDTH = 0.25;
-const asphaltTexture = createAsphaltTexture();
+const OUTLINE_WIDTH = 0.12;
+
+const outlineMat = new THREE.MeshStandardMaterial({ color: 0x8a8390, roughness: 1, metalness: 0 });
+const fillMat = new THREE.MeshStandardMaterial({ color: 0xc9c2c2, roughness: 1, metalness: 0 });
+const paintMat = new THREE.MeshStandardMaterial({ color: 0xf5efe6, roughness: 1, metalness: 0 });
 
 function buildRoadBed(a: Point, b: Point): THREE.Group {
   const group = new THREE.Group();
@@ -39,27 +41,24 @@ function buildRoadBed(a: Point, b: Point): THREE.Group {
   const midX = (a.x + b.x) / 2;
   const midZ = (a.z + b.z) / 2;
 
-  const tex = asphaltTexture.clone();
-  tex.needsUpdate = true;
-  tex.repeat.set(length / 3, ROAD_WIDTH / 3);
-  const bedMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 });
-  const bed = new THREE.Mesh(new THREE.PlaneGeometry(length, ROAD_WIDTH), bedMat);
-  bed.rotation.x = -Math.PI / 2;
-  bed.rotation.z = -angle;
-  bed.position.set(midX, 0.005, midZ);
-  bed.receiveShadow = true;
-  group.add(bed);
+  // Flat matte fill with a slightly larger, darker underlay peeking out — a simple
+  // "outline" effect without needing an edge-detection shader.
+  const outline = new THREE.Mesh(
+    new THREE.PlaneGeometry(length + OUTLINE_WIDTH * 2, ROAD_WIDTH + OUTLINE_WIDTH * 2),
+    outlineMat,
+  );
+  outline.rotation.x = -Math.PI / 2;
+  outline.rotation.z = -angle;
+  outline.position.set(midX, 0.004, midZ);
+  outline.receiveShadow = true;
+  group.add(outline);
 
-  const curbMat = new THREE.MeshStandardMaterial({ color: 0x352b3f, roughness: 0.8 });
-  for (const side of [-1, 1]) {
-    const curb = new THREE.Mesh(new THREE.BoxGeometry(length, 0.18, CURB_WIDTH), curbMat);
-    const offsetX = -Math.sin(angle) * (ROAD_WIDTH / 2 + CURB_WIDTH / 2);
-    const offsetZ = Math.cos(angle) * (ROAD_WIDTH / 2 + CURB_WIDTH / 2);
-    curb.rotation.y = -angle;
-    curb.position.set(midX + offsetX * side, 0.09, midZ + offsetZ * side);
-    curb.castShadow = true;
-    group.add(curb);
-  }
+  const fill = new THREE.Mesh(new THREE.PlaneGeometry(length, ROAD_WIDTH), fillMat);
+  fill.rotation.x = -Math.PI / 2;
+  fill.rotation.z = -angle;
+  fill.position.set(midX, 0.006, midZ);
+  fill.receiveShadow = true;
+  group.add(fill);
 
   return group;
 }
@@ -77,17 +76,12 @@ function buildLaneMarkings(a: Point, b: Point): THREE.Group {
   const gap = 0.6;
   const step = tickLength + gap;
   const count = Math.floor(length / step);
-  const mat = new THREE.MeshStandardMaterial({
-    color: 0xf2ac4a,
-    emissive: new THREE.Color(0xf2ac4a),
-    emissiveIntensity: 0.9,
-  });
-  const tickGeo = new THREE.BoxGeometry(tickLength, 0.03, 0.14);
+  const tickGeo = new THREE.BoxGeometry(tickLength, 0.02, 0.14);
 
   for (let i = 0; i < count; i++) {
     const dist = i * step + tickLength / 2;
-    const tick = new THREE.Mesh(tickGeo, mat);
-    tick.position.set(a.x + dirX * dist, 0.03, a.z + dirZ * dist);
+    const tick = new THREE.Mesh(tickGeo, paintMat);
+    tick.position.set(a.x + dirX * dist, 0.02, a.z + dirZ * dist);
     tick.rotation.y = -angle;
     group.add(tick);
   }
