@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ZONES, GATE_POSITION, type Zone } from '../data/zones';
-import { ROAD_SEGMENTS } from './roads';
+import { ROAD_SEGMENTS, ROAD_WIDTH } from './roads';
 import { createRoofIconTexture } from './roofIcons';
 
 // Shared with systems/collision.ts so the arch's solid legs actually block
@@ -266,31 +266,73 @@ function pickPropOffsets(zone: Zone, count: number): { x: number; z: number }[] 
   return candidates.filter((c) => c.dist >= ROAD_CLEARANCE).slice(0, count);
 }
 
+const LAMP_SPACING = 9;
+
+/** Evenly-spaced lamp posts running alongside every road, alternating sides. */
+function placeStreetLamps(scene: THREE.Scene) {
+  for (const [a, b] of ROAD_SEGMENTS) {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const length = Math.hypot(dx, dz);
+    const dirX = dx / length;
+    const dirZ = dz / length;
+    const perpX = -dirZ;
+    const perpZ = dirX;
+    const offset = ROAD_WIDTH / 2 + 0.7;
+
+    const count = Math.floor(length / LAMP_SPACING);
+    for (let i = 1; i < count; i++) {
+      const t = i * LAMP_SPACING;
+      const side = i % 2 === 0 ? 1 : -1;
+      scene.add(buildLampPost(a.x + dirX * t + perpX * offset * side, a.z + dirZ * t + perpZ * offset * side));
+    }
+  }
+}
+
+/** A scattering of small rocks just off the road edges, distinct from the
+ * general ambient rocks (which deliberately avoid roads) — these hug the
+ * street the way loose stones would in a real market town. */
+function scatterRoadsideRocks(scene: THREE.Scene) {
+  const clearPoints = [GATE_POSITION, ...ZONES.map((z) => z.position)];
+  for (const [a, b] of ROAD_SEGMENTS) {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const length = Math.hypot(dx, dz);
+    if (length < 6) continue;
+    const dirX = dx / length;
+    const dirZ = dz / length;
+    const perpX = -dirZ;
+    const perpZ = dirX;
+
+    const count = Math.round(length / 6);
+    for (let i = 0; i < count; i++) {
+      const t = THREE.MathUtils.randFloat(3, length - 3);
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const off = THREE.MathUtils.randFloat(ROAD_WIDTH / 2 + 0.35, ROAD_WIDTH / 2 + 1.7);
+      const x = a.x + dirX * t + perpX * off * side;
+      const z = a.z + dirZ * t + perpZ * off * side;
+      if (clearPoints.some((p) => Math.hypot(x - p.x, z - p.z) < 5)) continue;
+      scene.add(buildRock(x, z, THREE.MathUtils.randFloat(0.4, 1.0)));
+    }
+  }
+}
+
 /**
  * The town entrance, styled after India Gate: a single monumental sandstone
  * mass with a true arched opening punched through it (not two separate
- * pillars under a floating lintel), sitting on a raised plinth with small
- * corner chhatris and a glowing beacon on top. The character spawns
- * standing directly beneath the arch.
+ * pillars under a floating lintel), with small corner chhatris and a
+ * glowing beacon on top. The character spawns standing directly beneath
+ * the arch.
  */
 function buildGateArch(): THREE.Group {
   const group = new THREE.Group();
   const stoneMat = new THREE.MeshStandardMaterial({ color: 0xaa5f3d, roughness: 0.92 });
   const trimMat = new THREE.MeshStandardMaterial({ color: 0xe8d3ab, roughness: 0.8 });
-  const plinthMat = new THREE.MeshStandardMaterial({ color: 0x7a4530, roughness: 0.9 });
-
   const blockWidth = GATE_BLOCK_WIDTH;
   const blockHeight = 9.5;
   const blockDepth = GATE_BLOCK_DEPTH;
   const openingWidth = GATE_OPENING_WIDTH; // comfortably wider than the 3.2-wide road
   const archSpringHeight = 5.6; // where the straight sides end and the curve begins
-
-  // Raised plinth the whole monument stands on.
-  const plinth = new THREE.Mesh(new THREE.BoxGeometry(blockWidth + 1.2, 0.5, blockDepth + 1.2), plinthMat);
-  plinth.position.y = 0.25;
-  plinth.castShadow = true;
-  plinth.receiveShadow = true;
-  group.add(plinth);
 
   // The main mass, with a true arched hole punched through it via an
   // extruded shape rather than an assembly of separate pillar/lintel boxes —
@@ -313,12 +355,11 @@ function buildGateArch(): THREE.Group {
   const blockGeo = new THREE.ExtrudeGeometry(outline, { depth: blockDepth, bevelEnabled: false });
   blockGeo.translate(0, 0, -blockDepth / 2);
   const block = new THREE.Mesh(blockGeo, stoneMat);
-  block.position.y = 0.5;
   block.castShadow = true;
   block.receiveShadow = true;
   group.add(block);
 
-  const topY = 0.5 + blockHeight;
+  const topY = blockHeight;
 
   // Cream cornice band wrapping the top edge.
   const cornice = new THREE.Mesh(new THREE.BoxGeometry(blockWidth + 0.3, 0.4, blockDepth + 0.3), trimMat);
@@ -397,4 +438,6 @@ export function buildTown(scene: THREE.Scene) {
   }
 
   scatterRocks(scene);
+  placeStreetLamps(scene);
+  scatterRoadsideRocks(scene);
 }

@@ -25,7 +25,7 @@ export const ROAD_SEGMENTS: [Point, Point][] = [
   [P.skills, P.contact],
 ];
 
-const ROAD_WIDTH = 3.2;
+export const ROAD_WIDTH = 3.2;
 const OUTLINE_WIDTH = 0.12;
 
 // Warm, muted tones close in value to both the fill and the maroon ground, so the
