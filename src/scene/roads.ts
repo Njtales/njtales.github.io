@@ -119,14 +119,28 @@ function buildCurvedPath(a: Point, b: Point, points: Point[]): THREE.Group {
   const clearA = pullback(a);
   const clearB = pullback(b);
 
+  // Cumulative distance along the sampled curve from its start. Cutting by
+  // this instead of raw distance-to-endpoint per segment guarantees a single
+  // contiguous kept range: with a curvy path, a segment's midpoint can drift
+  // back inside a building's clearance radius after already having left it,
+  // which culled non-contiguous ranges and left an isolated "island" segment
+  // (a lone quad + rounded joints) floating mid-path, disconnected from the
+  // road on both sides.
+  const cum: number[] = [0];
+  for (let i = 1; i < points.length; i++) {
+    cum.push(cum[i - 1] + Math.hypot(points[i].x - points[i - 1].x, points[i].z - points[i - 1].z));
+  }
+  const total = cum[cum.length - 1];
+  const startCut = clearA;
+  const endCut = total - clearB;
+
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i];
     const p1 = points[i + 1];
+    if (cum[i + 1] <= startCut || cum[i] >= endCut) continue;
+
     const midX = (p0.x + p1.x) / 2;
     const midZ = (p0.z + p1.z) / 2;
-    if (Math.hypot(midX - a.x, midZ - a.z) < clearA) continue;
-    if (Math.hypot(midX - b.x, midZ - b.z) < clearB) continue;
-
     const dx = p1.x - p0.x;
     const dz = p1.z - p0.z;
     const segLength = Math.hypot(dx, dz);

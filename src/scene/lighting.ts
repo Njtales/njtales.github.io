@@ -26,7 +26,11 @@ export function addLighting(scene: THREE.Scene) {
   // the acne/hatching artifact that plain depth bias alone left visible on
   // large flat surfaces like the ground, especially in the gate's shadow.
   key.shadow.bias = -0.0004;
-  key.shadow.normalBias = 0.06;
+  // Raised further to clear a new artifact: the terrain's own small bump
+  // relief was self-shadowing at the wrong offset, producing a faint but
+  // very regular diagonal-grid acne pattern that followed the ground mesh's
+  // triangulation once the ground texture became smooth enough to reveal it.
+  key.shadow.normalBias = 0.15;
   scene.add(key);
   scene.add(key.target);
 

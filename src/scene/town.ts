@@ -537,9 +537,13 @@ function buildGateArch(): THREE.Group {
 
   const topY = blockHeight;
 
-  // Cream cornice band wrapping the top edge.
+  // Cream cornice band wrapping the top edge. Centered exactly on the block's
+  // top edge (straddling half above, half below) rather than embedded with
+  // its top face flush against the block's own top cap — that made the two
+  // top faces exactly coincident, which read as flickering/hatched artifacts
+  // right at the gate's top under the directional light.
   const cornice = new THREE.Mesh(new THREE.BoxGeometry(blockWidth + 0.3, 0.4, blockDepth + 0.3), trimMat);
-  cornice.position.y = topY - 0.2;
+  cornice.position.y = topY;
   cornice.castShadow = true;
   group.add(cornice);
 
@@ -588,7 +592,7 @@ function buildGateArch(): THREE.Group {
 const GROUND_SIZE = 140;
 const GROUND_CENTER = { x: 0, z: -35 };
 const TERRAIN_SEGMENTS = 70;
-const BUMP_AMPLITUDE = 0.22;
+const BUMP_AMPLITUDE = 0.1;
 
 // Cheap hash-based value noise (bilinear-interpolated pseudo-random grid) —
 // enough to look organic without pulling in a real noise library. A first
@@ -641,6 +645,11 @@ function clearanceFromSolids(worldX: number, worldZ: number): number {
   return clearance;
 }
 
+function heightAt(worldX: number, worldZ: number): number {
+  const flatten = smoothstep(0, 3, clearanceFromSolids(worldX, worldZ));
+  return terrainNoise(worldX, worldZ) * BUMP_AMPLITUDE * flatten;
+}
+
 /**
  * A subdivided, gently undulating ground plane instead of a flat one — real
  * grass has soft rises and dips. Flattened to zero near every path and
@@ -650,15 +659,26 @@ function clearanceFromSolids(worldX: number, worldZ: number): number {
 function buildGrassGeometry(): THREE.PlaneGeometry {
   const geo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, TERRAIN_SEGMENTS, TERRAIN_SEGMENTS);
   const pos = geo.attributes.position;
+  const normal = geo.attributes.normal;
+  const eps = 0.15;
 
   for (let i = 0; i < pos.count; i++) {
     const worldX = pos.getX(i) + GROUND_CENTER.x;
     const worldZ = pos.getY(i) + GROUND_CENTER.z;
-    const flatten = smoothstep(0, 3, clearanceFromSolids(worldX, worldZ));
-    pos.setZ(i, terrainNoise(worldX, worldZ) * BUMP_AMPLITUDE * flatten);
+    pos.setZ(i, heightAt(worldX, worldZ));
+
+    // Analytic normal from the height field's local slope, instead of
+    // computeVertexNormals()'s triangle-based average — PlaneGeometry splits
+    // every quad along the same diagonal, and averaging real triangle
+    // normals bakes that into a faint but very regular diagonal grid of
+    // shading facets across the whole terrain, invisible under a busy
+    // texture but obvious once the ground texture is smooth.
+    const dx = (heightAt(worldX + eps, worldZ) - heightAt(worldX - eps, worldZ)) / (2 * eps);
+    const dy = (heightAt(worldX, worldZ + eps) - heightAt(worldX, worldZ - eps)) / (2 * eps);
+    const n = new THREE.Vector3(-dx, -dy, 1).normalize();
+    normal.setXYZ(i, n.x, n.y, n.z);
   }
 
-  geo.computeVertexNormals();
   return geo;
 }
 

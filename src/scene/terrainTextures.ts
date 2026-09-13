@@ -68,6 +68,31 @@ function paintStrokes(
   ctx.globalAlpha = 1;
 }
 
+/**
+ * Draws broad soft patches onto a separate canvas, then blurs that whole
+ * layer when compositing it onto the destination — a radial-gradient patch
+ * on its own still has a rim where its alpha reaches zero, and enough of
+ * those at similar sizes still reads as "circles" once you look closely
+ * (as opposed to random natural mottling). Blurring the composited layer
+ * erases that rim entirely, leaving smooth cloud-like variation with no
+ * discernible edge at any radius.
+ */
+function paintBlurredMottling(
+  dest: CanvasRenderingContext2D,
+  size: number,
+  blurPx: number,
+  draw: (ctx: CanvasRenderingContext2D) => void,
+) {
+  const layer = document.createElement('canvas');
+  layer.width = size;
+  layer.height = size;
+  const layerCtx = layer.getContext('2d')!;
+  draw(layerCtx);
+  dest.filter = `blur(${blurPx}px)`;
+  dest.drawImage(layer, 0, 0);
+  dest.filter = 'none';
+}
+
 function makeTexture(canvas: HTMLCanvasElement, repeat: number): THREE.Texture {
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
@@ -91,31 +116,37 @@ export function createGrassTexture(): THREE.Texture {
   ctx.fillStyle = '#6f9450';
   ctx.fillRect(0, 0, size, size);
 
-  // Broad, soft mottling — the base color variation.
+  // Broad, soft mottling — the base color variation. Blurred as a whole
+  // layer so no individual patch rim is ever discernible as a "circle".
   const lightColors = ['#7c9f5a', '#82a35e'];
   const darkColors = ['#628647', '#5d8043'];
-  for (let i = 0; i < 26; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const color = lightColors[Math.floor(Math.random() * lightColors.length)];
-    paintSoftPatch(ctx, size, x, y, color, 80 + Math.random() * 80, 0.2 + Math.random() * 0.1);
-  }
-  for (let i = 0; i < 26; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const color = darkColors[Math.floor(Math.random() * darkColors.length)];
-    paintSoftPatch(ctx, size, x, y, color, 65 + Math.random() * 75, 0.16 + Math.random() * 0.1);
-  }
+  paintBlurredMottling(ctx, size, 40, (layerCtx) => {
+    for (let i = 0; i < 26; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const color = lightColors[Math.floor(Math.random() * lightColors.length)];
+      paintSoftPatch(layerCtx, size, x, y, color, 80 + Math.random() * 80, 0.35 + Math.random() * 0.15);
+    }
+    for (let i = 0; i < 26; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const color = darkColors[Math.floor(Math.random() * darkColors.length)];
+      paintSoftPatch(layerCtx, size, x, y, color, 65 + Math.random() * 75, 0.3 + Math.random() * 0.15);
+    }
+  });
 
   // Mid layer — smaller, warmer olive/sunlit patches for richer variation,
-  // like the dappled highlights in the reference field.
+  // like the dappled highlights in the reference field. Blurred less, so it
+  // still reads as texture rather than fully dissolving into the base.
   const warmColors = ['#93a94f', '#a3ab5a', '#547a3f'];
-  for (let i = 0; i < 55; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const color = warmColors[Math.floor(Math.random() * warmColors.length)];
-    paintSoftPatch(ctx, size, x, y, color, 20 + Math.random() * 30, 0.16 + Math.random() * 0.12);
-  }
+  paintBlurredMottling(ctx, size, 14, (layerCtx) => {
+    for (let i = 0; i < 55; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const color = warmColors[Math.floor(Math.random() * warmColors.length)];
+      paintSoftPatch(layerCtx, size, x, y, color, 20 + Math.random() * 30, 0.3 + Math.random() * 0.2);
+    }
+  });
 
   // Fine blade-like strokes — the close-up grain that reads as individual
   // tufts of grass rather than a smooth gradient.
@@ -150,18 +181,20 @@ export function createPathTexture(): THREE.Texture {
   const lightColors = ['#cdb086', '#d0b78f'];
   const darkColors = ['#b4966a', '#a98a5f'];
 
-  for (let i = 0; i < 18; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const color = lightColors[Math.floor(Math.random() * lightColors.length)];
-    paintSoftPatch(ctx, size, x, y, color, 60 + Math.random() * 60, 0.2 + Math.random() * 0.1);
-  }
-  for (let i = 0; i < 18; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const color = darkColors[Math.floor(Math.random() * darkColors.length)];
-    paintSoftPatch(ctx, size, x, y, color, 50 + Math.random() * 55, 0.18 + Math.random() * 0.1);
-  }
+  paintBlurredMottling(ctx, size, 30, (layerCtx) => {
+    for (let i = 0; i < 18; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const color = lightColors[Math.floor(Math.random() * lightColors.length)];
+      paintSoftPatch(layerCtx, size, x, y, color, 60 + Math.random() * 60, 0.35 + Math.random() * 0.15);
+    }
+    for (let i = 0; i < 18; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const color = darkColors[Math.floor(Math.random() * darkColors.length)];
+      paintSoftPatch(layerCtx, size, x, y, color, 50 + Math.random() * 55, 0.3 + Math.random() * 0.15);
+    }
+  });
 
   for (let i = 0; i < 300; i++) {
     const x = Math.random() * size;
