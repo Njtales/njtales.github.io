@@ -1,18 +1,18 @@
 import * as THREE from 'three';
 
-/** Warm twilight mood: cool ambient fill, warm key light casting soft shadows, near-black fog for depth. */
+/** Bright daytime mood: warm sunlight, a sky-tinted hemisphere fill, soft shadows. */
 export function addLighting(scene: THREE.Scene) {
-  scene.background = new THREE.Color(0x0e0b12);
-  scene.fog = new THREE.Fog(0x0e0b12, 60, 140);
+  scene.background = new THREE.Color(0xa9d1e0);
+  scene.fog = new THREE.Fog(0xcfe6e8, 70, 160);
 
-  const ambient = new THREE.AmbientLight(0x3a3048, 1.1);
+  const ambient = new THREE.AmbientLight(0xfff6e8, 1.2);
   scene.add(ambient);
 
   // Town spans roughly x:[-34,36] z:[-88,10] — center the shadow frustum over
   // it (not the origin) so buildings near the Station/Skill Tower aren't clipped.
   const townCenter = new THREE.Vector3(1, 0, -39);
-  const key = new THREE.DirectionalLight(0xffb877, 1.0);
-  key.position.copy(townCenter).add(new THREE.Vector3(30, 45, 20));
+  const key = new THREE.DirectionalLight(0xfff4d6, 1.5);
+  key.position.copy(townCenter).add(new THREE.Vector3(30, 55, 20));
   key.target.position.copy(townCenter);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -30,10 +30,11 @@ export function addLighting(scene: THREE.Scene) {
   scene.add(key);
   scene.add(key.target);
 
-  const rim = new THREE.DirectionalLight(0x7c93ff, 0.35);
+  // Soft sky-blue fill from the opposite side, standing in for bounced skylight.
+  const rim = new THREE.DirectionalLight(0xbfe0f0, 0.3);
   rim.position.set(-25, 20, -30);
   scene.add(rim);
 
-  const hemi = new THREE.HemisphereLight(0x4a3f5c, 0x0e0b12, 0.5);
+  const hemi = new THREE.HemisphereLight(0xaed4e0, 0x6b8f4e, 0.75);
   scene.add(hemi);
 }

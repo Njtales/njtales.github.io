@@ -56,11 +56,15 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, isoCamera.camera));
+// Daytime scenes are much brighter overall (sky, sunlit grass) and no longer
+// rely on glowing windows/lamps for their mood — bloom now only needs to
+// catch genuine light sources like the gate's flame, so threshold is raised
+// and strength pulled back to avoid a hazy, overexposed look.
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.42, // strength — nudged back up a touch from the last pass, which read too dim
+  0.25, // strength
   0.4, // radius
-  0.68, // threshold
+  0.85, // threshold
 );
 composer.addPass(bloomPass);
 composer.addPass(new OutputPass());

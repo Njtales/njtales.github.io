@@ -15,10 +15,13 @@ function shadeColor(hex: string, factor: number): THREE.Color {
   return c;
 }
 
+// Daytime glass — a pale sky-blue tint reflecting the sky, not a lit-up warm
+// glow (which read as nighttime lighting, out of place once the town moved
+// to a daytime look).
 const winMat = new THREE.MeshStandardMaterial({
-  color: 0xecd0a0,
-  emissive: new THREE.Color(0xe0a868),
-  emissiveIntensity: 0.75,
+  color: 0xbcd9e0,
+  roughness: 0.3,
+  metalness: 0.1,
 });
 const winGeo = new THREE.PlaneGeometry(0.55, 0.7);
 
@@ -175,16 +178,15 @@ function buildLampPost(x: number, z: number): THREE.Group {
   pole.castShadow = true;
   group.add(pole);
 
+  // Frosted glass, unlit — the lamp is off during the day. Its own point
+  // light was dropped too: dozens of these across the town added up, and
+  // a daytime scene doesn't need them lit anyway.
   const lampGlow = new THREE.Mesh(
     new THREE.SphereGeometry(0.18, 10, 10),
-    new THREE.MeshBasicMaterial({ color: 0xffcf7a }),
+    new THREE.MeshStandardMaterial({ color: 0xd8d2c4, roughness: 0.6 }),
   );
   lampGlow.position.y = 3.25;
   group.add(lampGlow);
-
-  const light = new THREE.PointLight(0xffb877, 0.6, 8);
-  light.position.y = 3.25;
-  group.add(light);
 
   group.position.set(x, 0, z);
   return group;
@@ -307,42 +309,22 @@ function pickPropOffsets(zone: Zone, count: number): { x: number; z: number }[] 
   return candidates.filter((c) => c.dist >= ROAD_CLEARANCE).slice(0, count);
 }
 
-const LAMP_SPACING = 9;
-
-/** Evenly-spaced lamp posts running alongside every road, alternating sides. */
-function placeStreetLamps(scene: THREE.Scene) {
-  for (const [a, b] of ROAD_SEGMENTS) {
-    const dx = b.x - a.x;
-    const dz = b.z - a.z;
-    const length = Math.hypot(dx, dz);
-    const dirX = dx / length;
-    const dirZ = dz / length;
-    const perpX = -dirZ;
-    const perpZ = dirX;
-    const offset = ROAD_WIDTH / 2 + 0.7;
-
-    const count = Math.floor(length / LAMP_SPACING);
-    for (let i = 1; i < count; i++) {
-      const t = i * LAMP_SPACING;
-      const side = i % 2 === 0 ? 1 : -1;
-      scene.add(buildLampPost(a.x + dirX * t + perpX * offset * side, a.z + dirZ * t + perpZ * offset * side));
-    }
-  }
-}
-
+// Tight enough that most road segments (many are only 15-25 units end to
+// end) still fit at least two lamps — bunting connects consecutive lamps,
+// so a segment with only one lamp gets no bunting at all.
+const LAMP_SPACING = 6;
 const BUNTING_HEIGHT = 3.6;
-const BUNTING_FLAG_COUNT = 7;
+const BUNTING_FLAG_COUNT = 5;
 const FLAG_COLORS = ZONES.map((z) => z.accentColor);
 
-/** One sagging string of small triangular flags spanning across the road, market-style. */
-function buildBuntingSpan(centerX: number, centerZ: number, dirX: number, dirZ: number, span: number): THREE.Group {
+/** One sagging string of small triangular flags between two arbitrary ground points. */
+function buildBuntingBetween(p0: { x: number; z: number }, p1: { x: number; z: number }): THREE.Group {
   const group = new THREE.Group();
   const points: THREE.Vector3[] = [];
   for (let i = 0; i <= BUNTING_FLAG_COUNT; i++) {
     const t = i / BUNTING_FLAG_COUNT;
-    const along = (t - 0.5) * span;
     const sag = Math.sin(t * Math.PI) * 0.4;
-    points.push(new THREE.Vector3(centerX + dirX * along, BUNTING_HEIGHT - sag, centerZ + dirZ * along));
+    points.push(new THREE.Vector3(THREE.MathUtils.lerp(p0.x, p1.x, t), BUNTING_HEIGHT - sag, THREE.MathUtils.lerp(p0.z, p1.z, t)));
   }
 
   const rope = new THREE.Line(
@@ -354,7 +336,7 @@ function buildBuntingSpan(centerX: number, centerZ: number, dirX: number, dirZ: 
   const flagGeo = new THREE.BufferGeometry();
   flagGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0.18, -0.24, 0, -0.18, -0.24, 0], 3));
   flagGeo.computeVertexNormals();
-  const flagAngle = Math.atan2(dirX, dirZ);
+  const flagAngle = Math.atan2(p1.x - p0.x, p1.z - p0.z);
 
   for (let i = 0; i < BUNTING_FLAG_COUNT; i++) {
     const mid = points[i].clone().lerp(points[i + 1], 0.5);
@@ -371,9 +353,17 @@ function buildBuntingSpan(centerX: number, centerZ: number, dirX: number, dirZ: 
   return group;
 }
 
-/** Colorful bunting strung across the road at regular intervals — a market-street
- * flourish that also breaks up the long empty stretches between zones. */
-function placeBunting(scene: THREE.Scene) {
+/**
+ * Evenly-spaced lamp posts alongside every road, alternating sides, with
+ * bunting zigzagging between each CONSECUTIVE real lamp post. Bunting used
+ * to span a fixed perpendicular width at each interval instead — since
+ * lamps alternate sides, only one end of that span ever landed near an
+ * actual post, leaving the other end visibly floating in empty space.
+ * Connecting real, consecutive lamp positions guarantees both ends anchor
+ * to something, at the cost of a natural zigzag instead of a straight
+ * crossing — which reads as more authentic market bunting anyway.
+ */
+function placeStreetLampsAndBunting(scene: THREE.Scene) {
   for (const [a, b] of ROAD_SEGMENTS) {
     const dx = b.x - a.x;
     const dz = b.z - a.z;
@@ -382,12 +372,20 @@ function placeBunting(scene: THREE.Scene) {
     const dirZ = dz / length;
     const perpX = -dirZ;
     const perpZ = dirX;
-    const span = ROAD_WIDTH + 1.4;
+    const offset = ROAD_WIDTH / 2 + 0.7;
 
     const count = Math.floor(length / LAMP_SPACING);
+    const lampPositions: { x: number; z: number }[] = [];
     for (let i = 1; i < count; i++) {
       const t = i * LAMP_SPACING;
-      scene.add(buildBuntingSpan(a.x + dirX * t, a.z + dirZ * t, perpX, perpZ, span));
+      const side = i % 2 === 0 ? 1 : -1;
+      const pos = { x: a.x + dirX * t + perpX * offset * side, z: a.z + dirZ * t + perpZ * offset * side };
+      scene.add(buildLampPost(pos.x, pos.z));
+      lampPositions.push(pos);
+    }
+
+    for (let i = 0; i < lampPositions.length - 1; i++) {
+      scene.add(buildBuntingBetween(lampPositions[i], lampPositions[i + 1]));
     }
   }
 }
@@ -516,10 +514,12 @@ function buildGateArch(): THREE.Group {
 
 export function buildTown(scene: THREE.Scene) {
   const groundGeo = new THREE.PlaneGeometry(140, 140);
-  // Earthy soil brown — still a flat matte color, not a texture map (a texture
-  // wouldn't cause render problems on its own, but a flat color keeps the look
-  // consistent with the rest of the palette and is simpler to keep matte).
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0x8f6a48, roughness: 1, metalness: 0 });
+  // Vibrant grass green for the daytime look — still a flat matte color, not
+  // a texture map (a texture wouldn't cause render problems on its own, but
+  // flat keeps the look consistent with the rest of the palette and simpler
+  // to keep matte). The roads already read as the distinct "walking area"
+  // cutting through the grass, so no extra path geometry is needed.
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x6fae4a, roughness: 0.95, metalness: 0 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, -0.01, -35);
@@ -556,6 +556,5 @@ export function buildTown(scene: THREE.Scene) {
   }
 
   buildRockInstances(scene, [...generateAmbientRocks(), ...generateRoadsideRocks()]);
-  placeStreetLamps(scene);
-  placeBunting(scene);
+  placeStreetLampsAndBunting(scene);
 }

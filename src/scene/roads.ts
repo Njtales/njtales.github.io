@@ -30,9 +30,12 @@ const OUTLINE_WIDTH = 0.12;
 
 // Warm, muted tones close in value to both the fill and the maroon ground, so the
 // road's edge reads as a soft border rather than a hard-contrast line.
-const outlineMat = new THREE.MeshStandardMaterial({ color: 0x9e8f8c, roughness: 1, metalness: 0 });
-const fillMat = new THREE.MeshStandardMaterial({ color: 0xcfc0ba, roughness: 1, metalness: 0 });
-const paintMat = new THREE.MeshStandardMaterial({ color: 0xf5efe6, roughness: 1, metalness: 0 });
+// Warm sandy-dirt tones — read as a worn path cutting through the grass,
+// rather than a paved grey road (which is what these were tuned for against
+// the earlier maroon-soil ground).
+const outlineMat = new THREE.MeshStandardMaterial({ color: 0x8a7355, roughness: 1, metalness: 0 });
+const fillMat = new THREE.MeshStandardMaterial({ color: 0xc9a876, roughness: 1, metalness: 0 });
+const paintMat = new THREE.MeshStandardMaterial({ color: 0xe8d9b0, roughness: 1, metalness: 0 });
 
 function buildRoadBed(a: Point, b: Point): THREE.Group {
   const group = new THREE.Group();
