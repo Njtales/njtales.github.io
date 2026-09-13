@@ -30,20 +30,6 @@ export class IsoCamera {
   }
 
   /**
-   * Movement axes for input mapping. Roads and zones are laid out on the raw
-   * world X/Z grid, so movement intentionally follows world axes rather than
-   * the camera's screen-diagonal direction — pressing "forward" moves the
-   * character up the road (appearing diagonal on screen), which is the
-   * standard isometric-game convention and keeps the character on the roads.
-   */
-  getGroundAxes() {
-    return {
-      forward: new THREE.Vector3(0, 0, -1),
-      right: new THREE.Vector3(1, 0, 0),
-    };
-  }
-
-  /**
    * Eases toward the target instead of snapping to it every frame — a small
    * amount of camera lag reads as weight/momentum rather than a rigidly
    * attached rig, closer to how physically-simulated third-person cameras

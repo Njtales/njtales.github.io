@@ -27,7 +27,7 @@ const hero = document.createElement('div');
 hero.id = 'hero';
 hero.innerHTML = `
   <h1>Nikhil — systems that stay up when it matters.</h1>
-  <p>WASD / arrows to ride, or click-drag toward a direction</p>
+  <p>W/Up to accelerate, S/Down to brake or reverse, A/D or arrows to steer</p>
   <p class="hint">Explore the town to find the story.</p>
 `;
 app.appendChild(hero);
@@ -43,7 +43,6 @@ character.position.set(GATE_POSITION.x, 0, GATE_POSITION.z);
 scene.add(character.group);
 
 const isoCamera = new IsoCamera(window.innerWidth / window.innerHeight);
-const { forward, right } = isoCamera.getGroundAxes();
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -86,39 +85,51 @@ const input = new InputController(canvas);
 input.notifyFirstMove(() => hero.classList.add('hidden'));
 
 // ---------- Game loop ----------
-const MOVE_SPEED = 9; // world units per second, top speed
-const ACCEL = 26; // units/s^2 ramping up to top speed
-const DECEL = 34; // units/s^2 coasting to a stop — brakes a bit harder than it accelerates
+// Vehicle-style controls: steering only turns the heading, throttle/brake
+// control a signed speed along that heading — not the old omnidirectional
+// scheme where each key set an absolute movement direction.
+const MAX_FORWARD_SPEED = 9;
+const MAX_REVERSE_SPEED = 4;
+const THROTTLE_ACCEL = 14; // units/s^2 while the gas is held
+const BRAKE_DECEL = 24; // units/s^2 while braking (speed > 0) — stops harder than it accelerates
+const REVERSE_ACCEL = 7; // units/s^2 accelerating backward once already stopped
+const COAST_DECEL = 6; // units/s^2 natural drag with no input at all — this is the inertia:
+// releasing the throttle is not the same as braking, it glides to a stop instead of snapping
+const TURN_RATE = 2.6; // radians/sec
+
 const clock = new THREE.Clock();
 let activeZoneId: string | null = null;
-const velocity = new THREE.Vector2(); // persists across frames for momentum
+let heading = 0; // steering-controlled facing angle; 0 = facing -Z, matching spawn orientation
+let speed = 0; // signed scalar along heading — positive forward, negative reverse
 
 function stepFrame(delta: number) {
-  const { right: r, forward: f } = input.getIntent();
+  const { steer, throttle } = input.getIntent();
 
-  const moveDir = new THREE.Vector2(
-    right.x * r + forward.x * f,
-    right.z * r + forward.z * f,
-  );
-  if (moveDir.length() > 1) moveDir.normalize();
-  const targetVelocity = moveDir.multiplyScalar(MOVE_SPEED);
+  heading += steer * TURN_RATE * delta;
 
-  // Ease current velocity toward the target instead of snapping to it — an
-  // instant on/off felt robotic; ramping up/down reads as an actual vehicle
-  // with weight, closer to the physically-simulated feel of a car controller.
-  const rate = targetVelocity.lengthSq() > velocity.lengthSq() ? ACCEL : DECEL;
-  const diff = targetVelocity.clone().sub(velocity);
-  const maxStep = rate * delta;
-  if (diff.length() > maxStep) diff.setLength(maxStep);
-  velocity.add(diff);
+  if (throttle > 0) {
+    speed = Math.min(speed + THROTTLE_ACCEL * delta, MAX_FORWARD_SPEED);
+  } else if (throttle < 0) {
+    if (speed > 0) {
+      speed = Math.max(speed - BRAKE_DECEL * delta, 0); // braking
+    } else {
+      speed = Math.max(speed - REVERSE_ACCEL * delta, -MAX_REVERSE_SPEED); // reversing
+    }
+  } else if (speed > 0) {
+    speed = Math.max(speed - COAST_DECEL * delta, 0);
+  } else if (speed < 0) {
+    speed = Math.min(speed + COAST_DECEL * delta, 0);
+  }
+
+  const headingDir = new THREE.Vector2(Math.sin(heading), -Math.cos(heading));
 
   const moved = resolveBuildingCollisions(
-    character.position.x + velocity.x * delta,
-    character.position.z + velocity.y * delta,
+    character.position.x + headingDir.x * speed * delta,
+    character.position.z + headingDir.y * speed * delta,
   );
   const next = clampToTownBounds(moved.x, moved.z);
   character.position.set(next.x, 0, next.z);
-  character.update(delta, velocity);
+  character.update(delta, headingDir, speed);
 
   isoCamera.follow(character.position, delta);
 

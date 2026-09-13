@@ -1,7 +1,9 @@
 /**
- * Produces a normalized (right, forward) intent vector from WASD/arrow keys
- * or click(-and-hold)-and-drag toward a direction. Screen-relative: the
- * caller maps (right, forward) onto the camera's ground-plane axes.
+ * Produces a (steer, throttle) intent from WASD/arrow keys or click(-and-
+ * hold)-and-drag toward a direction — vehicle-style controls: left/right
+ * turn the wheel, up/down are the gas and the brake, not an absolute
+ * movement direction. The caller owns all the actual driving physics
+ * (heading, speed, inertia); this just reports what the player is pressing.
  */
 export class InputController {
   private keys = new Set<string>();
@@ -54,23 +56,24 @@ export class InputController {
     }
   }
 
-  getIntent(): { right: number; forward: number } {
+  getIntent(): { steer: number; throttle: number } {
     if (this.dragging && (this.dragVector.x !== 0 || this.dragVector.y !== 0)) {
-      return { right: this.dragVector.x, forward: this.dragVector.y };
+      // Drag up = throttle, drag left/right = steer — the same gas+wheel
+      // mapping as the keyboard, just via a virtual stick.
+      return { steer: this.dragVector.x, throttle: this.dragVector.y };
     }
 
-    let right = 0;
-    let forward = 0;
-    if (this.keys.has('w') || this.keys.has('arrowup')) forward += 1;
-    if (this.keys.has('s') || this.keys.has('arrowdown')) forward -= 1;
-    if (this.keys.has('a') || this.keys.has('arrowleft')) right -= 1;
-    if (this.keys.has('d') || this.keys.has('arrowright')) right += 1;
+    let steer = 0;
+    let throttle = 0;
+    if (this.keys.has('w') || this.keys.has('arrowup')) throttle += 1;
+    if (this.keys.has('s') || this.keys.has('arrowdown')) throttle -= 1;
+    if (this.keys.has('a') || this.keys.has('arrowleft')) steer -= 1;
+    if (this.keys.has('d') || this.keys.has('arrowright')) steer += 1;
 
-    const length = Math.hypot(right, forward);
-    if (length > 1) {
-      right /= length;
-      forward /= length;
-    }
-    return { right, forward };
+    // Deliberately NOT jointly normalized: steering and throttle are
+    // independent controls (a real wheel and a real pedal), so full-throttle
+    // while turning hard should stay full-throttle, not get scaled down the
+    // way a single omnidirectional movement vector would.
+    return { steer, throttle };
   }
 }

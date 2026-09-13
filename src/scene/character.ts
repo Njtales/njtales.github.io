@@ -13,7 +13,6 @@ export class Character {
   /** All visible meshes, nested one level in so lean/bob can't fight the yaw rotation. */
   private readonly visual: THREE.Group;
   private readonly wheels: THREE.Mesh[] = [];
-  private facing = new THREE.Vector3(0, 0, -1);
   private currentYaw = 0;
   private currentLean = 0;
   private age = 0;
@@ -212,24 +211,28 @@ export class Character {
   }
 
   /** Rotates to face the movement direction, banks into turns, and spins the wheels. */
-  update(delta: number, velocityXZ: THREE.Vector2) {
+  /**
+   * `heading` is the steering-controlled facing direction — always a valid
+   * unit vector, independent of whether the scooter is moving forward,
+   * reversing, or stopped. `speed` is the signed scalar along that heading
+   * (negative = reverse). Orientation deliberately follows `heading`, not
+   * the velocity vector: a real vehicle doesn't spin around to face
+   * backwards when it reverses, it keeps facing the way it's steered and
+   * just moves backward along that facing.
+   */
+  update(delta: number, heading: THREE.Vector2, speed: number) {
     this.age += delta;
-    const speed = velocityXZ.length();
 
-    let turnRate = 0;
-    if (speed > 0.001) {
-      this.facing.set(velocityXZ.x, 0, velocityXZ.y).normalize();
-      // The model's front (headlight/handlebar) sits at local -Z, so the angle that
-      // points -Z at the travel direction is atan2(x,z) + π, not atan2(x,z) — without
-      // the offset the scooter drives visually backwards (front trailing the motion).
-      const targetYaw = Math.atan2(this.facing.x, this.facing.z) + Math.PI;
-      let yawDelta = targetYaw - this.currentYaw;
-      // Shortest-path wrap so it doesn't spin the long way round crossing the ±π seam.
-      yawDelta = ((yawDelta + Math.PI) % (Math.PI * 2)) - Math.PI;
-      this.currentYaw += yawDelta;
-      this.group.rotation.y = this.currentYaw;
-      turnRate = delta > 0 ? yawDelta / delta : 0;
-    }
+    // The model's front (headlight/handlebar) sits at local -Z, so the angle that
+    // points -Z at the heading direction is atan2(x,z) + π, not atan2(x,z) — without
+    // the offset the scooter would visually face backwards.
+    const targetYaw = Math.atan2(heading.x, heading.y) + Math.PI;
+    let yawDelta = targetYaw - this.currentYaw;
+    // Shortest-path wrap so it doesn't spin the long way round crossing the ±π seam.
+    yawDelta = ((yawDelta + Math.PI) % (Math.PI * 2)) - Math.PI;
+    this.currentYaw += yawDelta;
+    this.group.rotation.y = this.currentYaw;
+    const turnRate = delta > 0 ? yawDelta / delta : 0;
 
     // Bank into turns proportional to how fast it's turning and how fast it's
     // going — a stationary vehicle turning in place shouldn't visibly lean.
@@ -238,13 +241,14 @@ export class Character {
     this.visual.rotation.z = this.currentLean;
 
     // A faint idle bob so the scooter doesn't look frozen when stationary.
-    const bobSpeedFactor = 1 + speed * 0.15;
+    const bobSpeedFactor = 1 + Math.abs(speed) * 0.15;
     this.visual.position.y = Math.sin(this.age * IDLE_BOB_SPEED * bobSpeedFactor) * IDLE_BOB_AMOUNT;
 
     // The wheel geometry's axle is baked along local X (see constructor), so a
     // plain rotation.x is the wheel's own single axis of rotation — no other
     // axis is involved, so there's no way for this to compose into anything
-    // other than a clean roll.
+    // other than a clean roll. Signed speed means reversing spins the wheels
+    // the other way, as it should.
     const spin = speed * delta * 6;
     for (const wheel of this.wheels) {
       wheel.rotation.x += spin;
