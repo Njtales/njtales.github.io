@@ -34,6 +34,40 @@ function paintSoftPatch(
   ctx.globalAlpha = 1;
 }
 
+/**
+ * Scatters many tiny short strokes in randomized colors/angles — the
+ * fine-grained, blade-like detail that separates a "painted texture" from a
+ * flat tint. Individually near-invisible, but in bulk they read as the
+ * close-up grain a reference painterly ground texture has, without ever
+ * resolving into a repeating shape the way circles/clumps did.
+ */
+function paintStrokes(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  count: number,
+  colors: string[],
+  length: number,
+  alphaRange: [number, number],
+) {
+  ctx.lineCap = 'round';
+  for (let i = 0; i < count; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const angle = Math.random() * Math.PI * 2;
+    const len = length * (0.6 + Math.random() * 0.8);
+    const dx = Math.cos(angle) * len;
+    const dy = Math.sin(angle) * len;
+    ctx.strokeStyle = colors[Math.floor(Math.random() * colors.length)];
+    ctx.lineWidth = 1 + Math.random();
+    ctx.globalAlpha = alphaRange[0] + Math.random() * (alphaRange[1] - alphaRange[0]);
+    ctx.beginPath();
+    ctx.moveTo(x - dx / 2, y - dy / 2);
+    ctx.lineTo(x + dx / 2, y + dy / 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
 function makeTexture(canvas: HTMLCanvasElement, repeat: number): THREE.Texture {
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
@@ -43,11 +77,12 @@ function makeTexture(canvas: HTMLCanvasElement, repeat: number): THREE.Texture {
   return texture;
 }
 
-/** Decent, understated green grass with soft, low-contrast mottling — close
- * variations on the base color blended in with feathered edges rather than
- * distinct shapes, so it reads as a subtle natural texture, not a pattern. */
+/** Decent, understated green grass built up in layers of decreasing scale —
+ * broad soft mottling for overall color variation, a mid layer that adds
+ * warmer sunlit/olive hues, then fine blade-like strokes and grain for
+ * close-up detail — closer to a painted reference texture than a flat tint. */
 export function createGrassTexture(): THREE.Texture {
-  const size = 512;
+  const size = 768;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -56,29 +91,42 @@ export function createGrassTexture(): THREE.Texture {
   ctx.fillStyle = '#6f9450';
   ctx.fillRect(0, 0, size, size);
 
+  // Broad, soft mottling — the base color variation.
   const lightColors = ['#7c9f5a', '#82a35e'];
   const darkColors = ['#628647', '#5d8043'];
-
   for (let i = 0; i < 26; i++) {
     const x = Math.random() * size;
     const y = Math.random() * size;
     const color = lightColors[Math.floor(Math.random() * lightColors.length)];
-    paintSoftPatch(ctx, size, x, y, color, 55 + Math.random() * 55, 0.22 + Math.random() * 0.1);
+    paintSoftPatch(ctx, size, x, y, color, 80 + Math.random() * 80, 0.2 + Math.random() * 0.1);
   }
   for (let i = 0; i < 26; i++) {
     const x = Math.random() * size;
     const y = Math.random() * size;
     const color = darkColors[Math.floor(Math.random() * darkColors.length)];
-    paintSoftPatch(ctx, size, x, y, color, 45 + Math.random() * 50, 0.18 + Math.random() * 0.1);
+    paintSoftPatch(ctx, size, x, y, color, 65 + Math.random() * 75, 0.16 + Math.random() * 0.1);
   }
 
-  // A little fine-grain speckle for close-up texture, very low opacity so it
-  // reads as grain rather than dots.
-  for (let i = 0; i < 400; i++) {
+  // Mid layer — smaller, warmer olive/sunlit patches for richer variation,
+  // like the dappled highlights in the reference field.
+  const warmColors = ['#93a94f', '#a3ab5a', '#547a3f'];
+  for (let i = 0; i < 55; i++) {
     const x = Math.random() * size;
     const y = Math.random() * size;
-    ctx.globalAlpha = 0.05 + Math.random() * 0.06;
-    ctx.fillStyle = Math.random() < 0.5 ? '#4f7038' : '#9ab76a';
+    const color = warmColors[Math.floor(Math.random() * warmColors.length)];
+    paintSoftPatch(ctx, size, x, y, color, 20 + Math.random() * 30, 0.16 + Math.random() * 0.12);
+  }
+
+  // Fine blade-like strokes — the close-up grain that reads as individual
+  // tufts of grass rather than a smooth gradient.
+  paintStrokes(ctx, size, 2200, ['#547a3f', '#6f9450', '#87a85c', '#9db65f'], 6, [0.12, 0.28]);
+
+  // Tiny speckle grain on top, very low opacity.
+  for (let i = 0; i < 900; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    ctx.globalAlpha = 0.05 + Math.random() * 0.07;
+    ctx.fillStyle = Math.random() < 0.5 ? '#4f7038' : '#b8d17e';
     ctx.fillRect(x, y, 1.5, 1.5);
   }
   ctx.globalAlpha = 1;
