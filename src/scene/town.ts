@@ -171,6 +171,92 @@ function buildBuilding(zone: Zone): { group: THREE.Group; windowMatrices: THREE.
   return { group, windowMatrices };
 }
 
+/**
+ * The Skill Tower, rebuilt as a windmill instead of the shared box template —
+ * a proof-of-concept for giving zones distinct, characterful silhouettes
+ * instead of one recolored shape repeated seven times. Returns its blade hub
+ * separately so the caller can animate the spin; the hub's own rotation.z is
+ * the ONLY rotation ever applied to it (the fan-out angle lives one level
+ * down, on each blade's own wrapper group), so animating it is a single
+ * unambiguous spin around a fixed axis — the same reasoning that fixed the
+ * scooter's wheel-rotation bug earlier.
+ */
+function buildWindmill(zone: Zone): { group: THREE.Group; windowMatrices: THREE.Matrix4[]; bladeHub: THREE.Group } {
+  const group = new THREE.Group();
+  const towerMat = new THREE.MeshStandardMaterial({ color: shadeColor(zone.accentColor, 0.85), roughness: 0.8 });
+  const capMat = new THREE.MeshStandardMaterial({ color: shadeColor(zone.accentColor, 0.5), roughness: 0.75 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: 0xe8d9b0, roughness: 0.7 });
+
+  const towerHeight = 10;
+  const bottomRadius = 1.7;
+  const topRadius = 1.0;
+
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(bottomRadius + 0.25, bottomRadius + 0.45, 0.4, 16), trimMat);
+  base.position.y = 0.2;
+  base.castShadow = true;
+  base.receiveShadow = true;
+  group.add(base);
+
+  const tower = new THREE.Mesh(
+    new THREE.CylinderGeometry(topRadius, bottomRadius, towerHeight, 16),
+    towerMat,
+  );
+  tower.position.y = 0.4 + towerHeight / 2;
+  tower.castShadow = true;
+  tower.receiveShadow = true;
+  group.add(tower);
+
+  const capHeight = 2.2;
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(topRadius + 0.2, capHeight, 16), capMat);
+  cap.position.y = 0.4 + towerHeight + capHeight / 2 - 0.1;
+  cap.castShadow = true;
+  group.add(cap);
+
+  const door = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.0, 1.7),
+    new THREE.MeshStandardMaterial({ color: 0x120e17, roughness: 0.9 }),
+  );
+  door.position.set(0, 0.85, bottomRadius - 0.02);
+  group.add(door);
+
+  const signMat = new THREE.MeshStandardMaterial({ color: shadeColor(zone.accentColor, 0.55), roughness: 0.7 });
+  const signFaceMat = new THREE.MeshBasicMaterial({ map: createSignTexture(zone.title, zone.accentColor) });
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.6, 0.16), [
+    signMat,
+    signMat,
+    signMat,
+    signMat,
+    signFaceMat,
+    signMat,
+  ]);
+  sign.position.set(0, 2.4, topRadius + 0.5);
+  sign.castShadow = true;
+  group.add(sign);
+
+  // Blade hub, mounted on the front (south, +Z) face partway up the cap. Each
+  // blade sits in its own wrapper group with a fixed fan-out angle (0/90/
+  // 180/270); the hub itself carries only the animated spin.
+  const bladeHub = new THREE.Group();
+  const bladeMat = new THREE.MeshStandardMaterial({ color: 0xe8d9b0, roughness: 0.8, side: THREE.DoubleSide });
+  for (let i = 0; i < 4; i++) {
+    const wrapper = new THREE.Group();
+    wrapper.rotation.z = (i * Math.PI) / 2;
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.24, 1.9, 0.05), bladeMat);
+    blade.position.y = 1.05;
+    blade.castShadow = true;
+    wrapper.add(blade);
+    bladeHub.add(wrapper);
+  }
+  const hubCap = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), trimMat);
+  bladeHub.add(hubCap);
+  bladeHub.position.set(0, 0.4 + towerHeight + 0.3, bottomRadius + 0.05);
+  group.add(bladeHub);
+
+  group.position.set(zone.position.x, 0, zone.position.z);
+  group.userData.zoneId = zone.id;
+  return { group, windowMatrices: [], bladeHub };
+}
+
 function buildLampPost(x: number, z: number): THREE.Group {
   const group = new THREE.Group();
   const poleMat = new THREE.MeshStandardMaterial({ color: 0x171019, roughness: 0.7 });
@@ -364,7 +450,9 @@ function buildBuntingBetween(p0: { x: number; z: number }, p1: { x: number; z: n
  * to something, at the cost of a natural zigzag instead of a straight
  * crossing — which reads as more authentic market bunting anyway.
  */
-function placeStreetLampsAndBunting(scene: THREE.Scene) {
+// Exported (rather than left as an unused local) so it's ready to wire back
+// in later without needing to touch this file again.
+export function placeStreetLampsAndBunting(scene: THREE.Scene) {
   for (const [a, b] of ROAD_SEGMENTS) {
     const dx = b.x - a.x;
     const dz = b.z - a.z;
@@ -590,7 +678,7 @@ function buildGrassGeometry(): THREE.PlaneGeometry {
   return geo;
 }
 
-export function buildTown(scene: THREE.Scene) {
+export function buildTown(scene: THREE.Scene): { update: (delta: number) => void } {
   const groundGeo = buildGrassGeometry();
   const groundMat = new THREE.MeshStandardMaterial({ map: createGrassTexture(), roughness: 0.95, metalness: 0 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -607,10 +695,15 @@ export function buildTown(scene: THREE.Scene) {
   scene.add(gateArch);
 
   const allWindowMatrices: THREE.Matrix4[] = [];
+  let windmillBladeHub: THREE.Group | null = null;
   for (const zone of ZONES) {
-    const { group, windowMatrices } = buildBuilding(zone);
+    // The Skill Tower gets a distinct windmill silhouette instead of the
+    // shared box template — see buildWindmill's doc comment.
+    const { group, windowMatrices, bladeHub } =
+      zone.id === 'skills' ? buildWindmill(zone) : { ...buildBuilding(zone), bladeHub: null };
     scene.add(group);
     allWindowMatrices.push(...windowMatrices);
+    if (bladeHub) windmillBladeHub = bladeHub;
 
     // Street props flanking each building, placed wherever is clearest of the roads.
     const [lampOffset, treeOffset] = pickPropOffsets(zone, 2);
@@ -629,5 +722,14 @@ export function buildTown(scene: THREE.Scene) {
   }
 
   buildRockInstances(scene, [...generateAmbientRocks(), ...generateRoadsideRocks()]);
-  placeStreetLampsAndBunting(scene);
+  // Street lamps + bunting removed for now, per Nikhil's call — he'll ask for
+  // them back explicitly. placeStreetLampsAndBunting() is left defined below,
+  // just not called, so it doesn't need rebuilding from scratch later.
+
+  const WINDMILL_SPIN_SPEED = 0.6; // radians/sec
+  return {
+    update(delta: number) {
+      if (windmillBladeHub) windmillBladeHub.rotation.z += delta * WINDMILL_SPIN_SPEED;
+    },
+  };
 }

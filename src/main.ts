@@ -35,7 +35,7 @@ app.appendChild(hero);
 // ---------- Three.js setup ----------
 const scene = new THREE.Scene();
 addLighting(scene);
-buildTown(scene);
+const town = buildTown(scene);
 buildRoads(scene);
 
 const character = new Character();
@@ -134,6 +134,7 @@ function stepFrame(delta: number) {
   }
 
   minimap.update(character.position.x, character.position.z);
+  town.update(delta);
   composer.render();
 }
 
