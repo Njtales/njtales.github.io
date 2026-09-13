@@ -114,6 +114,25 @@ function pullback(p: Point): number {
   return zone ? Math.max(zone.footprint.width, zone.footprint.depth) / 2 + 0.4 : 0;
 }
 
+/**
+ * True axis-aligned rectangle containment against every zone's real
+ * footprint (not the circular pullback radius above, which approximates a
+ * rectangle with a circle of its longer side — safe for an approach along
+ * that side, but a shallow diagonal approach on a non-square building can
+ * still reach a real corner before the circular cutoff kicks in). Used as a
+ * final check so a path segment is never rendered inside any building,
+ * regardless of which two zones the road connects.
+ */
+function isInsideAnyZoneFootprint(x: number, z: number): boolean {
+  const margin = 0.4;
+  for (const zone of ZONES) {
+    const halfW = zone.footprint.width / 2 + margin;
+    const halfD = zone.footprint.depth / 2 + margin;
+    if (Math.abs(x - zone.position.x) <= halfW && Math.abs(z - zone.position.z) <= halfD) return true;
+  }
+  return false;
+}
+
 function buildCurvedPath(a: Point, b: Point, points: Point[]): THREE.Group {
   const group = new THREE.Group();
   const clearA = pullback(a);
@@ -141,6 +160,8 @@ function buildCurvedPath(a: Point, b: Point, points: Point[]): THREE.Group {
 
     const midX = (p0.x + p1.x) / 2;
     const midZ = (p0.z + p1.z) / 2;
+    if (isInsideAnyZoneFootprint(midX, midZ)) continue;
+
     const dx = p1.x - p0.x;
     const dz = p1.z - p0.z;
     const segLength = Math.hypot(dx, dz);

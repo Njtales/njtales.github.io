@@ -78,9 +78,55 @@ export function createGrassTexture(): THREE.Texture {
   return makeTexture(canvas, 7);
 }
 
-/** Bright, clean dirt footpath to match — a warm cream/tan base with a
- * couple of large soft patches for gentle variation, no crack lines or
- * fine grain. */
+/** Draws one rounded cobblestone into a grid cell, jittered off-center and
+ * randomly sized so the pattern reads as old hand-laid stone rather than a
+ * perfect grid, plus a soft diagonal light/shadow gradient for a rounded,
+ * worn-pebble look. Stamped at all 9 tile-wrap offsets, same as
+ * paintSoftPatch, so the grid lines up seamlessly across the repeat. */
+function paintCobblestone(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  cx: number,
+  cy: number,
+  cellW: number,
+  cellH: number,
+  colors: string[],
+) {
+  for (const dx of [-size, 0, size]) {
+    for (const dy of [-size, 0, size]) {
+      const wx = cx + dx;
+      const wy = cy + dy;
+      if (wx + cellW < 0 || wx - cellW > size || wy + cellH < 0 || wy - cellH > size) continue;
+
+      const w = cellW * (0.72 + Math.random() * 0.14);
+      const h = cellH * (0.72 + Math.random() * 0.14);
+      const jitterX = (Math.random() - 0.5) * cellW * 0.14;
+      const jitterY = (Math.random() - 0.5) * cellH * 0.14;
+      const x = wx + jitterX - w / 2;
+      const y = wy + jitterY - h / 2;
+      const r = Math.min(w, h) * 0.3;
+
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+      ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+      ctx.fill();
+
+      ctx.save();
+      ctx.clip();
+      const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+      gradient.addColorStop(0, 'rgba(255,255,255,0.2)');
+      gradient.addColorStop(0.5, 'rgba(255,255,255,0)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0.18)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, y, w, h);
+      ctx.restore();
+    }
+  }
+}
+
+/** Old-town cobblestone street — small rounded stones set in mortar,
+ * staggered row to row like real hand-laid paving. Aimed at the "1920s
+ * street" reference: warm, worn stone tones rather than a flat dirt tint. */
 export function createPathTexture(): THREE.Texture {
   const size = 512;
   const canvas = document.createElement('canvas');
@@ -88,23 +134,23 @@ export function createPathTexture(): THREE.Texture {
   canvas.height = size;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = '#dcc08a';
+  // Mortar/grout base, visible in the gaps between stones.
+  ctx.fillStyle = '#7d7160';
   ctx.fillRect(0, 0, size, size);
 
-  const lightColors = ['#e6cd9c', '#e9d2a5'];
-  const darkColors = ['#c9aa72', '#d1b47c'];
+  const cols = 8;
+  const rows = 8;
+  const cellW = size / cols;
+  const cellH = size / rows;
+  const stoneColors = ['#b7a888', '#a89878', '#9c8d70', '#c2b494', '#ad9e7e', '#93876d'];
 
-  for (let i = 0; i < 16; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const color = lightColors[Math.floor(Math.random() * lightColors.length)];
-    paintSoftPatch(ctx, size, x, y, color, 70 + Math.random() * 70, 0.15 + Math.random() * 0.08);
-  }
-  for (let i = 0; i < 16; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const color = darkColors[Math.floor(Math.random() * darkColors.length)];
-    paintSoftPatch(ctx, size, x, y, color, 60 + Math.random() * 65, 0.12 + Math.random() * 0.08);
+  for (let row = 0; row < rows; row++) {
+    const rowOffset = row % 2 === 0 ? 0 : cellW / 2;
+    for (let col = 0; col < cols; col++) {
+      const cx = col * cellW + rowOffset + cellW / 2;
+      const cy = row * cellH + cellH / 2;
+      paintCobblestone(ctx, size, cx, cy, cellW, cellH, stoneColors);
+    }
   }
 
   return makeTexture(canvas, 5);
