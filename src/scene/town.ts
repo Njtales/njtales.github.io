@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ZONES, GATE_POSITION, type Zone } from '../data/zones';
 import { ROAD_SEGMENTS, ROAD_WIDTH } from './roads';
 import { createRoofIconTexture, createSignTexture } from './roofIcons';
+import { createGrassTexture } from './grassTexture';
 
 // Shared with systems/collision.ts so the arch's solid legs actually block
 // movement (and the opening between them doesn't).
@@ -512,17 +513,89 @@ function buildGateArch(): THREE.Group {
   return group;
 }
 
+const GROUND_SIZE = 140;
+const GROUND_CENTER = { x: 0, z: -35 };
+const TERRAIN_SEGMENTS = 70;
+const BUMP_AMPLITUDE = 0.22;
+
+// Cheap hash-based value noise (bilinear-interpolated pseudo-random grid) —
+// enough to look organic without pulling in a real noise library. A first
+// attempt using raw sin/cos waves produced a visibly regular ripple/grid
+// pattern instead, since a couple of fixed trig frequencies beat against
+// each other predictably rather than looking random.
+function hash2(x: number, y: number): number {
+  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+function valueNoise(x: number, y: number): number {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const xf = x - xi;
+  const yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf);
+  const v = yf * yf * (3 - 2 * yf);
+  const a = hash2(xi, yi);
+  const b = hash2(xi + 1, yi);
+  const c = hash2(xi, yi + 1);
+  const d = hash2(xi + 1, yi + 1);
+  return THREE.MathUtils.lerp(THREE.MathUtils.lerp(a, b, u), THREE.MathUtils.lerp(c, d, u), v);
+}
+
+function terrainNoise(x: number, z: number): number {
+  // Two octaves at different scales so the undulation reads as rolling
+  // ground rather than one uniform bump size.
+  const large = valueNoise(x * 0.05, z * 0.05);
+  const small = valueNoise(x * 0.15 + 50, z * 0.15 + 50);
+  return (large * 0.7 + small * 0.3) * 2 - 1; // remap ~[0,1] to ~[-1,1]
+}
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = THREE.MathUtils.clamp((x - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+/** How far (worldX, worldZ) is from the nearest path or building/gate footprint
+ * — negative or zero means inside it. Used to flatten the terrain there so
+ * nothing floats or sinks into a bump. */
+function clearanceFromSolids(worldX: number, worldZ: number): number {
+  let clearance = distanceToNearestRoad(worldX, worldZ) - (ROAD_WIDTH / 2 + 1.0);
+  const gateRadius = GATE_BLOCK_WIDTH / 2 + 4;
+  clearance = Math.min(clearance, Math.hypot(worldX - GATE_POSITION.x, worldZ - GATE_POSITION.z) - gateRadius);
+  for (const zone of ZONES) {
+    const r = Math.max(zone.footprint.width, zone.footprint.depth) / 2 + 4;
+    clearance = Math.min(clearance, Math.hypot(worldX - zone.position.x, worldZ - zone.position.z) - r);
+  }
+  return clearance;
+}
+
+/**
+ * A subdivided, gently undulating ground plane instead of a flat one — real
+ * grass has soft rises and dips. Flattened to zero near every path and
+ * building/gate footprint (blended over a few units) so nothing floats above
+ * or sinks into the terrain there; the open grass in between gets the bumps.
+ */
+function buildGrassGeometry(): THREE.PlaneGeometry {
+  const geo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, TERRAIN_SEGMENTS, TERRAIN_SEGMENTS);
+  const pos = geo.attributes.position;
+
+  for (let i = 0; i < pos.count; i++) {
+    const worldX = pos.getX(i) + GROUND_CENTER.x;
+    const worldZ = pos.getY(i) + GROUND_CENTER.z;
+    const flatten = smoothstep(0, 3, clearanceFromSolids(worldX, worldZ));
+    pos.setZ(i, terrainNoise(worldX, worldZ) * BUMP_AMPLITUDE * flatten);
+  }
+
+  geo.computeVertexNormals();
+  return geo;
+}
+
 export function buildTown(scene: THREE.Scene) {
-  const groundGeo = new THREE.PlaneGeometry(140, 140);
-  // Vibrant grass green for the daytime look — still a flat matte color, not
-  // a texture map (a texture wouldn't cause render problems on its own, but
-  // flat keeps the look consistent with the rest of the palette and simpler
-  // to keep matte). The roads already read as the distinct "walking area"
-  // cutting through the grass, so no extra path geometry is needed.
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0x6fae4a, roughness: 0.95, metalness: 0 });
+  const groundGeo = buildGrassGeometry();
+  const groundMat = new THREE.MeshStandardMaterial({ map: createGrassTexture(), roughness: 0.95, metalness: 0 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set(0, -0.01, -35);
+  ground.position.set(GROUND_CENTER.x, -0.01, GROUND_CENTER.z);
   ground.receiveShadow = true;
   scene.add(ground);
 
