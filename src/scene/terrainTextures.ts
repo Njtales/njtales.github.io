@@ -3,11 +3,13 @@ import * as THREE from 'three';
 /**
  * Paints one soft, feather-edged patch of color — a radial gradient fading
  * from a low-opacity center to fully transparent at the rim, no stroke or
- * outline. Layering many of these in close, low-contrast hues is what gives
- * a subtle painterly mottling instead of either flat-dot circles or
- * cartoon-outlined clumps. Stamped at all 9 tile-wrap offsets so it still
- * tiles seamlessly (RepeatWrapping otherwise shows the repeat boundary as a
- * hard seam).
+ * outline. At low alpha and with many overlapping, no single patch's rim is
+ * discernible on its own — the previous version made that rim visible by
+ * running these through a canvas `filter: blur(...)` pass, which reads
+ * cleaner in isolation but introduced its own faint tiling/blocking artifact
+ * on this canvas 2D implementation. Plain overlapping gradients avoid that
+ * entirely. Stamped at all 9 tile-wrap offsets so it still tiles seamlessly
+ * (RepeatWrapping otherwise shows the repeat boundary as a hard seam).
  */
 function paintSoftPatch(
   ctx: CanvasRenderingContext2D,
@@ -34,65 +36,6 @@ function paintSoftPatch(
   ctx.globalAlpha = 1;
 }
 
-/**
- * Scatters many tiny short strokes in randomized colors/angles — the
- * fine-grained, blade-like detail that separates a "painted texture" from a
- * flat tint. Individually near-invisible, but in bulk they read as the
- * close-up grain a reference painterly ground texture has, without ever
- * resolving into a repeating shape the way circles/clumps did.
- */
-function paintStrokes(
-  ctx: CanvasRenderingContext2D,
-  size: number,
-  count: number,
-  colors: string[],
-  length: number,
-  alphaRange: [number, number],
-) {
-  ctx.lineCap = 'round';
-  for (let i = 0; i < count; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const angle = Math.random() * Math.PI * 2;
-    const len = length * (0.6 + Math.random() * 0.8);
-    const dx = Math.cos(angle) * len;
-    const dy = Math.sin(angle) * len;
-    ctx.strokeStyle = colors[Math.floor(Math.random() * colors.length)];
-    ctx.lineWidth = 1 + Math.random();
-    ctx.globalAlpha = alphaRange[0] + Math.random() * (alphaRange[1] - alphaRange[0]);
-    ctx.beginPath();
-    ctx.moveTo(x - dx / 2, y - dy / 2);
-    ctx.lineTo(x + dx / 2, y + dy / 2);
-    ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
-}
-
-/**
- * Draws broad soft patches onto a separate canvas, then blurs that whole
- * layer when compositing it onto the destination — a radial-gradient patch
- * on its own still has a rim where its alpha reaches zero, and enough of
- * those at similar sizes still reads as "circles" once you look closely
- * (as opposed to random natural mottling). Blurring the composited layer
- * erases that rim entirely, leaving smooth cloud-like variation with no
- * discernible edge at any radius.
- */
-function paintBlurredMottling(
-  dest: CanvasRenderingContext2D,
-  size: number,
-  blurPx: number,
-  draw: (ctx: CanvasRenderingContext2D) => void,
-) {
-  const layer = document.createElement('canvas');
-  layer.width = size;
-  layer.height = size;
-  const layerCtx = layer.getContext('2d')!;
-  draw(layerCtx);
-  dest.filter = `blur(${blurPx}px)`;
-  dest.drawImage(layer, 0, 0);
-  dest.filter = 'none';
-}
-
 function makeTexture(canvas: HTMLCanvasElement, repeat: number): THREE.Texture {
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
@@ -102,72 +45,42 @@ function makeTexture(canvas: HTMLCanvasElement, repeat: number): THREE.Texture {
   return texture;
 }
 
-/** Decent, understated green grass built up in layers of decreasing scale —
- * broad soft mottling for overall color variation, a mid layer that adds
- * warmer sunlit/olive hues, then fine blade-like strokes and grain for
- * close-up detail — closer to a painted reference texture than a flat tint. */
+/** Bright, clean cel-shaded grass — a saturated flat green base with a few
+ * large, very low-contrast patches for gentle variation and nothing else.
+ * Aimed at the Cat Quest III reference: color and the terrain's own gentle
+ * shape carry the look, not surface texture detail. */
 export function createGrassTexture(): THREE.Texture {
-  const size = 768;
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = '#6f9450';
+  ctx.fillStyle = '#78b34c';
   ctx.fillRect(0, 0, size, size);
 
-  // Broad, soft mottling — the base color variation. Blurred as a whole
-  // layer so no individual patch rim is ever discernible as a "circle".
-  const lightColors = ['#7c9f5a', '#82a35e'];
-  const darkColors = ['#628647', '#5d8043'];
-  paintBlurredMottling(ctx, size, 40, (layerCtx) => {
-    for (let i = 0; i < 26; i++) {
-      const x = Math.random() * size;
-      const y = Math.random() * size;
-      const color = lightColors[Math.floor(Math.random() * lightColors.length)];
-      paintSoftPatch(layerCtx, size, x, y, color, 80 + Math.random() * 80, 0.35 + Math.random() * 0.15);
-    }
-    for (let i = 0; i < 26; i++) {
-      const x = Math.random() * size;
-      const y = Math.random() * size;
-      const color = darkColors[Math.floor(Math.random() * darkColors.length)];
-      paintSoftPatch(layerCtx, size, x, y, color, 65 + Math.random() * 75, 0.3 + Math.random() * 0.15);
-    }
-  });
+  const lightColors = ['#89c05c', '#8ec464'];
+  const darkColors = ['#5f9c3e', '#6aa646'];
 
-  // Mid layer — smaller, warmer olive/sunlit patches for richer variation,
-  // like the dappled highlights in the reference field. Blurred less, so it
-  // still reads as texture rather than fully dissolving into the base.
-  const warmColors = ['#93a94f', '#a3ab5a', '#547a3f'];
-  paintBlurredMottling(ctx, size, 14, (layerCtx) => {
-    for (let i = 0; i < 55; i++) {
-      const x = Math.random() * size;
-      const y = Math.random() * size;
-      const color = warmColors[Math.floor(Math.random() * warmColors.length)];
-      paintSoftPatch(layerCtx, size, x, y, color, 20 + Math.random() * 30, 0.3 + Math.random() * 0.2);
-    }
-  });
-
-  // Fine blade-like strokes — the close-up grain that reads as individual
-  // tufts of grass rather than a smooth gradient.
-  paintStrokes(ctx, size, 2200, ['#547a3f', '#6f9450', '#87a85c', '#9db65f'], 6, [0.12, 0.28]);
-
-  // Tiny speckle grain on top, very low opacity.
-  for (let i = 0; i < 900; i++) {
+  for (let i = 0; i < 30; i++) {
     const x = Math.random() * size;
     const y = Math.random() * size;
-    ctx.globalAlpha = 0.05 + Math.random() * 0.07;
-    ctx.fillStyle = Math.random() < 0.5 ? '#4f7038' : '#b8d17e';
-    ctx.fillRect(x, y, 1.5, 1.5);
+    const color = lightColors[Math.floor(Math.random() * lightColors.length)];
+    paintSoftPatch(ctx, size, x, y, color, 90 + Math.random() * 90, 0.12 + Math.random() * 0.06);
   }
-  ctx.globalAlpha = 1;
+  for (let i = 0; i < 30; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const color = darkColors[Math.floor(Math.random() * darkColors.length)];
+    paintSoftPatch(ctx, size, x, y, color, 80 + Math.random() * 80, 0.1 + Math.random() * 0.06);
+  }
 
   return makeTexture(canvas, 7);
 }
 
-/** Worn dirt footpath — a soft tan base with gentle, low-contrast mottling.
- * No hard clump outlines or crack lines, just enough variation to avoid
- * reading as a flat color fill. */
+/** Bright, clean dirt footpath to match — a warm cream/tan base with a
+ * couple of large soft patches for gentle variation, no crack lines or
+ * fine grain. */
 export function createPathTexture(): THREE.Texture {
   const size = 512;
   const canvas = document.createElement('canvas');
@@ -175,35 +88,24 @@ export function createPathTexture(): THREE.Texture {
   canvas.height = size;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = '#c3a578';
+  ctx.fillStyle = '#dcc08a';
   ctx.fillRect(0, 0, size, size);
 
-  const lightColors = ['#cdb086', '#d0b78f'];
-  const darkColors = ['#b4966a', '#a98a5f'];
+  const lightColors = ['#e6cd9c', '#e9d2a5'];
+  const darkColors = ['#c9aa72', '#d1b47c'];
 
-  paintBlurredMottling(ctx, size, 30, (layerCtx) => {
-    for (let i = 0; i < 18; i++) {
-      const x = Math.random() * size;
-      const y = Math.random() * size;
-      const color = lightColors[Math.floor(Math.random() * lightColors.length)];
-      paintSoftPatch(layerCtx, size, x, y, color, 60 + Math.random() * 60, 0.35 + Math.random() * 0.15);
-    }
-    for (let i = 0; i < 18; i++) {
-      const x = Math.random() * size;
-      const y = Math.random() * size;
-      const color = darkColors[Math.floor(Math.random() * darkColors.length)];
-      paintSoftPatch(layerCtx, size, x, y, color, 50 + Math.random() * 55, 0.3 + Math.random() * 0.15);
-    }
-  });
-
-  for (let i = 0; i < 300; i++) {
+  for (let i = 0; i < 16; i++) {
     const x = Math.random() * size;
     const y = Math.random() * size;
-    ctx.globalAlpha = 0.05 + Math.random() * 0.06;
-    ctx.fillStyle = Math.random() < 0.5 ? '#8a6f4a' : '#e0c69a';
-    ctx.fillRect(x, y, 1.5, 1.5);
+    const color = lightColors[Math.floor(Math.random() * lightColors.length)];
+    paintSoftPatch(ctx, size, x, y, color, 70 + Math.random() * 70, 0.15 + Math.random() * 0.08);
   }
-  ctx.globalAlpha = 1;
+  for (let i = 0; i < 16; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const color = darkColors[Math.floor(Math.random() * darkColors.length)];
+    paintSoftPatch(ctx, size, x, y, color, 60 + Math.random() * 65, 0.12 + Math.random() * 0.08);
+  }
 
   return makeTexture(canvas, 5);
 }
