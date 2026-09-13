@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GATE_POSITION, ZONES, getZone } from '../data/zones';
+import { createPathTexture } from './terrainTextures';
 
 type Point = { x: number; z: number };
 
@@ -29,7 +30,7 @@ export const ROAD_SEGMENTS: [Point, Point][] = [
 // hard outline border (a worn trail through grass doesn't have architectural
 // edges the way a street does).
 export const ROAD_WIDTH = 2.0;
-const pathMat = new THREE.MeshStandardMaterial({ color: 0xc9a876, roughness: 1, metalness: 0 });
+const pathMat = new THREE.MeshStandardMaterial({ map: createPathTexture(), roughness: 1, metalness: 0 });
 
 function seeded(n: number): number {
   const s = Math.sin(n * 12.9898) * 43758.5453;

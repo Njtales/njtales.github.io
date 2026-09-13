@@ -50,13 +50,14 @@ export class Character {
     footboard.position.y = 0.42;
     this.visual.add(footboard);
 
-    // Legshield: a tall rounded dome (stretched, flattened capsule) standing
-    // in front of the rider's legs, curving up toward the handlebar.
+    // Legshield: a rounded, flowing dome standing in front of the rider's
+    // legs — stubbier and rounder than a first pass at this (closer to a
+    // classic Vespa's soft curve than a tall narrow panel).
     const legshield = castAll(
-      new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.35, 6, 12), bodyMat),
+      new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 0.3, 6, 12), bodyMat),
     );
-    legshield.scale.set(1, 1.25, 0.42);
-    legshield.position.set(0, 0.86, -0.68);
+    legshield.scale.set(1, 1.1, 0.48);
+    legshield.position.set(0, 0.84, -0.68);
     this.visual.add(legshield);
 
     // Cream trim band across the legshield for a two-tone paint job.
@@ -77,11 +78,12 @@ export class Character {
     this.visual.add(headlightRing);
 
     // Rear hump — the rounded bump over the engine bay behind the seat,
-    // tapering down toward the rear wheel.
-    const rearHump = castAll(new THREE.Mesh(new THREE.CapsuleGeometry(0.33, 0.3, 6, 12), bodyMat));
-    rearHump.scale.set(1, 0.85, 0.62);
+    // tapering down toward the rear wheel. Sized up into a fuller, rounder
+    // pod to match the classic Vespa's bulbous rear haunch.
+    const rearHump = castAll(new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.28, 6, 12), bodyMat));
+    rearHump.scale.set(1, 0.8, 0.68);
     rearHump.rotation.x = -0.15;
-    rearHump.position.set(0, 0.62, 0.62);
+    rearHump.position.set(0, 0.62, 0.6);
     this.visual.add(rearHump);
 
     const tailLight = new THREE.Mesh(
@@ -160,11 +162,14 @@ export class Character {
       // itself (an open cylinder shell, rotated 90° about Z to bake the axle onto
       // local X) — a rim point at angle 0 maps to local +Y under that rotation, so
       // a thetaStart/thetaLength arc centered on 0 lands centered on the wheel's
-      // top, which is exactly where a fender should sit.
+      // top, which is exactly where a fender should sit. Sized up into a deep,
+      // enclosing fender like the reference scooters, and the rear one is cream
+      // (trimMat) against the coral body for the classic two-tone paint job.
       const arc = Math.PI * 0.9;
-      const fenderGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.2, 16, 1, true, -arc / 2, arc);
+      const fenderGeo = new THREE.CylinderGeometry(0.44, 0.44, 0.26, 16, 1, true, -arc / 2, arc);
       fenderGeo.rotateZ(Math.PI / 2);
-      const fender = castAll(new THREE.Mesh(fenderGeo, bodyMat));
+      const fenderMat = wheel === rearWheel ? trimMat : bodyMat;
+      const fender = castAll(new THREE.Mesh(fenderGeo, fenderMat));
       fender.position.copy(wheel.position);
       this.visual.add(fender);
     }
@@ -210,7 +215,6 @@ export class Character {
     return this.group.position;
   }
 
-  /** Rotates to face the movement direction, banks into turns, and spins the wheels. */
   /**
    * `heading` is the steering-controlled facing direction — always a valid
    * unit vector, independent of whether the scooter is moving forward,

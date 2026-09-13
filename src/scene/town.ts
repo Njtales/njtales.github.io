@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { ZONES, GATE_POSITION, type Zone } from '../data/zones';
 import { ROAD_SEGMENTS, ROAD_WIDTH, distanceToNearestRoad } from './roads';
 import { createRoofIconTexture, createSignTexture } from './roofIcons';
-import { createGrassTexture } from './grassTexture';
+import { createGrassTexture } from './terrainTextures';
 
 // Shared with systems/collision.ts so the arch's solid legs actually block
 // movement (and the opening between them doesn't).
