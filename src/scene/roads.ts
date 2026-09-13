@@ -20,9 +20,9 @@ export const ROAD_SEGMENTS: [Point, Point][] = [
   [P.about, P.arcade],
   [P.arcade, P.sketch],
   [P.about, P.work],
-  [P.work, P.projects],
   [P.work, P.skills],
-  [P.skills, P.contact],
+  [P.work, P.projects],
+  [P.projects, P.contact],
 ];
 
 // A simple dirt footpath now, not a paved road — narrower, no lane paint, no
@@ -30,6 +30,74 @@ export const ROAD_SEGMENTS: [Point, Point][] = [
 // edges the way a street does).
 export const ROAD_WIDTH = 2.0;
 const pathMat = new THREE.MeshStandardMaterial({ color: 0xc9a876, roughness: 1, metalness: 0 });
+
+function seeded(n: number): number {
+  const s = Math.sin(n * 12.9898) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+/**
+ * A gently winding polyline between two points (Ghost of Tsushima's map was
+ * the reference — paths that curve naturally through the terrain instead of
+ * ruler-straight lines). Built as a Catmull-Rom curve through two organically
+ * offset control points and sampled into a fixed number of segments;
+ * deterministic per segment index so it's stable across reloads instead of
+ * reshuffling every time (and so every consumer — rendering, road-distance
+ * checks — sees the exact same curve).
+ */
+function buildCurvePoints(a: Point, b: Point, seedIndex: number): Point[] {
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  const length = Math.hypot(dx, dz);
+  const dirX = dx / length;
+  const dirZ = dz / length;
+  const perpX = -dirZ;
+  const perpZ = dirX;
+
+  const bend = Math.min(length * 0.22, 7);
+  const r1 = seeded(seedIndex * 7.13 + 1.7) * 2 - 1;
+  const r2 = seeded(seedIndex * 7.13 + 3.1) * 2 - 1;
+
+  const p1 = {
+    x: a.x + dirX * length * 0.33 + perpX * bend * r1,
+    z: a.z + dirZ * length * 0.33 + perpZ * bend * r1,
+  };
+  const p2 = {
+    x: a.x + dirX * length * 0.66 + perpX * bend * r2,
+    z: a.z + dirZ * length * 0.66 + perpZ * bend * r2,
+  };
+
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(a.x, 0, a.z),
+    new THREE.Vector3(p1.x, 0, p1.z),
+    new THREE.Vector3(p2.x, 0, p2.z),
+    new THREE.Vector3(b.x, 0, b.z),
+  ]);
+  return curve.getPoints(14).map((v) => ({ x: v.x, z: v.z }));
+}
+
+/** Every road's sampled curve, computed once and shared by rendering and every
+ * distance-to-road query (rock placement, terrain flattening) so they all
+ * agree on where the path actually is. */
+export const ROAD_POLYLINES: Point[][] = ROAD_SEGMENTS.map(([a, b], i) => buildCurvePoints(a, b, i));
+
+function distanceToSegment(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
+  const dx = bx - ax;
+  const dz = bz - az;
+  const len2 = dx * dx + dz * dz;
+  const t = len2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / len2)) : 0;
+  return Math.hypot(px - (ax + t * dx), pz - (az + t * dz));
+}
+
+export function distanceToNearestRoad(x: number, z: number): number {
+  let min = Infinity;
+  for (const line of ROAD_POLYLINES) {
+    for (let i = 0; i < line.length - 1; i++) {
+      min = Math.min(min, distanceToSegment(x, z, line[i].x, line[i].z, line[i + 1].x, line[i + 1].z));
+    }
+  }
+  return min;
+}
 
 /**
  * How far a path should stop short of this point if it's a building — the
@@ -45,39 +113,38 @@ function pullback(p: Point): number {
   return zone ? Math.max(zone.footprint.width, zone.footprint.depth) / 2 + 0.4 : 0;
 }
 
-function buildPathSegment(a: Point, b: Point): THREE.Group {
+function buildCurvedPath(a: Point, b: Point, points: Point[]): THREE.Group {
   const group = new THREE.Group();
-  const dx = b.x - a.x;
-  const dz = b.z - a.z;
-  const length = Math.hypot(dx, dz);
-  const dirX = dx / length;
-  const dirZ = dz / length;
+  const clearA = pullback(a);
+  const clearB = pullback(b);
 
-  const pullA = pullback(a);
-  const pullB = pullback(b);
-  const start = { x: a.x + dirX * pullA, z: a.z + dirZ * pullA };
-  const end = { x: b.x - dirX * pullB, z: b.z - dirZ * pullB };
-  const trimmedLength = length - pullA - pullB;
-  if (trimmedLength <= 0.5) return group; // buildings too close together to leave a visible path
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    const midX = (p0.x + p1.x) / 2;
+    const midZ = (p0.z + p1.z) / 2;
+    if (Math.hypot(midX - a.x, midZ - a.z) < clearA) continue;
+    if (Math.hypot(midX - b.x, midZ - b.z) < clearB) continue;
 
-  const angle = Math.atan2(dz, dx);
-  const midX = (start.x + end.x) / 2;
-  const midZ = (start.z + end.z) / 2;
+    const dx = p1.x - p0.x;
+    const dz = p1.z - p0.z;
+    const segLength = Math.hypot(dx, dz);
+    if (segLength < 0.01) continue;
+    const angle = Math.atan2(dz, dx);
 
-  const fill = new THREE.Mesh(new THREE.PlaneGeometry(trimmedLength, ROAD_WIDTH), pathMat);
-  fill.rotation.x = -Math.PI / 2;
-  fill.rotation.z = -angle;
-  fill.position.set(midX, 0.006, midZ);
-  fill.receiveShadow = true;
-  group.add(fill);
+    // Slight length overlap so consecutive curve segments don't show hairline
+    // gaps at the bend points, plus a small round joint to smooth the bend.
+    const fill = new THREE.Mesh(new THREE.PlaneGeometry(segLength + 0.15, ROAD_WIDTH), pathMat);
+    fill.rotation.x = -Math.PI / 2;
+    fill.rotation.z = -angle;
+    fill.position.set(midX, 0.006, midZ);
+    fill.receiveShadow = true;
+    group.add(fill);
 
-  // Rounded caps at both (trimmed) ends so segments blend smoothly where
-  // several meet at a zone, instead of showing sharp rectangular corners.
-  for (const p of [start, end]) {
-    const cap = new THREE.Mesh(new THREE.CircleGeometry(ROAD_WIDTH / 2, 24), pathMat);
-    cap.rotation.x = -Math.PI / 2;
-    cap.position.set(p.x, 0.006, p.z);
-    group.add(cap);
+    const joint = new THREE.Mesh(new THREE.CircleGeometry(ROAD_WIDTH / 2, 16), pathMat);
+    joint.rotation.x = -Math.PI / 2;
+    joint.position.set(p1.x, 0.006, p1.z);
+    group.add(joint);
   }
 
   return group;
@@ -85,8 +152,8 @@ function buildPathSegment(a: Point, b: Point): THREE.Group {
 
 export function buildRoads(scene: THREE.Scene) {
   const group = new THREE.Group();
-  for (const [a, b] of ROAD_SEGMENTS) {
-    group.add(buildPathSegment(a, b));
-  }
+  ROAD_SEGMENTS.forEach(([a, b], i) => {
+    group.add(buildCurvedPath(a, b, ROAD_POLYLINES[i]));
+  });
   scene.add(group);
 }

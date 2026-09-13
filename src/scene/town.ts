@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ZONES, GATE_POSITION, type Zone } from '../data/zones';
-import { ROAD_SEGMENTS, ROAD_WIDTH } from './roads';
+import { ROAD_SEGMENTS, ROAD_WIDTH, distanceToNearestRoad } from './roads';
 import { createRoofIconTexture, createSignTexture } from './roofIcons';
 import { createGrassTexture } from './grassTexture';
 
@@ -361,22 +361,6 @@ function generateAmbientRocks(): RockPlacement[] {
 }
 
 const ROAD_CLEARANCE = 1.9; // half road width (1.6) + outline + a small margin
-
-function distanceToSegment(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
-  const dx = bx - ax;
-  const dz = bz - az;
-  const len2 = dx * dx + dz * dz;
-  const t = len2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / len2)) : 0;
-  return Math.hypot(px - (ax + t * dx), pz - (az + t * dz));
-}
-
-function distanceToNearestRoad(x: number, z: number): number {
-  let min = Infinity;
-  for (const [a, b] of ROAD_SEGMENTS) {
-    min = Math.min(min, distanceToSegment(x, z, a.x, a.z, b.x, b.z));
-  }
-  return min;
-}
 
 /**
  * Picks offsets around a zone for street props, ranked by clearance from

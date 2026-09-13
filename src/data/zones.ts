@@ -45,7 +45,7 @@ export const ZONES: Zone[] = [
     description:
       'Since 2017, one habit: make the boring parts invisible. Real-time sign language recognition, an S&P 500 data pipeline, two Employee of the Month awards along the way — and a lot of pipelines nobody had to think about twice.',
     accentColor: '#8cab82',
-    position: { x: 0, z: -18 },
+    position: { x: 12, z: -16 },
     footprint: { width: 6, depth: 5, height: 4 },
     triggerRadius: 7,
     metrics: [
@@ -59,7 +59,7 @@ export const ZONES: Zone[] = [
     title: 'Arcade Corner',
     description: 'PS5, story-driven games, and the occasional 40-hour weekend binge.',
     accentColor: '#8489c7',
-    position: { x: -14, z: -24 },
+    position: { x: -16, z: -14 },
     footprint: { width: 4, depth: 4, height: 3.5 },
     triggerRadius: 5.5,
   },
@@ -69,7 +69,7 @@ export const ZONES: Zone[] = [
     title: 'Sketch Nook',
     description: 'A small gallery of horror sketches — pencil, ink, and a steady hand.',
     accentColor: '#c06e80',
-    position: { x: -24, z: -22 },
+    position: { x: -28, z: -28 },
     footprint: { width: 4, depth: 4, height: 3.5 },
     triggerRadius: 5.5,
   },
@@ -80,7 +80,7 @@ export const ZONES: Zone[] = [
     description:
       "Joined Bloomberg in February 2024 supporting Enterprise Data products — Data License, BPIPE, SAPI — handling troubleshooting and connectivity for enterprise clients, promoted twice since. Before that: an MSc in Big Data Science at Queen Mary University of London, freelance ML work, and data/ETL roles at Addicor Tech, Syntel, and Orbit Tree.",
     accentColor: '#6c93b5',
-    position: { x: 0, z: -38 },
+    position: { x: 22, z: -34 },
     footprint: { width: 7, depth: 6, height: 5.5 },
     triggerRadius: 8,
     metrics: [
@@ -97,7 +97,7 @@ export const ZONES: Zone[] = [
     description:
       'The proof area. Four case studies, each a system pushed from "working" to "boring" — in the good way.',
     accentColor: '#a6738f',
-    position: { x: 26, z: -46 },
+    position: { x: -6, z: -48 },
     footprint: { width: 10, depth: 9, height: 8 },
     triggerRadius: 10,
     // TODO: replace all four metrics below with real, verifiable numbers before go-live
@@ -116,7 +116,7 @@ export const ZONES: Zone[] = [
     description:
       'Skills as physical landmarks — the ones already load-bearing, and the one still under construction: Python & SQL as the foundation, data support and orchestration and BI holding up the middle, cloud infrastructure being built out at the top.',
     accentColor: '#e0a855',
-    position: { x: 6, z: -58 },
+    position: { x: 30, z: -60 },
     footprint: { width: 5, depth: 5, height: 16 },
     triggerRadius: 9,
     // Tower metrics are derived from src/data/skills.ts (see DetailPanel), not listed here.
@@ -127,7 +127,7 @@ export const ZONES: Zone[] = [
     title: 'The Station',
     description: 'End of the line. Say hello.',
     accentColor: '#5c8b93',
-    position: { x: 0, z: -78 },
+    position: { x: 0, z: -80 },
     footprint: { width: 5, depth: 5, height: 6 },
     triggerRadius: 8,
     links: [

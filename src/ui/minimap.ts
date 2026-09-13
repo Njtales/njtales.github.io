@@ -1,5 +1,5 @@
 import { ZONES, GATE_POSITION } from '../data/zones';
-import { ROAD_SEGMENTS } from '../scene/roads';
+import { ROAD_POLYLINES } from '../scene/roads';
 
 const MARGIN = 10;
 
@@ -43,16 +43,19 @@ export class Minimap {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Roads, drawn beneath the zone dots so the map reads as a connected
-    // network rather than a scatter of unrelated points.
+    // network rather than a scatter of unrelated points. Follows the same
+    // curved polylines as the actual 3D paths, not a straight-line guess.
     ctx.strokeStyle = 'rgba(245, 239, 230, 0.35)';
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
-    for (const [a, b] of ROAD_SEGMENTS) {
-      const [ax, ay] = this.toCanvas(a.x, a.z);
-      const [bx, by] = this.toCanvas(b.x, b.z);
+    ctx.lineJoin = 'round';
+    for (const line of ROAD_POLYLINES) {
       ctx.beginPath();
-      ctx.moveTo(ax, ay);
-      ctx.lineTo(bx, by);
+      line.forEach((p, i) => {
+        const [x, y] = this.toCanvas(p.x, p.z);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
       ctx.stroke();
     }
 
