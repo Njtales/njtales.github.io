@@ -76,9 +76,20 @@ window.addEventListener('resize', () => {
 
 // ---------- UI ----------
 const boot = new Boot(app);
-const legend = new Legend(app);
 const minimap = new Minimap(app);
-const detailPanel = new DetailPanel(app);
+// A selection from the legend "pins" the panel open — see the `pinned` flag
+// in the game loop below — so it doesn't get closed again on the next frame
+// by the proximity check simply seeing the character isn't really there.
+const detailPanel = new DetailPanel(app, () => {
+  pinned = false;
+  activeZoneId = null;
+});
+const legend = new Legend(app, (zone) => {
+  pinned = true;
+  activeZoneId = zone.id;
+  detailPanel.show(zone);
+  legend.markVisited(zone.id);
+});
 
 // ---------- Input ----------
 const input = new InputController(canvas);
@@ -99,6 +110,11 @@ const TURN_RATE = 2.6; // radians/sec
 
 const clock = new THREE.Clock();
 let activeZoneId: string | null = null;
+// True while the detail panel is showing a zone the legend/text-nav jumped
+// to directly, rather than one the character actually walked up to —
+// suppresses the proximity system's show/hide until the visitor closes it
+// or really drives into a (possibly different) zone.
+let pinned = false;
 let heading = 0; // steering-controlled facing angle; 0 = facing -Z, matching spawn orientation
 let speed = 0; // signed scalar along heading — positive forward, negative reverse
 
@@ -134,14 +150,22 @@ function stepFrame(delta: number) {
   isoCamera.follow(character.position, delta);
 
   const zone = findActiveZone(character.position.x, character.position.z);
-  if (zone?.id !== activeZoneId) {
-    activeZoneId = zone?.id ?? null;
-    if (zone) {
-      detailPanel.show(zone);
-      legend.markVisited(zone.id);
-    } else {
-      detailPanel.hide();
+  if (!pinned) {
+    if (zone?.id !== activeZoneId) {
+      activeZoneId = zone?.id ?? null;
+      if (zone) {
+        detailPanel.show(zone);
+        legend.markVisited(zone.id);
+      } else {
+        detailPanel.hide();
+      }
     }
+  } else if (zone && zone.id !== activeZoneId) {
+    // Real arrival takes back over from a pinned text-nav selection.
+    pinned = false;
+    activeZoneId = zone.id;
+    detailPanel.show(zone);
+    legend.markVisited(zone.id);
   }
 
   minimap.update(character.position.x, character.position.z);

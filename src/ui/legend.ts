@@ -1,4 +1,4 @@
-import { ZONES, type ZoneId } from '../data/zones';
+import { ZONES, type Zone, type ZoneId } from '../data/zones';
 
 const ICON_PATHS: Record<ZoneId, string> = {
   // Storefront: roof + body + doorway cutout
@@ -26,7 +26,15 @@ export class Legend {
   private items = new Map<ZoneId, HTMLLIElement>();
   private visited = new Set<ZoneId>();
 
-  constructor(container: HTMLElement) {
+  /**
+   * `onSelect` turns this list into a text-nav fallback, not just a legend:
+   * activating an entry opens that zone's detail panel directly, without
+   * needing to physically drive there. Serves keyboard/screen-reader users
+   * who can't easily pilot the 3D scene, and anyone who just wants the
+   * content fast (a recruiter skimming, say) — the game should never be the
+   * only way in.
+   */
+  constructor(container: HTMLElement, onSelect: (zone: Zone) => void) {
     const panel = document.createElement('div');
     panel.id = 'legend';
     panel.innerHTML = '<h2>Town map</h2>';
@@ -35,7 +43,12 @@ export class Legend {
     for (const zone of ZONES) {
       const li = document.createElement('li');
       li.style.setProperty('--zone-color', zone.accentColor);
-      li.innerHTML = `${iconSvg(zone.id)}<span>${zone.title}</span>`;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'zone-btn';
+      button.innerHTML = `${iconSvg(zone.id)}<span>${zone.title}</span>`;
+      button.addEventListener('click', () => onSelect(zone));
+      li.appendChild(button);
       list.appendChild(li);
       this.items.set(zone.id, li);
     }

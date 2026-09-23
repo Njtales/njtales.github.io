@@ -158,23 +158,42 @@ html, body {
   gap: 6px;
 }
 
-#legend li {
+#legend .zone-btn {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  font: inherit;
   font-size: 12.5px;
   color: var(--text-dim);
-  transition: color 0.3s ease;
+  background: none;
+  border: none;
+  padding: 3px 4px;
+  margin: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.3s ease, background-color 0.15s ease;
 }
 
-#legend li .zone-icon {
+#legend .zone-btn:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--zone-color, var(--hairline)) 16%, transparent);
+}
+
+#legend .zone-btn:focus-visible {
+  outline: 2px solid var(--zone-color, var(--accent-skills));
+  outline-offset: 1px;
+}
+
+#legend .zone-btn .zone-icon {
   flex-shrink: 0;
   color: var(--hairline);
   filter: none;
   transition: color 0.3s ease, filter 0.3s ease;
 }
 
-#legend li.visited {
+#legend li.visited .zone-btn {
   color: var(--text);
 }
 

@@ -5,8 +5,15 @@ import { SKILLS } from '../data/skills';
 export class DetailPanel {
   private el: HTMLDivElement;
   private currentId: string | null = null;
+  private onUserClose?: () => void;
 
-  constructor(container: HTMLElement) {
+  /** `onUserClose` fires only when the visitor dismisses the panel via the
+   * close button — as opposed to `hide()`, which is also called by the
+   * proximity system when the character simply walks out of range. Lets the
+   * caller tell those two cases apart (e.g. to release a panel that was
+   * pinned open by the text-nav fallback rather than by arrival). */
+  constructor(container: HTMLElement, onUserClose?: () => void) {
+    this.onUserClose = onUserClose;
     this.el = document.createElement('div');
     this.el.id = 'detail-panel';
     container.appendChild(this.el);
@@ -60,7 +67,10 @@ export class DetailPanel {
           : ''
       }
     `;
-    this.el.querySelector('.close')?.addEventListener('click', () => this.hide());
+    this.el.querySelector('.close')?.addEventListener('click', () => {
+      this.hide();
+      this.onUserClose?.();
+    });
     this.el.classList.add('open');
   }
 
