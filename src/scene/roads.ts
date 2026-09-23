@@ -23,7 +23,9 @@ export const ROAD_SEGMENTS: [Point, Point][] = [
   [P.about, P.work],
   [P.work, P.skills],
   [P.work, P.projects],
-  [P.projects, P.contact],
+  // Contact now sits in the gap between the two clusters rather than past
+  // Projects at the far edge, so it branches off About instead.
+  [P.about, P.contact],
 ];
 
 // A simple dirt footpath now, not a paved road — narrower, no lane paint, no

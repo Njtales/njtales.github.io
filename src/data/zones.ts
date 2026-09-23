@@ -130,7 +130,7 @@ export const ZONES: Zone[] = [
     title: 'The Station',
     description: 'End of the line. Say hello.',
     accentColor: '#5c8b93',
-    position: { x: 10, z: -92 },
+    position: { x: 18, z: -35 },
     footprint: { width: 5, depth: 5, height: 6 },
     triggerRadius: 8,
     links: [
