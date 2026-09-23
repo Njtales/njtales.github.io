@@ -279,23 +279,40 @@ function buildLampPost(x: number, z: number): THREE.Group {
   return group;
 }
 
+/** A handful of overlapping low-poly blobs instead of a single cone — reads
+ * as a fuller, rounded leafy canopy (closer to the reference's trees) rather
+ * than a plain pine silhouette. Cheap: there are at most 7 trees in the
+ * whole scene, so a few extra small meshes per tree costs nothing. */
 function buildTree(x: number, z: number): THREE.Group {
   const group = new THREE.Group();
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.1, 0.14, 1.1, 6),
+    new THREE.CylinderGeometry(0.09, 0.13, 1.0, 6),
     new THREE.MeshStandardMaterial({ color: 0x3a2a22, roughness: 0.9 }),
   );
-  trunk.position.y = 0.55;
+  trunk.position.y = 0.5;
   trunk.castShadow = true;
   group.add(trunk);
 
-  const canopy = new THREE.Mesh(
-    new THREE.ConeGeometry(0.75, 1.5, 8),
-    new THREE.MeshStandardMaterial({ color: 0x2f5c46, roughness: 0.85 }),
-  );
-  canopy.position.y = 1.6;
-  canopy.castShadow = true;
-  group.add(canopy);
+  const shadeMat = new THREE.MeshStandardMaterial({ color: 0x2f5c46, roughness: 0.85 });
+  const litMat = new THREE.MeshStandardMaterial({ color: 0x4f9268, roughness: 0.8 });
+
+  const base = new THREE.Mesh(new THREE.IcosahedronGeometry(0.56, 1), shadeMat);
+  base.position.set(0, 1.5, 0);
+  base.castShadow = true;
+  group.add(base);
+
+  const lobes: [number, number, number, number][] = [
+    [0.26, 1.82, 0.16, 0.42],
+    [-0.24, 1.78, -0.12, 0.4],
+    [0.04, 2.02, -0.22, 0.36],
+    [-0.08, 1.66, 0.3, 0.34],
+  ];
+  for (const [lx, ly, lz, r] of lobes) {
+    const lobe = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), litMat);
+    lobe.position.set(lx, ly, lz);
+    lobe.castShadow = true;
+    group.add(lobe);
+  }
 
   group.position.set(x, 0, z);
   return group;
