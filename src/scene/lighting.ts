@@ -3,14 +3,18 @@ import * as THREE from 'three';
 /** Bright daytime mood: warm sunlight, a sky-tinted hemisphere fill, soft shadows. */
 export function addLighting(scene: THREE.Scene) {
   scene.background = new THREE.Color(0xa9d1e0);
-  scene.fog = new THREE.Fog(0xcfe6e8, 70, 160);
+  // Pushed further out than a close-up camera would need — the idle
+  // "establishing shot" zoom (see main.ts) widens the view specifically to
+  // show the far cluster as a landmark, which only works if fog doesn't eat
+  // it first.
+  scene.fog = new THREE.Fog(0xcfe6e8, 100, 230);
 
   const ambient = new THREE.AmbientLight(0xfff6e8, 1.2);
   scene.add(ambient);
 
-  // Town spans roughly x:[-34,36] z:[-88,10] — center the shadow frustum over
-  // it (not the origin) so buildings near the Station/Skill Tower aren't clipped.
-  const townCenter = new THREE.Vector3(1, 0, -39);
+  // Town spans roughly x:[-13,30] z:[-72,18] — center the shadow frustum over
+  // it (not the origin) so buildings near the Skill Tower aren't clipped.
+  const townCenter = new THREE.Vector3(8, 0, -27);
   const key = new THREE.DirectionalLight(0xfff4d6, 1.5);
   key.position.copy(townCenter).add(new THREE.Vector3(30, 55, 20));
   key.target.position.copy(townCenter);

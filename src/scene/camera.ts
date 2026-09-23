@@ -10,9 +10,12 @@ export class IsoCamera {
   private readonly offset: THREE.Vector3;
   private readonly currentLookAt = new THREE.Vector3();
   private hasLookAt = false;
-  private viewSize = 22;
+  private viewSize = 26;
+  private targetViewSize = 26;
+  private aspect: number;
 
   constructor(aspect: number) {
+    this.aspect = aspect;
     this.camera = new THREE.OrthographicCamera(
       (-this.viewSize * aspect) / 2,
       (this.viewSize * aspect) / 2,
@@ -44,13 +47,30 @@ export class IsoCamera {
     this.currentLookAt.lerp(target, smoothing);
     this.camera.position.copy(this.currentLookAt).add(this.offset);
     this.camera.lookAt(this.currentLookAt);
+
+    if (Math.abs(this.viewSize - this.targetViewSize) > 0.01) {
+      const zoomSmoothing = 1 - Math.pow(0.001, delta);
+      this.viewSize += (this.targetViewSize - this.viewSize) * zoomSmoothing;
+      this.applyFrustum();
+    }
   }
 
-  onResize(aspect: number) {
-    this.camera.left = (-this.viewSize * aspect) / 2;
-    this.camera.right = (this.viewSize * aspect) / 2;
+  /** Smoothly eases the frustum to a new width instead of snapping — used
+   * for the idle "establishing shot" zoom-out (and its return on input). */
+  setTargetViewSize(viewSize: number) {
+    this.targetViewSize = viewSize;
+  }
+
+  private applyFrustum() {
+    this.camera.left = (-this.viewSize * this.aspect) / 2;
+    this.camera.right = (this.viewSize * this.aspect) / 2;
     this.camera.top = this.viewSize / 2;
     this.camera.bottom = -this.viewSize / 2;
     this.camera.updateProjectionMatrix();
+  }
+
+  onResize(aspect: number) {
+    this.aspect = aspect;
+    this.applyFrustum();
   }
 }

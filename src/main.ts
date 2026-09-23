@@ -108,8 +108,17 @@ const COAST_DECEL = 6; // units/s^2 natural drag with no input at all — this i
 // releasing the throttle is not the same as braking, it glides to a stop instead of snapping
 const TURN_RATE = 2.6; // radians/sec
 
+// Establishing-shot zoom: the camera eases out to a wider view after a few
+// seconds of no input (see IsoCamera.setTargetViewSize), revealing more of
+// the town — including the far cluster — as landmarks, then eases back in
+// the moment the visitor touches a control again.
+const BASE_VIEW_SIZE = 26;
+const IDLE_VIEW_SIZE = 58;
+const IDLE_DELAY = 3; // seconds of no steer/throttle input before zooming out
+
 const clock = new THREE.Clock();
 let activeZoneId: string | null = null;
+let idleTime = 0;
 // True while the detail panel is showing a zone the legend/text-nav jumped
 // to directly, rather than one the character actually walked up to —
 // suppresses the proximity system's show/hide until the visitor closes it
@@ -120,6 +129,14 @@ let speed = 0; // signed scalar along heading — positive forward, negative rev
 
 function stepFrame(delta: number) {
   const { steer, throttle } = input.getIntent();
+
+  if (steer !== 0 || throttle !== 0) {
+    idleTime = 0;
+    isoCamera.setTargetViewSize(BASE_VIEW_SIZE);
+  } else {
+    idleTime += delta;
+    if (idleTime >= IDLE_DELAY) isoCamera.setTargetViewSize(IDLE_VIEW_SIZE);
+  }
 
   heading += steer * TURN_RATE * delta;
 
