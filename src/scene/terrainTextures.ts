@@ -75,15 +75,18 @@ export function createGrassTexture(): THREE.Texture {
     paintSoftPatch(ctx, size, x, y, color, 80 + Math.random() * 80, 0.1 + Math.random() * 0.06);
   }
 
-  // A smaller, warmer sunlit-patch layer on top — the dappled highlight
-  // variation visible in the reference's rolling hills, without going back
-  // to a blur pass or enough patches to read as busy texture again.
+  // A warmer sunlit-patch layer on top — the dappled highlight variation
+  // visible in the reference's rolling hills. Same large-radius/low-alpha
+  // recipe as the two layers above: a smaller, higher-contrast version of
+  // this (radius ~30, alpha up to 0.22) is exactly what caused the original
+  // "circles" bug — small + higher-alpha patches don't get enough overlap
+  // to blend, so each one's rim stays individually visible.
   const warmColors = ['#a3c363', '#9fbf57'];
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 30; i++) {
     const x = Math.random() * size;
     const y = Math.random() * size;
     const color = warmColors[Math.floor(Math.random() * warmColors.length)];
-    paintSoftPatch(ctx, size, x, y, color, 28 + Math.random() * 34, 0.14 + Math.random() * 0.08);
+    paintSoftPatch(ctx, size, x, y, color, 75 + Math.random() * 70, 0.06 + Math.random() * 0.05);
   }
 
   return makeTexture(canvas, 7);
