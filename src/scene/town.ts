@@ -257,6 +257,95 @@ function buildWindmill(zone: Zone): { group: THREE.Group; windowMatrices: THREE.
   return { group, windowMatrices: [], bladeHub };
 }
 
+// Fixed per-tier lean, not randomized — a wobbly stack should look the same
+// every reload, not jitter into a different (possibly worse) lean each time.
+const TOWER_TIER_LEAN: [number, number][] = [
+  [0, 0],
+  [0.18, -0.1],
+  [-0.12, 0.16],
+  [0.08, -0.18],
+];
+
+/**
+ * Workshop District, rebuilt as a wobbly candy-cane-striped tower with one
+ * tapered tier per project case study (there are four — see data/projects.ts)
+ * instead of the shared box template, echoing the windmill's precedent of a
+ * distinct silhouette per zone. A thin gear ring sits between each tier;
+ * the whole set spins together as one group, returned separately so the
+ * caller can animate it the same way it animates the windmill's blade hub.
+ */
+function buildProjectTower(zone: Zone): { group: THREE.Group; windowMatrices: THREE.Matrix4[]; gearGroup: THREE.Group } {
+  const group = new THREE.Group();
+  const stripeA = new THREE.MeshStandardMaterial({ color: shadeColor(zone.accentColor, 0.9), roughness: 0.75 });
+  const stripeB = new THREE.MeshStandardMaterial({ color: 0xe8d9b0, roughness: 0.7 });
+  const gearMat = new THREE.MeshStandardMaterial({ color: 0xb7ab98, roughness: 0.5, metalness: 0.3 });
+  const capMat = new THREE.MeshStandardMaterial({ color: shadeColor(zone.accentColor, 0.6), roughness: 0.7 });
+
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 3.0, 0.4, 16), stripeB);
+  base.position.y = 0.2;
+  base.castShadow = true;
+  base.receiveShadow = true;
+  group.add(base);
+
+  const tierHeight = 2.15;
+  const gearGroup = new THREE.Group();
+  let y = 0.4;
+  let bottomRadius = 2.6;
+  for (let i = 0; i < 4; i++) {
+    const topRadius = bottomRadius - 0.5;
+    const [leanX, leanZ] = TOWER_TIER_LEAN[i];
+    const tier = new THREE.Mesh(
+      new THREE.CylinderGeometry(topRadius, bottomRadius, tierHeight, 16),
+      i % 2 === 0 ? stripeA : stripeB,
+    );
+    tier.position.set(leanX, y + tierHeight / 2, leanZ);
+    tier.castShadow = true;
+    tier.receiveShadow = true;
+    group.add(tier);
+
+    if (i > 0) {
+      const gear = new THREE.Mesh(new THREE.CylinderGeometry(bottomRadius + 0.22, bottomRadius + 0.22, 0.22, 10), gearMat);
+      gear.position.set(leanX, y, leanZ);
+      gear.castShadow = true;
+      gearGroup.add(gear);
+    }
+
+    y += tierHeight;
+    bottomRadius = topRadius;
+  }
+  group.add(gearGroup);
+
+  const finial = new THREE.Mesh(new THREE.SphereGeometry(0.4, 12, 12), capMat);
+  finial.position.set(TOWER_TIER_LEAN[3][0], y + 0.4, TOWER_TIER_LEAN[3][1]);
+  finial.castShadow = true;
+  group.add(finial);
+
+  const door = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.1, 1.8),
+    new THREE.MeshStandardMaterial({ color: 0x120e17, roughness: 0.9 }),
+  );
+  door.position.set(0, 0.9, 2.78);
+  group.add(door);
+
+  const signMat = new THREE.MeshStandardMaterial({ color: shadeColor(zone.accentColor, 0.55), roughness: 0.7 });
+  const signFaceMat = new THREE.MeshBasicMaterial({ map: createSignTexture(zone.title, zone.accentColor) });
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.68, 0.22), [
+    signMat,
+    signMat,
+    signMat,
+    signMat,
+    signFaceMat,
+    signMat,
+  ]);
+  sign.position.set(0, 2.6, 3.1);
+  sign.castShadow = true;
+  group.add(sign);
+
+  group.position.set(zone.position.x, 0, zone.position.z);
+  group.userData.zoneId = zone.id;
+  return { group, windowMatrices: [], gearGroup };
+}
+
 function buildLampPost(x: number, z: number): THREE.Group {
   const group = new THREE.Group();
   const poleMat = new THREE.MeshStandardMaterial({ color: 0x171019, roughness: 0.7 });
@@ -609,7 +698,15 @@ function buildGateArch(): THREE.Group {
 const GROUND_SIZE = 140;
 const GROUND_CENTER = { x: 0, z: -35 };
 const TERRAIN_SEGMENTS = 70;
-const BUMP_AMPLITUDE = 0.1;
+// Genuine rolling-hill relief instead of subtle texture-only variation — the
+// wider idle-zoom establishing shot made the previous flat-ish ground (0.1)
+// read as too plain next to the reference's sculpted terrain. A first pass
+// at 0.6 turned out to still be too gentle a slope to actually read as hills
+// from the isometric camera distance (confirmed by sampling the geometry —
+// real height variation, just visually subtle) — pushed further to 1.8.
+// Only safe to go this big because the character now samples heightAt() for
+// its own Y position (see main.ts) instead of always rendering at y=0.
+const BUMP_AMPLITUDE = 1.8;
 
 // Cheap hash-based value noise (bilinear-interpolated pseudo-random grid) —
 // enough to look organic without pulling in a real noise library. A first
@@ -662,8 +759,11 @@ function clearanceFromSolids(worldX: number, worldZ: number): number {
   return clearance;
 }
 
-function heightAt(worldX: number, worldZ: number): number {
-  const flatten = smoothstep(0, 3, clearanceFromSolids(worldX, worldZ));
+export function heightAt(worldX: number, worldZ: number): number {
+  // Wider ramp than before (0-6 instead of 0-3) so the bigger bump amplitude
+  // eases down to flat ground gradually near buildings/paths rather than
+  // creating a visibly steep little slope right at the transition.
+  const flatten = smoothstep(0, 6, clearanceFromSolids(worldX, worldZ));
   return terrainNoise(worldX, worldZ) * BUMP_AMPLITUDE * flatten;
 }
 
@@ -715,16 +815,34 @@ export function buildTown(scene: THREE.Scene): { update: (delta: number) => void
   gateArch.position.set(GATE_POSITION.x, 0, GATE_POSITION.z);
   scene.add(gateArch);
 
+  const WINDMILL_SPIN_SPEED = 0.6; // radians/sec
+  const GEAR_SPIN_SPEED = 0.4; // radians/sec
+
   const allWindowMatrices: THREE.Matrix4[] = [];
-  let windmillBladeHub: THREE.Group | null = null;
+  const spinners: { group: THREE.Group; axis: 'x' | 'y' | 'z'; speed: number }[] = [];
   for (const zone of ZONES) {
-    // The Skill Tower gets a distinct windmill silhouette instead of the
-    // shared box template — see buildWindmill's doc comment.
-    const { group, windowMatrices, bladeHub } =
-      zone.id === 'skills' ? buildWindmill(zone) : { ...buildBuilding(zone), bladeHub: null };
+    // The Skill Tower and Workshop District get distinct silhouettes instead
+    // of the shared box template — see buildWindmill's/buildProjectTower's
+    // doc comments.
+    let group: THREE.Group;
+    let windowMatrices: THREE.Matrix4[];
+    if (zone.id === 'skills') {
+      const built = buildWindmill(zone);
+      group = built.group;
+      windowMatrices = built.windowMatrices;
+      spinners.push({ group: built.bladeHub, axis: 'z', speed: WINDMILL_SPIN_SPEED });
+    } else if (zone.id === 'projects') {
+      const built = buildProjectTower(zone);
+      group = built.group;
+      windowMatrices = built.windowMatrices;
+      spinners.push({ group: built.gearGroup, axis: 'y', speed: GEAR_SPIN_SPEED });
+    } else {
+      const built = buildBuilding(zone);
+      group = built.group;
+      windowMatrices = built.windowMatrices;
+    }
     scene.add(group);
     allWindowMatrices.push(...windowMatrices);
-    if (bladeHub) windmillBladeHub = bladeHub;
 
     // Street props flanking each building, placed wherever is clearest of the roads.
     const [lampOffset, treeOffset] = pickPropOffsets(zone, 2);
@@ -747,10 +865,9 @@ export function buildTown(scene: THREE.Scene): { update: (delta: number) => void
   // them back explicitly. placeStreetLampsAndBunting() is left defined below,
   // just not called, so it doesn't need rebuilding from scratch later.
 
-  const WINDMILL_SPIN_SPEED = 0.6; // radians/sec
   return {
     update(delta: number) {
-      if (windmillBladeHub) windmillBladeHub.rotation.z += delta * WINDMILL_SPIN_SPEED;
+      for (const s of spinners) s.group.rotation[s.axis] += delta * s.speed;
     },
   };
 }

@@ -7,7 +7,7 @@ import './styles/main.css';
 
 import { GATE_POSITION } from './data/zones';
 import { addLighting } from './scene/lighting';
-import { buildTown } from './scene/town';
+import { buildTown, heightAt } from './scene/town';
 import { buildRoads } from './scene/roads';
 import { Character } from './scene/character';
 import { IsoCamera } from './scene/camera';
@@ -39,7 +39,7 @@ const town = buildTown(scene);
 buildRoads(scene);
 
 const character = new Character();
-character.position.set(GATE_POSITION.x, 0, GATE_POSITION.z);
+character.position.set(GATE_POSITION.x, heightAt(GATE_POSITION.x, GATE_POSITION.z), GATE_POSITION.z);
 scene.add(character.group);
 
 const isoCamera = new IsoCamera(window.innerWidth / window.innerHeight);
@@ -161,7 +161,7 @@ function stepFrame(delta: number) {
     character.position.z + headingDir.y * speed * delta,
   );
   const next = clampToTownBounds(moved.x, moved.z);
-  character.position.set(next.x, 0, next.z);
+  character.position.set(next.x, heightAt(next.x, next.z), next.z);
   character.update(delta, headingDir, speed);
 
   isoCamera.follow(character.position, delta);
