@@ -9,6 +9,12 @@ const MOVE_SPEED = 5; // units/sec
 const ROTATE_RESPONSE = 10; // slerp speed — higher = snappier turn-to-face
 const HEIGHT_OFFSET = 0.5; // half character height, per spec
 const HEIGHT_LERP = 0.15;
+// The 80x80 world has no visible hard walls (fog fades the edges out
+// instead), but the character still shouldn't be able to wander past the
+// point that stops making sense — clamped a little past the nominal
+// walkable ~60x60 so the stop is never felt in practice, just quietly
+// there before the player would want to go further anyway.
+const WORLD_BOUND = 35;
 
 const UP = new THREE.Vector3(0, 1, 0);
 const DOWN = new THREE.Vector3(0, -1, 0);
@@ -53,8 +59,8 @@ export function NiroController({ terrainRef }: Props) {
       const len = Math.hypot(dx, dz); // normalize so diagonals aren't faster
       dx /= len;
       dz /= len;
-      group.position.x += dx * MOVE_SPEED * delta;
-      group.position.z += dz * MOVE_SPEED * delta;
+      group.position.x = THREE.MathUtils.clamp(group.position.x + dx * MOVE_SPEED * delta, -WORLD_BOUND, WORLD_BOUND);
+      group.position.z = THREE.MathUtils.clamp(group.position.z + dz * MOVE_SPEED * delta, -WORLD_BOUND, WORLD_BOUND);
       headingRef.current = Math.atan2(dx, dz);
     }
 

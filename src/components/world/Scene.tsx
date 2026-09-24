@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import { Terrain } from './Terrain';
 import { FollowCamera } from './FollowCamera';
+import { Buildings } from './Buildings';
 import { NiroController } from '../character/NiroController';
 
 export function Scene() {
@@ -17,6 +18,7 @@ export function Scene() {
 
       <FollowCamera />
       <Terrain ref={terrainRef} />
+      <Buildings />
       <NiroController terrainRef={terrainRef} />
     </>
   );
