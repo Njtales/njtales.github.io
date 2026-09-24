@@ -22,7 +22,7 @@ export function CareerClocktower({ position }: { position: [number, number, numb
     <group position={position}>
       {/* Slim rectangular base. */}
       <mesh position={[0, 4, 0]} castShadow>
-        <boxGeometry args={[3, 8, 3]} />
+        <roundedBoxGeometry args={[3, 8, 3, 2, 0.22]} />
         <meshLambertMaterial color={ACCENT} />
       </mesh>
       <Door position={[0, 0.85, 1.53]} />
@@ -35,7 +35,7 @@ export function CareerClocktower({ position }: { position: [number, number, numb
 
       {/* Belfry top — narrower box sitting directly on the ledge, no gap. */}
       <mesh position={[0, 9.8, 0]} castShadow>
-        <boxGeometry args={[2.2, 2.8, 2.2]} />
+        <roundedBoxGeometry args={[2.2, 2.8, 2.2, 2, 0.18]} />
         <meshLambertMaterial color={ACCENT} />
       </mesh>
 

@@ -7,6 +7,14 @@ import { PAD_RADIUS } from './BuildingPad';
 const PATH_WIDTH = 1.5;
 const PATH_Y_OFFSET = 0.05;
 const SPAWN = new THREE.Vector2(0, 0);
+// Stopping exactly at the pad's own radius left zero gap between path and
+// pad — and since the pad (#A89878) and path (#C8A878) are nearly the same
+// warm tan, the two blended into one continuous mass with the building
+// sitting right on top, reading as "the path runs under the building"
+// rather than "the path leads you to a clearing the building sits in".
+// This adds a real few units of visible grass between where the path ends
+// and where the pad begins.
+const PATH_CLEARANCE = PAD_RADIUS + 3;
 
 function seeded(n: number): number {
   const s = Math.sin(n * 12.9898) * 43758.5453;
@@ -27,7 +35,7 @@ function seeded(n: number): number {
 function buildPathGeometry(targetXZ: THREE.Vector2, seedIndex: number): THREE.BufferGeometry {
   const dir = targetXZ.clone().sub(SPAWN);
   const length = dir.length();
-  const trimmedEnd = SPAWN.clone().lerp(targetXZ, 1 - PAD_RADIUS / length);
+  const trimmedEnd = SPAWN.clone().lerp(targetXZ, 1 - PATH_CLEARANCE / length);
   dir.normalize();
   const perp = new THREE.Vector2(-dir.y, dir.x);
   const bend = Math.min(length * 0.15, 4);

@@ -24,7 +24,7 @@ export function SignalStation({ position }: { position: [number, number, number]
   return (
     <group position={position}>
       <mesh position={[0, 3.5, 0]} castShadow>
-        <boxGeometry args={[7, 7, 7]} />
+        <roundedBoxGeometry args={[7, 7, 7, 2, 0.4]} />
         <meshLambertMaterial color={ACCENT} />
       </mesh>
 

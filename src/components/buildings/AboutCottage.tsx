@@ -45,7 +45,7 @@ export function AboutCottage({ position }: { position: [number, number, number] 
   return (
     <group position={position}>
       <mesh position={[0, 1.6, 0]} castShadow>
-        <boxGeometry args={[4.5, 3.2, 4]} />
+        <roundedBoxGeometry args={[4.5, 3.2, 4, 2, 0.28]} />
         <meshLambertMaterial color={ACCENT} />
       </mesh>
       <Door position={[0, 1.1, 2.03]} size={[1.0, 1.9]} />

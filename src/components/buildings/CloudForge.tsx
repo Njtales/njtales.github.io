@@ -45,7 +45,7 @@ export function CloudForge({ position }: { position: [number, number, number] })
     <group position={position}>
       {/* Wide, squat body — 1.5x wider than tall. */}
       <mesh position={[0, 3, 0]} castShadow>
-        <boxGeometry args={[8, 6, 5]} />
+        <roundedBoxGeometry args={[8, 6, 5, 2, 0.35]} />
         <meshLambertMaterial color={ACCENT} />
       </mesh>
 

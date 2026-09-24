@@ -7,7 +7,11 @@ import { useStore } from '../../store/useStore';
 
 const MOVE_SPEED = 5; // units/sec
 const ROTATE_RESPONSE = 10; // slerp speed — higher = snappier turn-to-face
-const HEIGHT_OFFSET = 0.5; // half character height, per spec
+// Niro's own group origin sits at ground level (the legs' feet, y=0 inside
+// Niro.tsx) rather than at the character's vertical center, so no extra
+// lift is needed here to plant it on the terrain — offsetting by "half
+// character height" would float it in the air.
+const HEIGHT_OFFSET = 0;
 const HEIGHT_LERP = 0.15;
 // The 80x80 world has no visible hard walls (fog fades the edges out
 // instead), but the character still shouldn't be able to wander past the
@@ -36,6 +40,7 @@ export function NiroController({ terrainRef }: Props) {
   const { keys, interactPressed } = useKeyboard();
   const raycaster = useRef(new THREE.Raycaster());
   const headingRef = useRef(0); // radians; movement-direction convention: dir = (sin h, cos h)
+  const movingRef = useRef(false);
   const setCharacterPosition = useStore((s) => s.setCharacterPosition);
 
   useFrame((_state, rawDelta) => {
@@ -69,6 +74,7 @@ export function NiroController({ terrainRef }: Props) {
     }
 
     const moving = dx !== 0 || dz !== 0;
+    movingRef.current = moving;
     if (moving) {
       const len = Math.hypot(dx, dz); // normalize so diagonals aren't faster
       dx /= len;
@@ -101,5 +107,5 @@ export function NiroController({ terrainRef }: Props) {
     setCharacterPosition(group.position.x, group.position.y, group.position.z, headingRef.current);
   });
 
-  return <Niro ref={groupRef} />;
+  return <Niro ref={groupRef} movingRef={movingRef} />;
 }

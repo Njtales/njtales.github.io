@@ -29,7 +29,7 @@ export function DataTower({ position }: { position: [number, number, number] }) 
       {floors.map((i) => (
         <group key={i} position={[0, i * floorHeight + floorHeight / 2, 0]} rotation={[0, (i % 2 === 0 ? 1 : -1) * 0.05, 0]}>
           <mesh castShadow>
-            <boxGeometry args={[3, floorHeight, 3]} />
+            <roundedBoxGeometry args={[3, floorHeight, 3, 2, 0.22]} />
             <meshLambertMaterial color={ACCENT} />
           </mesh>
           <mesh

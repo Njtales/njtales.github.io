@@ -33,7 +33,7 @@ export function HobbiesHut({ position }: { position: [number, number, number] })
   return (
     <group position={position}>
       <mesh position={[0, 1.8, 0]} castShadow>
-        <boxGeometry args={[4, 3.6, 4]} />
+        <roundedBoxGeometry args={[4, 3.6, 4, 2, 0.28]} />
         <meshLambertMaterial color={ACCENT} />
       </mesh>
       <Door position={[0, 1.1, 2.03]} size={[1.0, 1.9]} />
