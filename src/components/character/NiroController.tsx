@@ -33,20 +33,34 @@ interface Props {
  */
 export function NiroController({ terrainRef }: Props) {
   const groupRef = useRef<THREE.Group>(null);
-  const { keys } = useKeyboard();
+  const { keys, interactPressed } = useKeyboard();
   const raycaster = useRef(new THREE.Raycaster());
   const headingRef = useRef(0); // radians; movement-direction convention: dir = (sin h, cos h)
-  const setPosition = useStore((s) => s.setPosition);
+  const setCharacterPosition = useStore((s) => s.setCharacterPosition);
 
   useFrame((_state, rawDelta) => {
     const group = groupRef.current;
     if (!group) return;
-    const activePanel = useStore.getState().activePanel;
+    const { activePanel, nearBuilding, setActivePanel } = useStore.getState();
     const delta = Math.min(rawDelta, 0.05);
+
+    // E opens the panel for whichever building is in range. Closing (ESC or
+    // the ✕ button) is owned by PanelShell instead of here, so both close
+    // paths go through the same GSAP slide-out before the store actually
+    // clears — closing straight from here would skip that animation.
+    if (interactPressed.current) {
+      interactPressed.current = false;
+      if (!activePanel && nearBuilding) setActivePanel(nearBuilding);
+    }
+
+    // Re-read after the E handling above, which may have just changed it
+    // this same frame — using the pre-press value here would let one frame
+    // of movement slip through right as a panel opens.
+    const panelOpen = useStore.getState().activePanel !== null;
 
     let dx = 0;
     let dz = 0;
-    if (!activePanel) {
+    if (!panelOpen) {
       const k = keys.current;
       if (k.has('w') || k.has('arrowup')) dz -= 1;
       if (k.has('s') || k.has('arrowdown')) dz += 1;
@@ -84,7 +98,7 @@ export function NiroController({ terrainRef }: Props) {
     }
     group.position.y = THREE.MathUtils.lerp(group.position.y, targetY, HEIGHT_LERP);
 
-    setPosition(group.position.x, group.position.z, headingRef.current);
+    setCharacterPosition(group.position.x, group.position.y, group.position.z, headingRef.current);
   });
 
   return <Niro ref={groupRef} />;

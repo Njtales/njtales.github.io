@@ -10,14 +10,12 @@ const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowlef
 export function useKeyboard() {
   const keys = useRef(new Set<string>());
   const interactPressed = useRef(false);
-  const escapePressed = useRef(false);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       if (MOVE_KEYS.has(key)) keys.current.add(key);
       if (key === 'e') interactPressed.current = true;
-      if (key === 'escape') escapePressed.current = true;
     };
     const onKeyUp = (e: KeyboardEvent) => {
       keys.current.delete(e.key.toLowerCase());
@@ -30,5 +28,5 @@ export function useKeyboard() {
     };
   }, []);
 
-  return { keys, interactPressed, escapePressed };
+  return { keys, interactPressed };
 }

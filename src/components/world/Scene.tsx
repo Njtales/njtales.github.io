@@ -3,10 +3,13 @@ import * as THREE from 'three';
 import { Terrain } from './Terrain';
 import { FollowCamera } from './FollowCamera';
 import { Buildings } from './Buildings';
+import { Paths } from './Paths';
 import { NiroController } from '../character/NiroController';
+import { useProximityCheck } from '../../hooks/useProximityCheck';
 
 export function Scene() {
   const terrainRef = useRef<THREE.Mesh>(null);
+  useProximityCheck();
 
   return (
     <>
@@ -18,6 +21,7 @@ export function Scene() {
 
       <FollowCamera />
       <Terrain ref={terrainRef} />
+      <Paths />
       <Buildings />
       <NiroController terrainRef={terrainRef} />
     </>

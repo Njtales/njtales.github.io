@@ -22,7 +22,7 @@ export function FollowCamera() {
   useFrame(() => {
     const cam = camRef.current;
     if (!cam) return;
-    const { x, z, heading } = useStore.getState().position;
+    const { x, z, heading } = useStore.getState().characterPosition;
 
     desiredPos.current.set(x + OFFSET.x, OFFSET.y, z + OFFSET.z);
     cam.position.lerp(desiredPos.current, FOLLOW_LERP);

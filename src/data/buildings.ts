@@ -13,7 +13,7 @@ export interface BuildingDef {
 
 export const BUILDINGS: BuildingDef[] = [
   {
-    id: 'dataTower',
+    id: 'projects',
     name: 'The Data Tower',
     panelHeader: 'Projects',
     position: [18, 0, -10],
@@ -21,7 +21,7 @@ export const BUILDINGS: BuildingDef[] = [
     height: 10,
   },
   {
-    id: 'cloudForge',
+    id: 'techstack',
     name: 'The Cloud Forge',
     panelHeader: 'Tech Stack',
     position: [-15, 0, -8],
@@ -29,7 +29,7 @@ export const BUILDINGS: BuildingDef[] = [
     height: 6,
   },
   {
-    id: 'careerClocktower',
+    id: 'experience',
     name: 'The Career Clocktower',
     panelHeader: 'Experience',
     position: [5, 0, -22],
@@ -37,7 +37,7 @@ export const BUILDINGS: BuildingDef[] = [
     height: 14,
   },
   {
-    id: 'learningLab',
+    id: 'learning',
     name: 'The Learning Lab',
     panelHeader: 'Currently Learning',
     position: [-10, 0, 12],
@@ -45,7 +45,7 @@ export const BUILDINGS: BuildingDef[] = [
     height: 7,
   },
   {
-    id: 'aboutCottage',
+    id: 'about',
     name: 'The About Cottage',
     panelHeader: 'About Niro',
     position: [12, 0, 10],
@@ -53,7 +53,7 @@ export const BUILDINGS: BuildingDef[] = [
     height: 6,
   },
   {
-    id: 'hobbiesHut',
+    id: 'hobbies',
     name: 'The Hobbies Hut',
     panelHeader: 'Beyond the Code',
     position: [-20, 0, 5],
@@ -61,7 +61,7 @@ export const BUILDINGS: BuildingDef[] = [
     height: 6,
   },
   {
-    id: 'signalStation',
+    id: 'contact',
     name: 'The Signal Station',
     panelHeader: 'Get in Touch',
     position: [0, 0, 18],
