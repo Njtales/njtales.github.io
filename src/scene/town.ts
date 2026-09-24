@@ -826,10 +826,14 @@ const TERRAIN_SEGMENTS = 70;
 // read as too plain next to the reference's sculpted terrain. A first pass
 // at 0.6 turned out to still be too gentle a slope to actually read as hills
 // from the isometric camera distance (confirmed by sampling the geometry —
-// real height variation, just visually subtle) — pushed further to 1.8.
-// Only safe to go this big because the character now samples heightAt() for
-// its own Y position (see main.ts) instead of always rendering at y=0.
-const BUMP_AMPLITUDE = 1.8;
+// real height variation, just visually subtle) — pushed further, then eased
+// back slightly from 1.8 to 1.4: even with the character's front/rear-wheel
+// sampling and body tilt (main.ts/character.ts), 1.8 combined with the
+// noise's high-frequency octave created bumps tighter than the ~1.5-unit
+// wheelbase could follow, so the rigid body still visibly clipped through
+// them. Only safe to be this big at all because the character no longer
+// renders at a fixed y=0 — see heightAt() usage in main.ts.
+const BUMP_AMPLITUDE = 1.4;
 
 // Cheap hash-based value noise (bilinear-interpolated pseudo-random grid) —
 // enough to look organic without pulling in a real noise library. A first
@@ -857,10 +861,15 @@ function valueNoise(x: number, y: number): number {
 
 function terrainNoise(x: number, z: number): number {
   // Two octaves at different scales so the undulation reads as rolling
-  // ground rather than one uniform bump size.
+  // ground rather than one uniform bump size. The small octave's weight was
+  // dropped from 0.3 to 0.15 — its ~6.7-unit wavelength was the main source
+  // of curvature tight enough for the scooter's own wheelbase (~1.5 units)
+  // to visibly clip through even with ground-following; the broad, gentle
+  // large octave carries most of the relief now, with the small one only
+  // adding light texture on top of it.
   const large = valueNoise(x * 0.05, z * 0.05);
   const small = valueNoise(x * 0.15 + 50, z * 0.15 + 50);
-  return (large * 0.7 + small * 0.3) * 2 - 1; // remap ~[0,1] to ~[-1,1]
+  return (large * 0.85 + small * 0.15) * 2 - 1; // remap ~[0,1] to ~[-1,1]
 }
 
 function smoothstep(edge0: number, edge1: number, x: number): number {

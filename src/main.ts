@@ -115,7 +115,7 @@ const WHEEL_OFFSET = 0.75; // roughly half the wheelbase — see character.ts's 
 // the moment the visitor touches a control again.
 const BASE_VIEW_SIZE = 26;
 const IDLE_VIEW_SIZE = 58;
-const IDLE_DELAY = 3; // seconds of no steer/throttle input before zooming out
+const IDLE_DELAY = 5; // seconds of no steer/throttle input before zooming out
 
 const clock = new THREE.Clock();
 let activeZoneId: string | null = null;
