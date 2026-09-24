@@ -13,6 +13,7 @@ const SIZE = 200;
 const SEGMENTS = 64;
 const BASE_COLOR = new THREE.Color('#7EC850');
 const VARIANT_COLOR = new THREE.Color('#5DAA3A');
+const DIRT_FLECK_COLOR = new THREE.Color('#8A7550');
 const NOISE_FREQUENCY = 0.08;
 const MAX_DISPLACEMENT = 0.4;
 
@@ -74,11 +75,17 @@ export const Terrain = forwardRef<THREE.Mesh>(function Terrain(_props, ref) {
       const n = new THREE.Vector3(-dx, 1, -dz).normalize();
       normal.setXYZ(i, n.x, n.y, n.z);
 
-      // Cheap patchy variation from a couple of layered sine waves — no
-      // noise library needed for a subtle color-only pattern like this.
-      const patch = Math.sin(x * 0.15) * Math.cos(z * 0.17) + Math.sin(x * 0.05 + z * 0.08) * 0.6;
-      const t = THREE.MathUtils.clamp(patch * 0.4 + 0.5, 0, 1);
-      color.copy(BASE_COLOR).lerp(VARIANT_COLOR, t * 0.5);
+      // Two octaves of the same value-noise field used for height, at very
+      // different frequencies: a slow one for large mottled regions and a
+      // fast one for close-up mottling — a single sine field read as flat,
+      // regular "wallpaper" once you were standing on it. A sparse third
+      // pass darkens toward a dirt-fleck color where the fine noise peaks,
+      // for scattered patches of bare soil instead of pure grass-on-grass.
+      const macro = valueNoise(x * 0.035, z * 0.035);
+      const micro = valueNoise(x * 0.4, z * 0.4);
+      const t = THREE.MathUtils.clamp(macro * 0.6 + micro * 0.4, 0, 1);
+      color.copy(BASE_COLOR).lerp(VARIANT_COLOR, t * 0.7);
+      if (micro > 0.86) color.lerp(DIRT_FLECK_COLOR, ((micro - 0.86) / 0.14) * 0.55);
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;

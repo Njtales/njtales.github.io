@@ -4,7 +4,12 @@ import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore } from '../../store/useStore';
 
-const OFFSET = { x: 0, y: 18, z: 14 };
+// Pulled in from the original {18, 14} (same ~52 tilt, preserved via the
+// ratio) — at the wider distance the follow rig read as a top-down map
+// overview, with the character and buildings small against a lot of empty
+// visible ground; this keeps the isometric-ish angle but frames noticeably
+// less of the world at once.
+const OFFSET = { x: 0, y: 14, z: 11 };
 const LOOKAHEAD_DIST = 2;
 const FOLLOW_LERP = 0.08;
 
@@ -35,5 +40,5 @@ export function FollowCamera() {
     cam.lookAt(lookTarget.current);
   });
 
-  return <PerspectiveCamera ref={camRef} makeDefault fov={55} position={[OFFSET.x, OFFSET.y, OFFSET.z]} />;
+  return <PerspectiveCamera ref={camRef} makeDefault fov={50} position={[OFFSET.x, OFFSET.y, OFFSET.z]} />;
 }
