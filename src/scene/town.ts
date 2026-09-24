@@ -346,6 +346,129 @@ function buildProjectTower(zone: Zone): { group: THREE.Group; windowMatrices: TH
   return { group, windowMatrices: [], gearGroup };
 }
 
+/** Builds one small spinning case-fan: a hub with three thin blade fins,
+ * mounted inside a fixed circular frame. Only the hub itself is ever
+ * rotated (around its own local Z, the axis its blades are already built
+ * flat against) — the frame's own orientation is set once and never
+ * touched again, so nesting it doesn't create the kind of ambiguous
+ * two-axis composition that caused the wheel-spin bug earlier. */
+function buildCaseFan(radius: number, mat: THREE.MeshStandardMaterial, frameMat: THREE.MeshStandardMaterial): { mount: THREE.Group; hub: THREE.Group } {
+  const mount = new THREE.Group();
+  const frame = new THREE.Mesh(new THREE.TorusGeometry(radius, radius * 0.12, 8, 16), frameMat);
+  mount.add(frame);
+
+  const hub = new THREE.Group();
+  for (let i = 0; i < 3; i++) {
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(radius * 0.28, radius * 1.6, 0.04), mat);
+    blade.rotation.z = (i * Math.PI * 2) / 3;
+    blade.castShadow = true;
+    hub.add(blade);
+  }
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.18, radius * 0.18, 0.1, 10), frameMat);
+  cap.rotation.x = Math.PI / 2;
+  hub.add(cap);
+  mount.add(hub);
+
+  return { mount, hub };
+}
+
+/**
+ * Tech Lane, rebuilt as a stepped "cloud spire" of stacked server racks —
+ * narrowing and lightening toward the top, with a satellite dish and a
+ * blinking aviation light on top, and a spinning case fan on each side.
+ * Two independent spinners, so both hubs are returned for the caller to
+ * animate separately (same pattern as the project tower's gear ring).
+ */
+function buildCloudSpire(zone: Zone): { group: THREE.Group; windowMatrices: THREE.Matrix4[]; fanHubs: THREE.Group[] } {
+  const group = new THREE.Group();
+  const rackMat = [0.6, 0.78, 0.95, 1.15].map(
+    (f) => new THREE.MeshStandardMaterial({ color: shadeColor(zone.accentColor, f), roughness: 0.6, metalness: 0.15 }),
+  );
+  const trimMat = new THREE.MeshStandardMaterial({ color: 0xe8d9b0, roughness: 0.7 });
+  const ledMat = new THREE.MeshBasicMaterial({ color: 0x8fe0f0 });
+  const dishMat = new THREE.MeshStandardMaterial({ color: 0xd8d2c4, roughness: 0.5, metalness: 0.2 });
+
+  const base = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.4, 2.6), trimMat);
+  base.position.y = 0.2;
+  base.castShadow = true;
+  base.receiveShadow = true;
+  group.add(base);
+
+  const segments = [
+    { w: 2.6, d: 2.2, h: 1.7 },
+    { w: 2.1, d: 1.8, h: 1.5 },
+    { w: 1.7, d: 1.5, h: 1.3 },
+    { w: 1.3, d: 1.2, h: 1.1 },
+  ];
+  let y = 0.4;
+  segments.forEach((seg, i) => {
+    const rack = new THREE.Mesh(new THREE.BoxGeometry(seg.w, seg.h, seg.d), rackMat[i]);
+    rack.position.y = y + seg.h / 2;
+    rack.castShadow = true;
+    rack.receiveShadow = true;
+    group.add(rack);
+
+    // A couple of small "status light" accents on the front face.
+    for (let led = 0; led < 2; led++) {
+      const light = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.04), ledMat);
+      light.position.set(seg.w / 2 - 0.25 - led * 0.3, y + seg.h - 0.25, seg.d / 2 + 0.01);
+      group.add(light);
+    }
+
+    y += seg.h;
+  });
+
+  const fanRadius = 0.42;
+  const fanA = buildCaseFan(fanRadius, rackMat[3], trimMat);
+  fanA.mount.rotation.y = Math.PI / 2;
+  fanA.mount.position.set(segments[1].w / 2 + 0.02, 0.4 + segments[0].h + segments[1].h / 2, 0);
+  group.add(fanA.mount);
+
+  const fanB = buildCaseFan(fanRadius * 0.8, rackMat[3], trimMat);
+  fanB.mount.rotation.y = -Math.PI / 2;
+  fanB.mount.position.set(-(segments[0].w / 2 + 0.02), 0.4 + segments[0].h / 2, 0);
+  group.add(fanB.mount);
+
+  // Satellite dish, tilted, plus a small blinking aviation light beside it.
+  const dish = new THREE.Mesh(new THREE.SphereGeometry(0.4, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), dishMat);
+  dish.rotation.x = Math.PI * 0.85;
+  dish.position.set(0.15, y + 0.35, 0.1);
+  dish.castShadow = true;
+  group.add(dish);
+
+  const beaconLight = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0xe24b4a, emissive: new THREE.Color(0xe24b4a), emissiveIntensity: 0.6 }),
+  );
+  beaconLight.position.set(-0.4, y + 0.5, -0.2);
+  group.add(beaconLight);
+
+  const door = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.0, 1.7),
+    new THREE.MeshStandardMaterial({ color: 0x120e17, roughness: 0.9 }),
+  );
+  door.position.set(0, 0.85, segments[0].d / 2 + 0.01);
+  group.add(door);
+
+  const signMat = new THREE.MeshStandardMaterial({ color: shadeColor(zone.accentColor, 0.55), roughness: 0.7 });
+  const signFaceMat = new THREE.MeshBasicMaterial({ map: createSignTexture(zone.title, zone.accentColor) });
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.62, 0.2), [
+    signMat,
+    signMat,
+    signMat,
+    signMat,
+    signFaceMat,
+    signMat,
+  ]);
+  sign.position.set(0, 2.2, segments[0].d / 2 + 0.4);
+  sign.castShadow = true;
+  group.add(sign);
+
+  group.position.set(zone.position.x, 0, zone.position.z);
+  group.userData.zoneId = zone.id;
+  return { group, windowMatrices: [], fanHubs: [fanA.hub, fanB.hub] };
+}
+
 function buildLampPost(x: number, z: number): THREE.Group {
   const group = new THREE.Group();
   const poleMat = new THREE.MeshStandardMaterial({ color: 0x171019, roughness: 0.7 });
@@ -817,13 +940,14 @@ export function buildTown(scene: THREE.Scene): { update: (delta: number) => void
 
   const WINDMILL_SPIN_SPEED = 0.6; // radians/sec
   const GEAR_SPIN_SPEED = 0.4; // radians/sec
+  const FAN_SPIN_SPEED = 2.2; // radians/sec — small fans read as idle unless they spin briskly
 
   const allWindowMatrices: THREE.Matrix4[] = [];
   const spinners: { group: THREE.Group; axis: 'x' | 'y' | 'z'; speed: number }[] = [];
   for (const zone of ZONES) {
-    // The Skill Tower and Workshop District get distinct silhouettes instead
-    // of the shared box template — see buildWindmill's/buildProjectTower's
-    // doc comments.
+    // The Skill Tower, Workshop District, and Tech Lane get distinct
+    // silhouettes instead of the shared box template — see buildWindmill's/
+    // buildProjectTower's/buildCloudSpire's doc comments.
     let group: THREE.Group;
     let windowMatrices: THREE.Matrix4[];
     if (zone.id === 'skills') {
@@ -836,6 +960,11 @@ export function buildTown(scene: THREE.Scene): { update: (delta: number) => void
       group = built.group;
       windowMatrices = built.windowMatrices;
       spinners.push({ group: built.gearGroup, axis: 'y', speed: GEAR_SPIN_SPEED });
+    } else if (zone.id === 'work') {
+      const built = buildCloudSpire(zone);
+      group = built.group;
+      windowMatrices = built.windowMatrices;
+      for (const hub of built.fanHubs) spinners.push({ group: hub, axis: 'z', speed: FAN_SPIN_SPEED });
     } else {
       const built = buildBuilding(zone);
       group = built.group;
