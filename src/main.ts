@@ -107,6 +107,7 @@ const REVERSE_ACCEL = 7; // units/s^2 accelerating backward once already stopped
 const COAST_DECEL = 6; // units/s^2 natural drag with no input at all — this is the inertia:
 // releasing the throttle is not the same as braking, it glides to a stop instead of snapping
 const TURN_RATE = 2.6; // radians/sec
+const WHEEL_OFFSET = 0.75; // roughly half the wheelbase — see character.ts's wheel positions
 
 // Establishing-shot zoom: the camera eases out to a wider view after a few
 // seconds of no input (see IsoCamera.setTargetViewSize), revealing more of
@@ -161,8 +162,22 @@ function stepFrame(delta: number) {
     character.position.z + headingDir.y * speed * delta,
   );
   const next = clampToTownBounds(moved.x, moved.z);
-  character.position.set(next.x, heightAt(next.x, next.z), next.z);
-  character.update(delta, headingDir, speed);
+
+  // Sample the ground at the front and rear wheel positions rather than one
+  // point at the vehicle's center — on real terrain relief, a single-point
+  // sample keeps the body perfectly flat and lets one wheel sink into (or
+  // float off) any slope steeper than a couple of degrees. Approximates
+  // character.ts's actual wheel z-offsets (-0.78 front, 0.7 rear).
+  const frontX = next.x + headingDir.x * WHEEL_OFFSET;
+  const frontZ = next.z + headingDir.y * WHEEL_OFFSET;
+  const rearX = next.x - headingDir.x * WHEEL_OFFSET;
+  const rearZ = next.z - headingDir.y * WHEEL_OFFSET;
+  const frontHeight = heightAt(frontX, frontZ);
+  const rearHeight = heightAt(rearX, rearZ);
+  const groundPitch = Math.atan2(frontHeight - rearHeight, WHEEL_OFFSET * 2);
+
+  character.position.set(next.x, (frontHeight + rearHeight) / 2, next.z);
+  character.update(delta, headingDir, speed, groundPitch);
 
   isoCamera.follow(character.position, delta);
 

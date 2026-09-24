@@ -3,6 +3,8 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 
 const MAX_LEAN = 0.32; // radians (~18°) — how far the scooter banks into a turn
 const LEAN_RESPONSE = 10; // higher = snappier lean transitions
+const MAX_PITCH = 0.4; // radians (~23°) — clamps the nose-up/down tilt on steep local terrain
+const PITCH_RESPONSE = 10;
 const IDLE_BOB_SPEED = 1.6;
 const IDLE_BOB_AMOUNT = 0.02;
 
@@ -15,6 +17,7 @@ export class Character {
   private readonly wheels: THREE.Mesh[] = [];
   private currentYaw = 0;
   private currentLean = 0;
+  private currentPitch = 0;
   private age = 0;
 
   constructor() {
@@ -223,8 +226,15 @@ export class Character {
    * the velocity vector: a real vehicle doesn't spin around to face
    * backwards when it reverses, it keeps facing the way it's steered and
    * just moves backward along that facing.
+   *
+   * `groundPitch` is the raw (unsmoothed) nose-up/down angle implied by the
+   * terrain height under the front vs. rear wheel this frame — the caller
+   * only positions the whole vehicle at one Y (the midpoint between the
+   * wheels), so without this the body stays perfectly flat and one wheel
+   * visibly sinks into (or floats off) any slope steeper than a couple of
+   * degrees now that the terrain has real hills.
    */
-  update(delta: number, heading: THREE.Vector2, speed: number) {
+  update(delta: number, heading: THREE.Vector2, speed: number, groundPitch: number) {
     this.age += delta;
 
     // The model's front (headlight/handlebar) sits at local -Z, so the angle that
@@ -243,6 +253,13 @@ export class Character {
     const leanTarget = THREE.MathUtils.clamp((turnRate * speed) / 14, -MAX_LEAN, MAX_LEAN);
     this.currentLean += (leanTarget - this.currentLean) * Math.min(1, LEAN_RESPONSE * delta);
     this.visual.rotation.z = this.currentLean;
+
+    // Smoothed the same way as lean, both to avoid jittering over small
+    // noise-level bumps and so a sudden steep patch eases into the tilt
+    // rather than snapping.
+    const pitchTarget = THREE.MathUtils.clamp(groundPitch, -MAX_PITCH, MAX_PITCH);
+    this.currentPitch += (pitchTarget - this.currentPitch) * Math.min(1, PITCH_RESPONSE * delta);
+    this.visual.rotation.x = this.currentPitch;
 
     // A faint idle bob so the scooter doesn't look frozen when stationary.
     const bobSpeedFactor = 1 + Math.abs(speed) * 0.15;
