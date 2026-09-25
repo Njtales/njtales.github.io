@@ -4,12 +4,16 @@ import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore } from '../../store/useStore';
 
-// Pulled in from the original {18, 14} (same ~52 tilt, preserved via the
-// ratio) — at the wider distance the follow rig read as a top-down map
-// overview, with the character and buildings small against a lot of empty
-// visible ground; this keeps the isometric-ish angle but frames noticeably
-// less of the world at once.
-const OFFSET = { x: 0, y: 14, z: 11 };
+// Shallowed from {14, 11} (~50 deg downward tilt) to {6, 13} (~21 deg) — at
+// the steeper angle the frustum's top edge never looked higher than ~25 deg
+// below horizontal from any character position (fixed offset => fixed
+// pitch, doesn't vary with position), so no sky or distant landmark could
+// ever appear on screen, confirmed both by the numbers and empirically in
+// the browser (a mountain ring built for a "big vista" backdrop was
+// completely invisible - solid ground to the top edge of every screenshot).
+// This is a real change to camera *feel* (more 3rd-person chase, less
+// top-down), done deliberately after flagging the tradeoff.
+const OFFSET = { x: 0, y: 6, z: 13 };
 const LOOKAHEAD_DIST = 2;
 const FOLLOW_LERP = 0.08;
 

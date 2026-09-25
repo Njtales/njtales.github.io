@@ -1,15 +1,20 @@
 import { forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
+import { createPainterlyGroundTexture } from '../../textures/canvasTextures';
+import { getToonGradientMap } from '../../materials/toonGradient';
 
 // Visual ground plane is deliberately bigger than the spec's stated 80x80
 // world — the character's walkable area is still clamped to the intended
-// ~60x60ish region (NiroController's WORLD_BOUND), but at 80 units the
-// plane's actual physical edge sat well within the fog's fade range (35-65
-// from the camera) rather than past it, so the hard edge was still visible
-// as a sharp line against the sky instead of a soft fade. 200 puts that
-// edge beyond the fog's fully-opaque distance in the worst case (character
-// at the walkable boundary, camera offset further out from there).
-const SIZE = 200;
+// ~60x60ish region (NiroController's WORLD_BOUND), but the plane's actual
+// physical edge needs to stay beyond the fog's fully-opaque distance (see
+// Scene.tsx) in the worst case, or the hard edge shows as a sharp line
+// instead of a soft fade. Sized for the shallow-pitch FollowCamera, which
+// can see much further across the ground than the old steep top-down tilt
+// did (near-horizontal view rays travel far before hitting flat ground):
+// worst case is the character at a WORLD_BOUND corner (~50 from origin)
+// with the camera trailing another ~13 further out, plus the fog's ~100
+// reach beyond that — comfortably inside this plane's ~170-unit radius.
+const SIZE = 340;
 const SEGMENTS = 64;
 const BASE_COLOR = new THREE.Color('#7EC850');
 const VARIANT_COLOR = new THREE.Color('#5DAA3A');
@@ -51,6 +56,18 @@ export function terrainHeightAt(x: number, z: number): number {
  * works in plain world-space X/Z without a rotation to account for.
  */
 export const Terrain = forwardRef<THREE.Mesh>(function Terrain(_props, ref) {
+  const groundTexture = useMemo(() => {
+    const tex = createPainterlyGroundTexture();
+    // ~5-unit tiles regardless of SIZE — nested between the macro noise's
+    // ~28-unit features and the micro noise's ~2.5-unit features below, so
+    // the baked brush-stroke grain reads as its own detail layer instead of
+    // fighting either octave.
+    const tileCount = SIZE / 5;
+    tex.repeat.set(tileCount, tileCount);
+    return tex;
+  }, []);
+  const gradientMap = useMemo(() => getToonGradientMap(), []);
+
   const geometry = useMemo(() => {
     const geo = new THREE.PlaneGeometry(SIZE, SIZE, SEGMENTS, SEGMENTS);
     geo.rotateX(-Math.PI / 2);
@@ -96,7 +113,7 @@ export const Terrain = forwardRef<THREE.Mesh>(function Terrain(_props, ref) {
 
   return (
     <mesh ref={ref} geometry={geometry} receiveShadow={false} name="terrain">
-      <meshLambertMaterial vertexColors />
+      <meshToonMaterial vertexColors map={groundTexture} gradientMap={gradientMap} />
     </mesh>
   );
 });
