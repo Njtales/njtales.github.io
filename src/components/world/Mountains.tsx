@@ -3,15 +3,20 @@ import * as THREE from 'three';
 import { getToonGradientMap } from '../../materials/toonGradient';
 import { terrainHeightAt } from './Terrain';
 
-const MOUNTAIN_COUNT = 20;
-const RING_RADIUS_MIN = 72;
-const RING_RADIUS_MAX = 85;
-const HEIGHT_MIN = 18;
-const HEIGHT_MAX = 30;
-// Cooler, desaturated palette than the sunny near-ground greens — reads as
-// atmospheric-perspective haze on a distant backdrop.
-const COLOR_NEAR = '#8FA8C4';
-const COLOR_FAR = '#5E7A9E';
+// Thinned from 20 and lightened toward the fog color per feedback — the
+// original read as a solid, fairly assertive wall of peaks; fewer of them,
+// paler and semi-transparent, reads as a soft distant backdrop instead.
+const MOUNTAIN_COUNT = 12;
+const RING_RADIUS_MIN = 75;
+const RING_RADIUS_MAX = 92;
+const HEIGHT_MIN = 16;
+const HEIGHT_MAX = 26;
+// Cooler, desaturated palette than the sunny near-ground greens, and close
+// to the fog color itself (#B8E0F0) rather than a strong contrasting blue —
+// reads as atmospheric-perspective haze, not a solid mountain range.
+const COLOR_NEAR = '#B4C9DC';
+const COLOR_FAR = '#96AFC8';
+const MOUNTAIN_OPACITY = 0.7;
 
 function hash(n: number): number {
   const s = Math.sin(n * 91.345) * 47453.123;
@@ -81,7 +86,7 @@ export function Mountains() {
     <>
       {peaks.map((p, i) => (
         <mesh key={i} geometry={p.geometry} position={p.position} scale={p.scale} rotation={[0, p.rotationY, 0]}>
-          <meshToonMaterial color={p.color} gradientMap={gradientMap} />
+          <meshToonMaterial color={p.color} gradientMap={gradientMap} transparent opacity={MOUNTAIN_OPACITY} depthWrite={false} />
         </mesh>
       ))}
     </>

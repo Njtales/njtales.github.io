@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Door } from './shared';
+import { getToonGradientMap } from '../../materials/toonGradient';
 
 const ACCENT = '#C0392B';
 const ROOF = '#8C2A1F';
@@ -17,7 +18,8 @@ const FLOWERS: { x: number; color: string }[] = [
  * stone chimney, a small porch platform, shuttered windows, and flower
  * boxes under each one. */
 export function AboutCottage({ position }: { position: [number, number, number] }) {
-  const windowMatRefs = useRef<THREE.MeshLambertMaterial[]>([]);
+  const windowMatRefs = useRef<THREE.MeshToonMaterial[]>([]);
+  const gradientMap = useMemo(() => getToonGradientMap(), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -30,12 +32,12 @@ export function AboutCottage({ position }: { position: [number, number, number] 
       <group position={[x, 1.55, 2.15]}>
         <mesh>
           <boxGeometry args={[0.9, 0.2, 0.25]} />
-          <meshLambertMaterial color="#5A4230" />
+          <meshToonMaterial color="#5A4230" gradientMap={gradientMap} />
         </mesh>
         {FLOWERS.map((f, i) => (
           <mesh key={i} position={[f.x, 0.15, 0]}>
             <sphereGeometry args={[0.08, 6, 6]} />
-            <meshLambertMaterial color={f.color} />
+            <meshToonMaterial color={f.color} gradientMap={gradientMap} />
           </mesh>
         ))}
       </group>
@@ -46,7 +48,7 @@ export function AboutCottage({ position }: { position: [number, number, number] 
     <group position={position}>
       <mesh position={[0, 1.6, 0]} castShadow>
         <roundedBoxGeometry args={[4.5, 3.2, 4, 2, 0.28]} />
-        <meshLambertMaterial color={ACCENT} />
+        <meshToonMaterial color={ACCENT} gradientMap={gradientMap} />
       </mesh>
       <Door position={[0, 1.1, 2.03]} size={[1.0, 1.9]} />
 
@@ -55,19 +57,19 @@ export function AboutCottage({ position }: { position: [number, number, number] 
           <mesh
             position={[x, 2.1, 2.03]}
             ref={(m) => {
-              if (m) windowMatRefs.current[x < 0 ? 0 : 1] = m.material as THREE.MeshLambertMaterial;
+              if (m) windowMatRefs.current[x < 0 ? 0 : 1] = m.material as THREE.MeshToonMaterial;
             }}
           >
             <boxGeometry args={[0.8, 0.8, 0.05]} />
-            <meshLambertMaterial color="#FFCC88" emissive="#FFCC88" emissiveIntensity={0.2} />
+            <meshToonMaterial color="#FFCC88" emissive="#FFCC88" emissiveIntensity={0.2} gradientMap={gradientMap} />
           </mesh>
           <mesh position={[x - 0.5, 2.1, 2.04]}>
             <boxGeometry args={[0.12, 0.85, 0.04]} />
-            <meshLambertMaterial color={SHUTTER} />
+            <meshToonMaterial color={SHUTTER} gradientMap={gradientMap} />
           </mesh>
           <mesh position={[x + 0.5, 2.1, 2.04]}>
             <boxGeometry args={[0.12, 0.85, 0.04]} />
-            <meshLambertMaterial color={SHUTTER} />
+            <meshToonMaterial color={SHUTTER} gradientMap={gradientMap} />
           </mesh>
           <FlowerBox x={x} />
         </group>
@@ -76,19 +78,19 @@ export function AboutCottage({ position }: { position: [number, number, number] 
       {/* Pitched roof — two sloped planes meeting at a ridge, with overhang. */}
       <mesh position={[0, 3.9, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
         <coneGeometry args={[3.6, 1.8, 4]} />
-        <meshLambertMaterial color={ROOF} />
+        <meshToonMaterial color={ROOF} gradientMap={gradientMap} />
       </mesh>
 
       {/* Stone chimney, static, no smoke. */}
       <mesh position={[1.6, 4.6, -1]} castShadow>
         <boxGeometry args={[0.5, 2.2, 0.5]} />
-        <meshLambertMaterial color="#8A8478" />
+        <meshToonMaterial color="#8A8478" gradientMap={gradientMap} />
       </mesh>
 
       {/* Small porch platform in front of the door. */}
       <mesh position={[0, 0.08, 2.8]} receiveShadow>
         <boxGeometry args={[2.2, 0.16, 1.2]} />
-        <meshLambertMaterial color="#6B5340" />
+        <meshToonMaterial color="#6B5340" gradientMap={gradientMap} />
       </mesh>
     </group>
   );

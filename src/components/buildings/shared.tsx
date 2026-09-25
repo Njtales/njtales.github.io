@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { useMemo } from 'react';
+import { getToonGradientMap } from '../../materials/toonGradient';
 
 /** A flat emissive quad — used as a window on every building. Faces +Z by
  * default (front); pass a `rotation` to place it on a different wall. */
@@ -15,10 +17,11 @@ export function Window({
   emissiveIntensity?: number;
   rotation?: [number, number, number];
 }) {
+  const gradientMap = useMemo(() => getToonGradientMap(), []);
   return (
     <mesh position={position} rotation={rotation}>
       <boxGeometry args={[size[0], size[1], 0.05]} />
-      <meshLambertMaterial color={color} emissive={color} emissiveIntensity={emissiveIntensity} />
+      <meshToonMaterial color={color} emissive={color} emissiveIntensity={emissiveIntensity} gradientMap={gradientMap} />
     </mesh>
   );
 }
@@ -33,10 +36,11 @@ export function Door({
   size?: [number, number];
   rotation?: [number, number, number];
 }) {
+  const gradientMap = useMemo(() => getToonGradientMap(), []);
   return (
     <mesh position={position} rotation={rotation}>
       <boxGeometry args={[size[0], size[1], 0.05]} />
-      <meshLambertMaterial color="#2C1810" />
+      <meshToonMaterial color="#2C1810" gradientMap={gradientMap} />
     </mesh>
   );
 }

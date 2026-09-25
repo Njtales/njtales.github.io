@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Door } from './shared';
+import { getToonGradientMap } from '../../materials/toonGradient';
 
 const ACCENT = '#2E7D9E';
 const ROOF_COLOR = '#4AACCB';
@@ -12,7 +13,8 @@ const ROOF_COLOR = '#4AACCB';
  * alignment on each floor's front face). */
 export function DataTower({ position }: { position: [number, number, number] }) {
   const gearRef = useRef<THREE.Mesh>(null);
-  const windowRefs = useRef<THREE.MeshLambertMaterial[]>([]);
+  const windowRefs = useRef<THREE.MeshToonMaterial[]>([]);
+  const gradientMap = useMemo(() => getToonGradientMap(), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -30,16 +32,16 @@ export function DataTower({ position }: { position: [number, number, number] }) 
         <group key={i} position={[0, i * floorHeight + floorHeight / 2, 0]} rotation={[0, (i % 2 === 0 ? 1 : -1) * 0.05, 0]}>
           <mesh castShadow>
             <roundedBoxGeometry args={[3, floorHeight, 3, 2, 0.22]} />
-            <meshLambertMaterial color={ACCENT} />
+            <meshToonMaterial color={ACCENT} gradientMap={gradientMap} />
           </mesh>
           <mesh
             position={[0, 0, 1.53]}
             ref={(m) => {
-              if (m) windowRefs.current[i] = m.material as THREE.MeshLambertMaterial;
+              if (m) windowRefs.current[i] = m.material as THREE.MeshToonMaterial;
             }}
           >
             <boxGeometry args={[1.2, 1.0, 0.05]} />
-            <meshLambertMaterial color="#88CCFF" emissive="#88CCFF" emissiveIntensity={0.4} />
+            <meshToonMaterial color="#88CCFF" emissive="#88CCFF" emissiveIntensity={0.4} gradientMap={gradientMap} />
           </mesh>
         </group>
       ))}
@@ -49,13 +51,13 @@ export function DataTower({ position }: { position: [number, number, number] }) 
       {/* Conical roof on top of the third floor. */}
       <mesh position={[0, floors.length * floorHeight + 0.8, 0]} castShadow>
         <coneGeometry args={[2.2, 1.6, 4]} />
-        <meshLambertMaterial color={ROOF_COLOR} />
+        <meshToonMaterial color={ROOF_COLOR} gradientMap={gradientMap} />
       </mesh>
 
       {/* Side gear — a flattened box spinning on its own face-normal axis. */}
       <mesh ref={gearRef} position={[1.6, floorHeight * 1.5, 0]} rotation={[0, Math.PI / 2, 0]}>
         <boxGeometry args={[0.6, 0.6, 0.12]} />
-        <meshLambertMaterial color="#B7AB98" />
+        <meshToonMaterial color="#B7AB98" gradientMap={gradientMap} />
       </mesh>
     </group>
   );

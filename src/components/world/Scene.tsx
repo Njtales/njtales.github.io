@@ -6,6 +6,7 @@ import { Buildings } from './Buildings';
 import { Paths } from './Paths';
 import { Foliage } from './Foliage';
 import { Mountains } from './Mountains';
+import { Clouds } from './Clouds';
 import { NiroController } from '../character/NiroController';
 import { useProximityCheck } from '../../hooks/useProximityCheck';
 
@@ -32,6 +33,7 @@ export function Scene() {
       <FollowCamera />
       <Terrain ref={terrainRef} />
       <Mountains />
+      <Clouds />
       <Paths />
       <Foliage />
       <Buildings />

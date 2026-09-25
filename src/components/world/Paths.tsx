@@ -4,6 +4,7 @@ import { getBuilding } from '../../data/buildings';
 import type { BuildingId } from '../../store/useStore';
 import { terrainHeightAt } from './Terrain';
 import { PAD_RADIUS } from './BuildingPad';
+import { getToonGradientMap } from '../../materials/toonGradient';
 
 const TRUNK_WIDTH = 1.8;
 const BRANCH_WIDTH = 1.3;
@@ -115,6 +116,7 @@ function buildPathGeometry(seg: Segment): THREE.BufferGeometry {
 }
 
 export function Paths() {
+  const gradientMap = useMemo(() => getToonGradientMap(), []);
   const segments = useMemo(() => {
     const list: Segment[] = [];
     let seed = 0;
@@ -134,7 +136,7 @@ export function Paths() {
     <>
       {segments.map((geo, i) => (
         <mesh key={i} geometry={geo} receiveShadow={false} name={`path-${i}`}>
-          <meshLambertMaterial color="#C8A878" side={THREE.DoubleSide} />
+          <meshToonMaterial color="#C8A878" side={THREE.DoubleSide} gradientMap={gradientMap} />
         </mesh>
       ))}
     </>

@@ -2,15 +2,19 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { BUILDINGS } from '../../data/buildings';
 import { terrainHeightAt } from './Terrain';
+import { getToonGradientMap } from '../../materials/toonGradient';
 
 const BUSH_COUNT = 50;
 const ROCK_COUNT = 26;
-// Scattered across roughly the walkable disc, not the full 200-unit visual
-// ground plane — keeps every instance somewhere the character will actually
-// pass near, instead of wasting most of them out past the fog.
+// Scattered across roughly the walkable disc, not the full visual ground
+// plane — keeps every instance somewhere the character will actually pass
+// near, instead of wasting most of them out past the fog.
 const SCATTER_RADIUS = 32;
 const MIN_FROM_SPAWN = 5;
-const MIN_FROM_BUILDING = 7;
+// Shrunk from 7 alongside the building/pad scale-down in Buildings.tsx and
+// BuildingPad.tsx — that clearance was sized for the old, much bigger
+// buildings and now left an oddly empty ring of bare grass around each one.
+const MIN_FROM_BUILDING = 3.5;
 
 const ROCK_COLOR = '#8A8478';
 
@@ -54,6 +58,7 @@ function scatterProps(count: number, seedOffset: number, build: (index: number, 
  * setMatrixAt lifecycle needing careful re-sync under React StrictMode's
  * double-mount in dev. */
 export function Foliage() {
+  const gradientMap = useMemo(() => getToonGradientMap(), []);
   const bushes = useMemo(
     () =>
       scatterProps(BUSH_COUNT, 1, (i, x, z) => {
@@ -86,13 +91,13 @@ export function Foliage() {
       {bushes.map((p, i) => (
         <mesh key={i} position={p.position} scale={p.scale} rotation={p.rotation} castShadow>
           <icosahedronGeometry args={[0.6, 0]} />
-          <meshLambertMaterial color={p.color} />
+          <meshToonMaterial color={p.color} gradientMap={gradientMap} />
         </mesh>
       ))}
       {rocks.map((p, i) => (
         <mesh key={i} position={p.position} scale={p.scale} rotation={p.rotation} castShadow>
           <dodecahedronGeometry args={[0.6, 0]} />
-          <meshLambertMaterial color={ROCK_COLOR} />
+          <meshToonMaterial color={ROCK_COLOR} gradientMap={gradientMap} />
         </mesh>
       ))}
     </>

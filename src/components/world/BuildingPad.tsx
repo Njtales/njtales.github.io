@@ -1,6 +1,11 @@
+import { useMemo } from 'react';
 import { terrainHeightAt } from './Terrain';
+import { getToonGradientMap } from '../../materials/toonGradient';
 
-const PAD_RADIUS = 4;
+// Shrunk from 4 alongside the building scale-down in Buildings.tsx (see
+// BUILDING_SCALE there) — at the old radius the pad read as an oversized
+// plaza under a now much smaller building.
+const PAD_RADIUS = 2.2;
 const PAD_HEIGHT = 0.1;
 const PAD_COLOR = '#A89878';
 
@@ -12,10 +17,11 @@ const PAD_COLOR = '#A89878';
  */
 export function BuildingPad({ x, z }: { x: number; z: number }) {
   const y = terrainHeightAt(x, z) + PAD_HEIGHT / 2;
+  const gradientMap = useMemo(() => getToonGradientMap(), []);
   return (
     <mesh position={[x, y, z]} receiveShadow name={`pad-${x}-${z}`}>
       <cylinderGeometry args={[PAD_RADIUS, PAD_RADIUS, PAD_HEIGHT, 8]} />
-      <meshLambertMaterial color={PAD_COLOR} />
+      <meshToonMaterial color={PAD_COLOR} gradientMap={gradientMap} />
     </mesh>
   );
 }
