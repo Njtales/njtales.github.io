@@ -9,6 +9,15 @@ import { getToonGradientMap } from '../../materials/toonGradient';
 const TRUNK_WIDTH = 1.8;
 const BRANCH_WIDTH = 1.3;
 const PATH_Y_OFFSET = 0.05;
+// A wider, darker ribbon sits just underneath each path's fill ribbon and
+// pokes out past its edges — the classic "wider silhouette behind" outline
+// trick, borrowed here for a flat ribbon instead of a 3D mesh. This is what
+// gives the reference's paths their painted ink-edge look instead of a
+// soft, edgeless blend into the grass.
+const EDGE_EXTRA_WIDTH = 0.4;
+const EDGE_Y_OFFSET = PATH_Y_OFFSET - 0.015;
+const EDGE_COLOR = '#5A4326';
+const FILL_COLOR = '#C8A878';
 const SPAWN = new THREE.Vector2(0, 0);
 // Stopping exactly at the pad's own radius left zero gap between path and
 // pad — and since the pad (#A89878) and path (#C8A878) are nearly the same
@@ -54,15 +63,14 @@ interface Segment {
 }
 
 /**
- * One gently curved ribbon between two points, built as a CatmullRomCurve3
- * through a single organically-offset midpoint — matching the World
- * Overview's "loose radial cluster... dirt paths" (a dead-straight line
- * wouldn't need Catmull-Rom at all). Sampled in flat XZ, then each sample is
- * lifted to the actual terrain height beneath it (plus the 0.05 offset) so
- * the ribbon hugs the bumps instead of needing the terrain to flatten out
- * under it.
+ * The flat-XZ centerline samples for one segment, built as a
+ * CatmullRomCurve3 through a single organically-offset midpoint — matching
+ * the World Overview's "loose radial cluster... dirt paths" (a dead-straight
+ * line wouldn't need Catmull-Rom at all). Factored out from ribbon-building
+ * so the edge and fill ribbons of the same path can share an identical
+ * curve instead of drifting apart.
  */
-function buildPathGeometry(seg: Segment): THREE.BufferGeometry {
+function buildCurveSamples(seg: Segment): THREE.Vector2[] {
   const dir = seg.to.clone().sub(seg.from);
   const length = dir.length();
   const trimmedEnd = seg.clearance > 0 ? seg.from.clone().lerp(seg.to, 1 - seg.clearance / length) : seg.to;
@@ -77,8 +85,16 @@ function buildPathGeometry(seg: Segment): THREE.BufferGeometry {
     new THREE.Vector3(mid.x, 0, mid.y),
     new THREE.Vector3(trimmedEnd.x, 0, trimmedEnd.y),
   ]);
-  const samples = curve.getPoints(16).map((p) => new THREE.Vector2(p.x, p.z));
+  return curve.getPoints(16).map((p) => new THREE.Vector2(p.x, p.z));
+}
 
+/**
+ * A flat ribbon of the given width along the centerline samples, each
+ * sample lifted to the actual terrain height beneath it (plus `yOffset`) so
+ * the ribbon hugs the bumps instead of needing the terrain to flatten out
+ * under it.
+ */
+function buildRibbonGeometry(samples: THREE.Vector2[], width: number, yOffset: number): THREE.BufferGeometry {
   const positions: number[] = [];
   const indices: number[] = [];
   for (let i = 0; i < samples.length; i++) {
@@ -86,16 +102,16 @@ function buildPathGeometry(seg: Segment): THREE.BufferGeometry {
     const prev = samples[Math.max(0, i - 1)];
     const next = samples[Math.min(samples.length - 1, i + 1)];
     const segDir = next.clone().sub(prev).normalize();
-    const segPerp = new THREE.Vector2(-segDir.y, segDir.x).multiplyScalar(seg.width / 2);
+    const segPerp = new THREE.Vector2(-segDir.y, segDir.x).multiplyScalar(width / 2);
 
     const left = p.clone().sub(segPerp);
     const right = p.clone().add(segPerp);
     positions.push(
       left.x,
-      terrainHeightAt(left.x, left.y) + PATH_Y_OFFSET,
+      terrainHeightAt(left.x, left.y) + yOffset,
       left.y,
       right.x,
-      terrainHeightAt(right.x, right.y) + PATH_Y_OFFSET,
+      terrainHeightAt(right.x, right.y) + yOffset,
       right.y,
     );
 
@@ -117,7 +133,7 @@ function buildPathGeometry(seg: Segment): THREE.BufferGeometry {
 
 export function Paths() {
   const gradientMap = useMemo(() => getToonGradientMap(), []);
-  const segments = useMemo(() => {
+  const ribbons = useMemo(() => {
     const list: Segment[] = [];
     let seed = 0;
 
@@ -129,14 +145,24 @@ export function Paths() {
       }
     });
 
-    return list.map((seg) => buildPathGeometry(seg));
+    // Each segment becomes two ribbons sharing one curve: a wider, darker
+    // "edge" underneath and the normal-width tan "fill" on top, so the edge
+    // peeks out along both sides as a painted border instead of the fill
+    // blending edgelessly into the grass.
+    return list.flatMap((seg, segIndex) => {
+      const samples = buildCurveSamples(seg);
+      return [
+        { key: `${segIndex}-edge`, geo: buildRibbonGeometry(samples, seg.width + EDGE_EXTRA_WIDTH * 2, EDGE_Y_OFFSET), color: EDGE_COLOR },
+        { key: `${segIndex}-fill`, geo: buildRibbonGeometry(samples, seg.width, PATH_Y_OFFSET), color: FILL_COLOR },
+      ];
+    });
   }, []);
 
   return (
     <>
-      {segments.map((geo, i) => (
-        <mesh key={i} geometry={geo} receiveShadow={false} name={`path-${i}`}>
-          <meshToonMaterial color="#C8A878" side={THREE.DoubleSide} gradientMap={gradientMap} />
+      {ribbons.map((r) => (
+        <mesh key={r.key} geometry={r.geo} receiveShadow={false} name={`path-${r.key}`}>
+          <meshToonMaterial color={r.color} side={THREE.DoubleSide} gradientMap={gradientMap} />
         </mesh>
       ))}
     </>

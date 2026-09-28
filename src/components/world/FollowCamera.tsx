@@ -16,6 +16,16 @@ import { useStore } from '../../store/useStore';
 const OFFSET = { x: 0, y: 6, z: 13 };
 const LOOKAHEAD_DIST = 2;
 const FOLLOW_LERP = 0.08;
+// heading (NiroController's atan2 of raw input direction) jumps instantly
+// on any direction change - e.g. releasing 'w' for 'a' snaps it 90deg in a
+// single frame, confirmed by instrumenting camera yaw: an ~8.5deg jump in
+// one ~18ms frame, vs ~0.3deg/frame during steady movement (~25x). The old
+// code fed that straight into lookTarget.set(...) every frame, so the
+// camera's *aim* snapped exactly as abruptly even though its *position*
+// was already smoothly lerped - that mismatch (smooth position, snapping
+// look direction) is what reads as a jerk specifically on turns. Lerping
+// the look target the same way position is lerped fixes it.
+const LOOKAT_LERP = 0.15;
 
 /**
  * Fixed follow rig — no orbit, no zoom, no manual pan. Reads the character's
@@ -26,7 +36,9 @@ const FOLLOW_LERP = 0.08;
 export function FollowCamera() {
   const camRef = useRef<THREE.PerspectiveCamera>(null);
   const desiredPos = useRef(new THREE.Vector3());
+  const desiredLookTarget = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3());
+  const initialized = useRef(false);
 
   useFrame(() => {
     const cam = camRef.current;
@@ -40,7 +52,16 @@ export function FollowCamera() {
     // exactly on them — a small, subtle "gaze ahead" cue.
     const aheadX = x + Math.sin(heading) * LOOKAHEAD_DIST;
     const aheadZ = z + Math.cos(heading) * LOOKAHEAD_DIST;
-    lookTarget.current.set(aheadX, 1, aheadZ);
+    desiredLookTarget.current.set(aheadX, 1, aheadZ);
+
+    if (!initialized.current) {
+      // First frame: snap straight to the target instead of lerping from
+      // (0,0,0), which would otherwise itself be a one-time jerk on load.
+      lookTarget.current.copy(desiredLookTarget.current);
+      initialized.current = true;
+    } else {
+      lookTarget.current.lerp(desiredLookTarget.current, LOOKAT_LERP);
+    }
     cam.lookAt(lookTarget.current);
   });
 

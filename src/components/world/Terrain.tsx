@@ -16,8 +16,13 @@ import { getToonGradientMap } from '../../materials/toonGradient';
 // reach beyond that — comfortably inside this plane's ~170-unit radius.
 const SIZE = 340;
 const SEGMENTS = 64;
+// Widened from a 2-color (base/variant) blend to a 3-stop range — the old
+// pair was too close in tone to read as the reference's bold painted
+// light/dark patches; SHADOW/HIGHLIGHT give the macro-noise pass real
+// swing to work with instead of a narrow band.
+const SHADOW_COLOR = new THREE.Color('#3F7A28');
 const BASE_COLOR = new THREE.Color('#7EC850');
-const VARIANT_COLOR = new THREE.Color('#5DAA3A');
+const HIGHLIGHT_COLOR = new THREE.Color('#A8E070');
 const DIRT_FLECK_COLOR = new THREE.Color('#8A7550');
 const NOISE_FREQUENCY = 0.08;
 const MAX_DISPLACEMENT = 0.4;
@@ -100,9 +105,13 @@ export const Terrain = forwardRef<THREE.Mesh>(function Terrain(_props, ref) {
       // for scattered patches of bare soil instead of pure grass-on-grass.
       const macro = valueNoise(x * 0.035, z * 0.035);
       const micro = valueNoise(x * 0.4, z * 0.4);
-      const t = THREE.MathUtils.clamp(macro * 0.6 + micro * 0.4, 0, 1);
-      color.copy(BASE_COLOR).lerp(VARIANT_COLOR, t * 0.7);
-      if (micro > 0.86) color.lerp(DIRT_FLECK_COLOR, ((micro - 0.86) / 0.14) * 0.55);
+      const t = THREE.MathUtils.clamp(macro * 0.75 + micro * 0.25, 0, 1);
+      // Three-stop blend (shadow -> base -> highlight) instead of a plain
+      // two-color lerp, so the macro pass produces real bold light/dark
+      // patches rather than a narrow, subtle tint shift.
+      if (t < 0.5) color.copy(SHADOW_COLOR).lerp(BASE_COLOR, t * 2);
+      else color.copy(BASE_COLOR).lerp(HIGHLIGHT_COLOR, (t - 0.5) * 2);
+      if (micro > 0.84) color.lerp(DIRT_FLECK_COLOR, ((micro - 0.84) / 0.16) * 0.6);
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
