@@ -1,6 +1,7 @@
 import { forwardRef, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text, Billboard } from '@react-three/drei';
+import { Select } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { getToonGradientMap } from '../../materials/toonGradient';
 
@@ -112,12 +113,17 @@ export const Niro = forwardRef<THREE.Group, Props>(function Niro({ movingRef }, 
 
   return (
     <group ref={ref}>
-      <Leg x={-0.13} z={-0.13} legRef={(el) => (legRefs.current[0] = el)} />
-      <Leg x={0.13} z={-0.13} legRef={(el) => (legRefs.current[1] = el)} />
-      <Leg x={-0.13} z={0.13} legRef={(el) => (legRefs.current[2] = el)} />
-      <Leg x={0.13} z={0.13} legRef={(el) => (legRefs.current[3] = el)} />
+      {/* Only the body meshes go in the outline selection — the nametag
+          below is a sibling outside it, or it'd get outlined too (its
+          Billboard/Text mesh would register as just another selectable
+          object, showing as a stray rectangle floating over Niro's head). */}
+      <Select enabled>
+        <Leg x={-0.13} z={-0.13} legRef={(el) => (legRefs.current[0] = el)} />
+        <Leg x={0.13} z={-0.13} legRef={(el) => (legRefs.current[1] = el)} />
+        <Leg x={-0.13} z={0.13} legRef={(el) => (legRefs.current[2] = el)} />
+        <Leg x={0.13} z={0.13} legRef={(el) => (legRefs.current[3] = el)} />
 
-      <group ref={bodyBobRef}>
+        <group ref={bodyBobRef}>
         {/* Body — small relative to the head, chibi-style. */}
         <mesh position={[0, BODY_CENTER_Y, 0]} castShadow>
           <boxGeometry args={BODY_SIZE} />
@@ -187,6 +193,7 @@ export const Niro = forwardRef<THREE.Group, Props>(function Niro({ movingRef }, 
           </mesh>
         </group>
       </group>
+      </Select>
 
       <Billboard position={[0, 1.65, 0]}>
         <Text fontSize={0.3} color="#FFFFFF" outlineWidth={0.02} outlineColor="#000000" anchorX="center" anchorY="middle">

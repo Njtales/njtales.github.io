@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import * as THREE from 'three';
+import { Selection, EffectComposer, Outline } from '@react-three/postprocessing';
 import { Terrain } from './Terrain';
 import { FollowCamera } from './FollowCamera';
 import { Buildings } from './Buildings';
@@ -15,7 +16,7 @@ export function Scene() {
   useProximityCheck();
 
   return (
-    <>
+    <Selection>
       {/* Background matches the fog color exactly — with the shallower
           camera now able to see past the fogged terrain into empty space
           (nothing rendered beyond the ground plane's edge), a mismatched
@@ -30,6 +31,17 @@ export function Scene() {
       <ambientLight color="#FFFFFF" intensity={0.6} />
       <directionalLight color="#FFF5E0" intensity={1.2} position={[10, 20, 10]} />
 
+      {/* Ink-outline effect on buildings + Niro (each wraps itself in
+          <Select enabled> — Buildings.tsx, Niro via NiroController.tsx).
+          A real postprocessing pass gives consistent, crisp silhouette
+          lines across every object it wraps in one place, instead of the
+          per-object "wider mesh underneath" trick used for the dirt
+          paths — better suited to paths' flat ribbons than to the
+          buildings' and Niro's fully 3D silhouettes. */}
+      <EffectComposer autoClear={false}>
+        <Outline blur={false} edgeStrength={8} visibleEdgeColor={0x1a0a00} hiddenEdgeColor={0x1a0a00} xRay={false} />
+      </EffectComposer>
+
       <FollowCamera />
       <Terrain ref={terrainRef} />
       <Mountains />
@@ -38,6 +50,6 @@ export function Scene() {
       <Foliage />
       <Buildings />
       <NiroController terrainRef={terrainRef} />
-    </>
+    </Selection>
   );
 }
