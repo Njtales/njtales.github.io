@@ -6,7 +6,15 @@ import { useKeyboard } from '../../hooks/useKeyboard';
 import { useStore } from '../../store/useStore';
 
 const MOVE_SPEED = 5; // units/sec
-const ROTATE_RESPONSE = 10; // slerp speed — higher = snappier turn-to-face
+// Slerp speed — higher = snappier turn-to-face. Was 10, which felt snappy
+// for small turns but whipped hard on a full reversal: slerp's per-frame
+// step is a fixed *fraction* of the remaining angle, so the very first
+// frame after a 180deg flip is also the single biggest turn it ever makes
+// (measured: ~31deg in one ~16ms frame, i.e. ~1800deg/sec for that instant)
+// — most noticeable exactly when least wanted, right at the moment of
+// direction change. 5 roughly halves that peak (~15-18deg on a reversal)
+// while keeping smaller turns reasonably prompt.
+const ROTATE_RESPONSE = 5;
 // Niro's own group origin sits at ground level (the legs' feet, y=0 inside
 // Niro.tsx) rather than at the character's vertical center, so no extra
 // lift is needed here to plant it on the terrain — offsetting by "half

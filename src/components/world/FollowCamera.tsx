@@ -14,17 +14,7 @@ import { useStore } from '../../store/useStore';
 // This is a real change to camera *feel* (more 3rd-person chase, less
 // top-down), done deliberately after flagging the tradeoff.
 const OFFSET = { x: 0, y: 6, z: 13 };
-const LOOKAHEAD_DIST = 2;
 const FOLLOW_LERP = 0.08;
-// heading (NiroController's atan2 of raw input direction) jumps instantly
-// on any direction change - e.g. releasing 'w' for 'a' snaps it 90deg in a
-// single frame, confirmed by instrumenting camera yaw: an ~8.5deg jump in
-// one ~18ms frame, vs ~0.3deg/frame during steady movement (~25x). The old
-// code fed that straight into lookTarget.set(...) every frame, so the
-// camera's *aim* snapped exactly as abruptly even though its *position*
-// was already smoothly lerped - that mismatch (smooth position, snapping
-// look direction) is what reads as a jerk specifically on turns. Lerping
-// the look target the same way position is lerped fixes it.
 const LOOKAT_LERP = 0.15;
 
 /**
@@ -32,35 +22,41 @@ const LOOKAT_LERP = 0.15;
  * position straight from the store each frame via getState() (not the
  * reactive hook) so a 60fps position write doesn't route through React's
  * render cycle just to move a camera.
+ *
+ * Deliberately does NOT look toward the character's facing/heading. An
+ * earlier version offset the look-at point 2 units ahead of the character's
+ * movement direction as a "gaze ahead" cue — but `heading` (NiroController's
+ * raw atan2 of input direction) jumps instantly on every direction change,
+ * so that offset gave the camera's *view* a rotation tied directly to key
+ * presses, on top of its already-smooth position follow. Even after
+ * smoothing that offset with a lerp, it was still extra camera rotation the
+ * player didn't ask for every time they turned. Looking directly at the
+ * character's (smoothly-moving) position instead means the camera only
+ * rotates as a side effect of position changing, never from a key press by
+ * itself — no heading coupling left to jerk.
  */
 export function FollowCamera() {
   const camRef = useRef<THREE.PerspectiveCamera>(null);
   const desiredPos = useRef(new THREE.Vector3());
-  const desiredLookTarget = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3());
   const initialized = useRef(false);
 
   useFrame(() => {
     const cam = camRef.current;
     if (!cam) return;
-    const { x, z, heading } = useStore.getState().characterPosition;
+    const { x, y, z } = useStore.getState().characterPosition;
 
     desiredPos.current.set(x + OFFSET.x, OFFSET.y, z + OFFSET.z);
     cam.position.lerp(desiredPos.current, FOLLOW_LERP);
 
-    // Leads the character's facing direction slightly rather than centering
-    // exactly on them — a small, subtle "gaze ahead" cue.
-    const aheadX = x + Math.sin(heading) * LOOKAHEAD_DIST;
-    const aheadZ = z + Math.cos(heading) * LOOKAHEAD_DIST;
-    desiredLookTarget.current.set(aheadX, 1, aheadZ);
-
+    const desiredLookTarget = new THREE.Vector3(x, y + 1, z);
     if (!initialized.current) {
       // First frame: snap straight to the target instead of lerping from
       // (0,0,0), which would otherwise itself be a one-time jerk on load.
-      lookTarget.current.copy(desiredLookTarget.current);
+      lookTarget.current.copy(desiredLookTarget);
       initialized.current = true;
     } else {
-      lookTarget.current.lerp(desiredLookTarget.current, LOOKAT_LERP);
+      lookTarget.current.lerp(desiredLookTarget, LOOKAT_LERP);
     }
     cam.lookAt(lookTarget.current);
   });
