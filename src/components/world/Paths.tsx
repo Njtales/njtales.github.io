@@ -26,16 +26,21 @@ const SPAWN = new THREE.Vector2(0, 0);
 // rather than "the path leads you to a clearing the building sits in".
 // This adds a real few units of visible grass between where the path ends
 // and where the pad begins.
-const PAD_CLEARANCE = PAD_RADIUS + 3;
+// Trimmed from +3 to +1.5 alongside the building layout's compression (see
+// data/buildings.ts) — a couple of hub-to-building branches got short
+// enough that +3 would have left near-zero (or negative) room for the
+// curve's own midpoint bend.
+const PAD_CLEARANCE = PAD_RADIUS + 1.5;
 
 // Three junction points a short walk out from spawn, one per loose building
 // cluster below — turns what used to be 7 independent spawn-to-building
 // spokes (an obvious wheel from above) into a branching road: one trunk to
 // each junction, then short branches off to the buildings in that cluster.
+// Scaled by the same ~65% factor as the building positions.
 const HUBS = {
-  west: new THREE.Vector2(-9, 1),
-  north: new THREE.Vector2(5, -7),
-  south: new THREE.Vector2(2, 9),
+  west: new THREE.Vector2(-5.85, 0.65),
+  north: new THREE.Vector2(3.25, -4.55),
+  south: new THREE.Vector2(1.3, 5.85),
 } as const;
 
 type HubName = keyof typeof HUBS;

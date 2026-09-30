@@ -21,12 +21,13 @@ const ROTATE_RESPONSE = 5;
 // character height" would float it in the air.
 const HEIGHT_OFFSET = 0;
 const HEIGHT_LERP = 0.15;
-// The 80x80 world has no visible hard walls (fog fades the edges out
-// instead), but the character still shouldn't be able to wander past the
-// point that stops making sense — clamped a little past the nominal
-// walkable ~60x60 so the stop is never felt in practice, just quietly
-// there before the player would want to go further anyway.
-const WORLD_BOUND = 35;
+// No visible hard walls (fog fades the edges out instead), but the
+// character still shouldn't be able to wander past the point that stops
+// making sense. Shrunk from 35 alongside the building layout's compression
+// ("make buildings even closer") — the farthest building now sits at
+// radius ~18 rather than ~27, so the old bound would have left a large ring
+// of walkable-but-pointless empty ground around a now-tighter cluster.
+const WORLD_BOUND = 26;
 
 const UP = new THREE.Vector3(0, 1, 0);
 const DOWN = new THREE.Vector3(0, -1, 0);
