@@ -9,7 +9,11 @@ export default function App() {
     <div className="w-screen h-screen overflow-hidden relative">
       <Canvas
         shadows={{ type: THREE.PCFSoftShadowMap }}
-        gl={{ powerPreference: 'high-performance', toneMapping: THREE.NoToneMapping }}
+        // Cineon tone mapping (not the flat NoToneMapping used before) is
+        // what gives real contrast/warmth to lit surfaces instead of a flat
+        // raw-lit look — confirmed by reading a working reference project
+        // built on the same stack that nails this exact visual target.
+        gl={{ powerPreference: 'high-performance', toneMapping: THREE.CineonToneMapping }}
         dpr={[1, 2]}
       >
         <Scene />

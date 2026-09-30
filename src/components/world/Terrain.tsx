@@ -1,6 +1,5 @@
 import { forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { getToonGradientMap } from '../../materials/toonGradient';
 
 // Visual ground plane is deliberately bigger than the island itself so the
 // surrounding open water still has something to render on, and the plane's
@@ -162,7 +161,6 @@ export const Terrain = forwardRef<THREE.Mesh>(function Terrain(_props, ref) {
   // spec's own Phase 1 allowance ("terrain can be flat/no texture at this
   // stage"), vertex color alone carries this checkpoint; texture detail is
   // a later refinement once the island shape itself is confirmed.
-  const gradientMap = useMemo(() => getToonGradientMap(), []);
 
   const geometry = useMemo(() => {
     const geo = new THREE.PlaneGeometry(SIZE, SIZE, SEGMENTS, SEGMENTS);
@@ -200,8 +198,17 @@ export const Terrain = forwardRef<THREE.Mesh>(function Terrain(_props, ref) {
   }, []);
 
   return (
-    <mesh ref={ref} geometry={geometry} receiveShadow={false} name="terrain">
-      <meshToonMaterial vertexColors gradientMap={gradientMap} />
+    <mesh ref={ref} geometry={geometry} receiveShadow name="terrain">
+      {/* Switched from MeshToonMaterial to MeshStandardMaterial per a
+          working reference on the same stack — flat toon bands read
+          noticeably flatter/less grounded than real lit shading once
+          shadows are actually received (receiveShadow was false before,
+          silently making all that castShadow work on buildings/Niro a
+          no-op here). No flatShading here: our analytic per-vertex normals
+          already avoid PlaneGeometry's diagonal-triangulation artifact,
+          and flatShading would derive flat per-face normals from the raw
+          triangles instead, reintroducing it. */}
+      <meshStandardMaterial vertexColors roughness={1} />
     </mesh>
   );
 });

@@ -28,8 +28,23 @@ export function Scene() {
           full fog-opacity, where it'd be invisible. Near stays at 35. */}
       <fog attach="fog" args={['#B8E0F0', 35, 100]} />
 
-      <ambientLight color="#FFFFFF" intensity={0.6} />
-      <directionalLight color="#FFF5E0" intensity={1.2} position={[10, 20, 10]} />
+      {/* Intensities and warm directional color matched to a working
+          reference project on the same stack — our old 0.6/1.2 read flat
+          and under-lit by comparison. Shadow-camera bounds sized to cover
+          the whole island (radius ~36) so nothing outside the frustum
+          silently drops its shadow. */}
+      <ambientLight color="#FFFFFF" intensity={2.1} />
+      <directionalLight
+        color="#FFF2CE"
+        intensity={2.1}
+        position={[-10, 22, 12]}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-36}
+        shadow-camera-right={36}
+        shadow-camera-top={36}
+        shadow-camera-bottom={-36}
+      />
 
       {/* Ink-outline effect on buildings + Niro (each wraps itself in
           <Select enabled> — Buildings.tsx, Niro via NiroController.tsx).
