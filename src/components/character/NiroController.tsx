@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { Niro } from './Niro';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { useStore } from '../../store/useStore';
+import { maxWalkableRadiusAt } from '../world/Terrain';
 
 const MOVE_SPEED = 5; // units/sec
 // Slerp speed — higher = snappier turn-to-face. Was 10, which felt snappy
@@ -21,13 +22,6 @@ const ROTATE_RESPONSE = 5;
 // character height" would float it in the air.
 const HEIGHT_OFFSET = 0;
 const HEIGHT_LERP = 0.15;
-// No visible hard walls (fog fades the edges out instead), but the
-// character still shouldn't be able to wander past the point that stops
-// making sense. Shrunk from 35 alongside the building layout's compression
-// ("make buildings even closer") — the farthest building now sits at
-// radius ~18 rather than ~27, so the old bound would have left a large ring
-// of walkable-but-pointless empty ground around a now-tighter cluster.
-const WORLD_BOUND = 26;
 
 const UP = new THREE.Vector3(0, 1, 0);
 const DOWN = new THREE.Vector3(0, -1, 0);
@@ -88,8 +82,23 @@ export function NiroController({ terrainRef }: Props) {
       const len = Math.hypot(dx, dz); // normalize so diagonals aren't faster
       dx /= len;
       dz /= len;
-      group.position.x = THREE.MathUtils.clamp(group.position.x + dx * MOVE_SPEED * delta, -WORLD_BOUND, WORLD_BOUND);
-      group.position.z = THREE.MathUtils.clamp(group.position.z + dz * MOVE_SPEED * delta, -WORLD_BOUND, WORLD_BOUND);
+      const nx = group.position.x + dx * MOVE_SPEED * delta;
+      const nz = group.position.z + dz * MOVE_SPEED * delta;
+      // Radial clamp against the island's actual (non-circular) coastline,
+      // not a fixed-radius circle or axis-aligned square — a square's
+      // corners would reach past the coastline at some angles and let the
+      // character walk straight into open water.
+      const r = Math.hypot(nx, nz);
+      const theta = Math.atan2(nz, nx);
+      const maxR = maxWalkableRadiusAt(theta);
+      if (r > maxR) {
+        const scale = maxR / r;
+        group.position.x = nx * scale;
+        group.position.z = nz * scale;
+      } else {
+        group.position.x = nx;
+        group.position.z = nz;
+      }
       headingRef.current = Math.atan2(dx, dz);
     }
 

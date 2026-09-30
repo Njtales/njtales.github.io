@@ -4,16 +4,23 @@ import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore } from '../../store/useStore';
 
-// Shallowed from {14, 11} (~50 deg downward tilt) to {6, 13} (~21 deg) — at
-// the steeper angle the frustum's top edge never looked higher than ~25 deg
-// below horizontal from any character position (fixed offset => fixed
-// pitch, doesn't vary with position), so no sky or distant landmark could
-// ever appear on screen, confirmed both by the numbers and empirically in
-// the browser (a mountain ring built for a "big vista" backdrop was
-// completely invisible - solid ground to the top edge of every screenshot).
-// This is a real change to camera *feel* (more 3rd-person chase, less
-// top-down), done deliberately after flagging the tradeoff.
-const OFFSET = { x: 0, y: 6, z: 13 };
+// Raised/pulled back from {6, 13} (~21 deg tilt) toward the reference
+// island composition's more "looking down and across a diorama" feel.
+// Note the reference's own stated "50-55 deg down" can't be taken as a
+// literal boresight pitch — at any FOV wide enough to also show a horizon
+// band at the top of frame (which the reference clearly has), a 50+ deg
+// pitch mathematically never reaches back up to horizontal (confirmed by
+// this exact math when the previous mountain-visibility bug was fixed).
+// It's almost certainly describing the ground's apparent foreshortening,
+// not a literal camera angle. Tuned by eye instead: taller/further offset
+// plus a narrower fov for a more compressed, isometric-leaning look, while
+// keeping enough frustum headroom above the boresight to still show sky.
+const OFFSET = { x: 0, y: 11, z: 14 };
+const FOV = 44;
+// Aim a couple units above the character (not just head height) so the
+// frustum's centerline tilts up slightly — more of the village and horizon
+// in frame, less "staring at Niro's feet".
+const LOOK_HEIGHT_OFFSET = 2;
 const FOLLOW_LERP = 0.08;
 const LOOKAT_LERP = 0.15;
 
@@ -49,7 +56,7 @@ export function FollowCamera() {
     desiredPos.current.set(x + OFFSET.x, OFFSET.y, z + OFFSET.z);
     cam.position.lerp(desiredPos.current, FOLLOW_LERP);
 
-    const desiredLookTarget = new THREE.Vector3(x, y + 1, z);
+    const desiredLookTarget = new THREE.Vector3(x, y + LOOK_HEIGHT_OFFSET, z);
     if (!initialized.current) {
       // First frame: snap straight to the target instead of lerping from
       // (0,0,0), which would otherwise itself be a one-time jerk on load.
@@ -61,5 +68,5 @@ export function FollowCamera() {
     cam.lookAt(lookTarget.current);
   });
 
-  return <PerspectiveCamera ref={camRef} makeDefault fov={50} position={[OFFSET.x, OFFSET.y, OFFSET.z]} />;
+  return <PerspectiveCamera ref={camRef} makeDefault fov={FOV} position={[OFFSET.x, OFFSET.y, OFFSET.z]} />;
 }
