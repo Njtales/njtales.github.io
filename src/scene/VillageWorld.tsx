@@ -988,21 +988,32 @@ function HeroCharacter({ onOpen }: { onOpen: (spot: PortfolioSpot) => void }) {
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
       const code = event.code
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'KeyE', 'Enter'].includes(code)) event.preventDefault()
+      const gameKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'KeyE', 'Enter']
+      if (gameKeys.includes(code)) event.preventDefault()
+      if (document.querySelector('[role="dialog"]')) {
+        pressed.current[code] = false
+        return
+      }
       pressed.current[code] = true
       if ((code === 'KeyE' || code === 'Enter') && nearby) onOpen(nearby)
     }
     const up = (event: KeyboardEvent) => { pressed.current[event.code] = false }
+    const resetMovement = () => { pressed.current = {} }
+    const resetWhenHidden = () => { if (document.hidden) resetMovement() }
     const pad = (event: Event) => {
       const { code, down: isDown } = (event as CustomEvent<{ code: string; down: boolean }>).detail
       pressed.current[code] = isDown
     }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
+    window.addEventListener('blur', resetMovement)
+    document.addEventListener('visibilitychange', resetWhenHidden)
     window.addEventListener('coastlight:move', pad)
     return () => {
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
+      window.removeEventListener('blur', resetMovement)
+      document.removeEventListener('visibilitychange', resetWhenHidden)
       window.removeEventListener('coastlight:move', pad)
     }
   }, [nearby, onOpen])

@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber'
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { VillageWorld } from './VillageWorld'
 import { portfolioSpots, type PortfolioSpot } from './portfolioData'
 
@@ -68,6 +68,39 @@ function PortfolioMap({ selectedId, onSelect }: { selectedId: string | null; onS
 
 export default function App() {
   const [selected, setSelected] = useState<PortfolioSpot | null>(null)
+  const dialogRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (!selected) return
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const dialog = dialogRef.current
+    const closeButton = dialog?.querySelector<HTMLButtonElement>('[data-dialog-close]')
+    closeButton?.focus()
+    const handleDialogKeys = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setSelected(null)
+        return
+      }
+      if (event.key !== 'Tab' || !dialog) return
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'))
+      if (!focusable.length) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    window.addEventListener('keydown', handleDialogKeys)
+    return () => {
+      window.removeEventListener('keydown', handleDialogKeys)
+      previousFocus?.focus()
+    }
+  }, [selected])
 
   return (
     <main className="app-shell">
@@ -107,8 +140,8 @@ export default function App() {
       <div className="control-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows to explore <span>·</span> walk to a landmark and press <kbd>E</kbd></div>
       {selected && (
         <div className="panel-backdrop" role="presentation" onClick={() => setSelected(null)}>
-          <section className="portfolio-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" onClick={(event) => event.stopPropagation()}>
-            <div className="panel-topline"><span>{selected.section}</span><button type="button" aria-label="Close panel" onClick={() => setSelected(null)}>×</button></div>
+          <section ref={dialogRef} className="portfolio-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" onClick={(event) => event.stopPropagation()}>
+            <div className="panel-topline"><span>{selected.section}</span><button data-dialog-close type="button" aria-label="Close panel" onClick={() => setSelected(null)}>×</button></div>
             <h2 id="panel-title">{selected.title}</h2>
             <p>{selected.description}</p>
             <div className="portfolio-entries">

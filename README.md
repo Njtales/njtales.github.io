@@ -25,4 +25,8 @@ Vite prints the local preview URL, usually `http://localhost:5173/`.
 
 ## Portfolio content
 
-The seven cards now use Nikhil's supplied role, career direction, AWS and data engineering stack, project outlines, learning goals, interests, and personal philosophy. Dates, measured outcomes, project repositories, certification status, email, professional profile, and CV links still need verification or source material before public launch.
+The seven cards use Nikhil's supplied role, career direction, AWS and data engineering stack, project outlines, learning goals, interests, and personal philosophy. Add verified dates, measured outcomes, project repositories, certification status, email, professional profile, and CV links as those details become available.
+
+## Deployment
+
+The site is published at [njtales.github.io](https://njtales.github.io/) through GitHub Pages. Commits to `main` build the Vite app and deploy the `dist` directory using the workflow in `.github/workflows/pages.yml`.
