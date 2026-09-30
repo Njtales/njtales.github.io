@@ -32,24 +32,16 @@ const SPAWN = new THREE.Vector2(0, 0);
 // curve's own midpoint bend.
 const PAD_CLEARANCE = PAD_RADIUS + 1.5;
 
-// Three junction points a short walk out from spawn, one per loose building
-// cluster below — turns what used to be 7 independent spawn-to-building
-// spokes (an obvious wheel from above) into a branching road: one trunk to
-// each junction, then short branches off to the buildings in that cluster.
-// Scaled by the same ~65% factor as the building positions.
-const HUBS = {
-  west: new THREE.Vector2(-5.85, 0.65),
-  north: new THREE.Vector2(3.25, -4.55),
-  south: new THREE.Vector2(1.3, 5.85),
-} as const;
-
-type HubName = keyof typeof HUBS;
-
-const CLUSTERS: Record<HubName, BuildingId[]> = {
-  west: ['techstack', 'hobbies'],
-  north: ['projects', 'experience'],
-  south: ['learning', 'about', 'contact'],
-};
+// A single junction a short walk out from spawn, just before the (now
+// tightly clustered) village — one trunk from spawn, then a branch out to
+// each of the six buildings that make up the cluster. Signal Station is
+// deliberately left out of this cluster: at its position (close to both the
+// hub and Data Tower, "a waypoint between Data Tower and the About/Hobbies
+// pair" per the reference mapping) a hub-branch would be shorter than
+// PAD_CLEARANCE, breaking the curve's own trim-back math — it gets a direct
+// spawn branch instead (see CONTACT_SEGMENT below).
+const VILLAGE_HUB = new THREE.Vector2(0, -4);
+const VILLAGE_CLUSTER: BuildingId[] = ['techstack', 'experience', 'projects', 'learning', 'about', 'hobbies'];
 
 function seeded(n: number): number {
   const s = Math.sin(n * 12.9898) * 43758.5453;
@@ -142,13 +134,15 @@ export function Paths() {
     const list: Segment[] = [];
     let seed = 0;
 
-    (Object.keys(HUBS) as HubName[]).forEach((hub) => {
-      list.push({ from: SPAWN, to: HUBS[hub], clearance: 0, width: TRUNK_WIDTH, seed: seed++ });
-      for (const id of CLUSTERS[hub]) {
-        const [x, , z] = getBuilding(id).position;
-        list.push({ from: HUBS[hub], to: new THREE.Vector2(x, z), clearance: PAD_CLEARANCE, width: BRANCH_WIDTH, seed: seed++ });
-      }
-    });
+    list.push({ from: SPAWN, to: VILLAGE_HUB, clearance: 0, width: TRUNK_WIDTH, seed: seed++ });
+    for (const id of VILLAGE_CLUSTER) {
+      const [x, , z] = getBuilding(id).position;
+      list.push({ from: VILLAGE_HUB, to: new THREE.Vector2(x, z), clearance: PAD_CLEARANCE, width: BRANCH_WIDTH, seed: seed++ });
+    }
+    // Signal Station: direct spawn branch, not through the hub (see the
+    // comment on VILLAGE_CLUSTER above for why).
+    const [sx, , sz] = getBuilding('contact').position;
+    list.push({ from: SPAWN, to: new THREE.Vector2(sx, sz), clearance: PAD_CLEARANCE, width: BRANCH_WIDTH, seed: seed++ });
 
     // Each segment becomes two ribbons sharing one curve: a wider, darker
     // "edge" underneath and the normal-width tan "fill" on top, so the edge

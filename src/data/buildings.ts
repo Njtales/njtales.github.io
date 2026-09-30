@@ -11,24 +11,27 @@ export interface BuildingDef {
   height: number;
 }
 
-// Positions deliberately avoid a uniform radius/angle spread around spawn —
-// an earlier version placed every building at a 15-23 unit radius, which,
-// combined with dead-straight spawn-to-building paths, read as an obvious
-// spoke wheel from the follow camera's overhead-leaning angle. These vary
-// in radius and cluster loosely by direction (matched by Paths.tsx's hub
-// grouping) for a more organic town feel.
-//
-// Compressed to ~65% of the original spread ("make buildings even closer")
-// — same relative layout/clustering, shorter walks between them. Paths.tsx's
-// HUBS were scaled by the same factor, and PAD_CLEARANCE was trimmed from
-// PAD_RADIUS+3 to PAD_RADIUS+1.5 since a couple of hub-to-building branches
-// would otherwise have ended up shorter than the old clearance margin.
+// Repositioned into a tight clustered "village" per the reference-image
+// mapping, replacing the earlier loose radial spread entirely:
+// - Clocktower (experience): back-left, the tallest anchor of the skyline.
+// - Cloud Forge (techstack): front-left, immediately adjacent to Clocktower.
+// - Data Tower (projects): center, the main hub — Clocktower on its left,
+//   About Cottage on its right, pads nearly touching all three.
+// - Learning Lab (learning): isolated ~7 units off the core cluster's
+//   west side, meant to sit apart with foliage filling the gap.
+// - About Cottage (about) + Hobbies Hut (hobbies): a close cosy pair
+//   right of Data Tower.
+// - Signal Station (contact): centre-right, between Data Tower and the
+//   About/Hobbies pair — a waypoint, not deep in the cluster.
+// Paths.tsx's hub was moved/re-clustered to match (single "village" hub
+// close to the core six, Signal Station branching straight from spawn
+// since it's too close to the hub for a hub-branch's own clearance trim).
 export const BUILDINGS: BuildingDef[] = [
   {
     id: 'projects',
     name: 'The Data Tower',
     panelHeader: 'Projects',
-    position: [14.3, 0, -9.1],
+    position: [1, 0, -9],
     color: '#2E7D9E',
     height: 10,
   },
@@ -36,7 +39,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: 'techstack',
     name: 'The Cloud Forge',
     panelHeader: 'Tech Stack',
-    position: [-8.45, 0, -3.9],
+    position: [-4.5, 0, -7],
     color: '#D4602A',
     height: 6,
   },
@@ -44,7 +47,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: 'experience',
     name: 'The Career Clocktower',
     panelHeader: 'Experience',
-    position: [5.2, 0, -16.9],
+    position: [-3, 0, -10],
     color: '#7B3F8C',
     height: 14,
   },
@@ -52,7 +55,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: 'learning',
     name: 'The Learning Lab',
     panelHeader: 'Currently Learning',
-    position: [-5.85, 0, 5.85],
+    position: [-11, 0, -6],
     color: '#2A9D6F',
     height: 7,
   },
@@ -60,7 +63,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: 'about',
     name: 'The About Cottage',
     panelHeader: 'About Niro',
-    position: [9.75, 0, 5.2],
+    position: [5, 0, -8],
     color: '#C0392B',
     height: 6,
   },
@@ -68,7 +71,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: 'hobbies',
     name: 'The Hobbies Hut',
     panelHeader: 'Beyond the Code',
-    position: [-15.6, 0, 6.5],
+    position: [7.5, 0, -6],
     color: '#E8A020',
     height: 6,
   },
@@ -76,7 +79,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: 'contact',
     name: 'The Signal Station',
     panelHeader: 'Get in Touch',
-    position: [1.95, 0, 15.6],
+    position: [3.5, 0, -6.5],
     color: '#3A5F8A',
     height: 7,
   },
