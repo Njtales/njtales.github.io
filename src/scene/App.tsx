@@ -137,7 +137,10 @@ export default function App() {
       <PortfolioMap selectedId={selected?.id ?? null} onSelect={setSelected} />
       <div className="scene-note">WORLD 01 <span>·</span> THE SHORE</div>
       <MovementPad />
-      <div className="control-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows to explore <span>·</span> walk to a landmark and press <kbd>E</kbd></div>
+      <div className="control-hint">
+        <span className="desktop-controls"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows to explore <i>·</i> walk to a landmark and press <kbd>E</kbd></span>
+        <span className="touch-controls">Use arrows to move <i>·</i> tap a map pin to explore</span>
+      </div>
       {selected && (
         <div className="panel-backdrop" role="presentation" onClick={() => setSelected(null)}>
           <section ref={dialogRef} className="portfolio-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" onClick={(event) => event.stopPropagation()}>
