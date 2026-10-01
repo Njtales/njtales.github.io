@@ -49,13 +49,13 @@ function pointInWorldShape(x: number, z: number, polygon: THREE.Vector2[]) {
 }
 
 const buildingFootprints: Record<string, [number, number]> = {
-  'clocktower': [1.5, 1.45],
+  'clocktower': [1.72, 1.55],
   'cloud-forge': [2.45, 1.65],
-  'data-tower': [2.9, 1.95],
-  'learning-lab': [1.55, 1.5],
-  'about-cottage': [1.55, 1.3],
-  'hobbies-hut': [1.55, 1.25],
-  'signal-station': [0.72, 0.72],
+  'data-tower': [1.7, 1.65],
+  'learning-lab': [1.95, 1.65],
+  'about-cottage': [1.9, 1.85],
+  'hobbies-hut': [1.75, 1.7],
+  'signal-station': [1.12, 1.05],
 }
 
 function canWalkTo(x: number, z: number) {
@@ -375,45 +375,134 @@ function BuildingInk() {
   return <Outlines color="#3d1f0a" thickness={0.032} screenspace transparent opacity={0.82} angle={0} />
 }
 
-function Cottage({ position, scale = 1, wall = '#bd8655', roof = '#a84f39', playful = false }: {
-  position: [number, number, number]
-  scale?: number
-  wall?: string
-  roof?: string
-  playful?: boolean
-}) {
+function AboutCottage() {
   return (
-    <group position={position} scale={scale}>
-      <mesh castShadow receiveShadow position={[0, 0.9, 0]}>
-        <boxGeometry args={playful ? [2.4, 1.75, 1.9] : [2.8, 1.85, 2.1]} />
-        <meshStandardMaterial color={wall} roughness={0.95} />
+    <group position={[-3.75, 0.34, -2.2]} scale={0.9}>
+      <mesh castShadow receiveShadow position={[0, 0.9, 0]} rotation={[0, 0, -0.025]}>
+        <boxGeometry args={[2.65, 1.8, 2.05]} />
+        <meshStandardMaterial color="#d7b785" roughness={0.96} />
         <BuildingInk />
       </mesh>
-      <GableRoof width={playful ? 2.85 : 3.25} depth={playful ? 2.05 : 2.3} ridge={playful ? 2.72 : 3.12} eave={playful ? 1.7 : 1.8} color={roof} />
-      <mesh position={[0, 0.61, 1.07]}>
-        <boxGeometry args={[0.5, 1.15, 0.08]} />
-        <meshStandardMaterial color="#55392c" roughness={1} />
+      <GableRoof width={3.32} depth={2.35} ridge={3.08} eave={1.75} color="#a9533d" />
+      <mesh castShadow position={[0.22, 0.48, 1.57]}>
+        <boxGeometry args={[2.8, 0.16, 1.05]} />
+        <meshStandardMaterial color="#805c3c" roughness={1} />
+        <BuildingInk />
       </mesh>
-      {[-0.82, 0.82].map((x) => (
-        <group key={x} position={[x, 1.1, 1.08]}>
+      <mesh castShadow position={[0.16, 2.02, 1.62]} rotation={[0.04, 0, 0.035]}>
+        <boxGeometry args={[2.9, 0.18, 1.15]} />
+        <meshStandardMaterial color="#bd7548" roughness={0.95} />
+        <BuildingInk />
+      </mesh>
+      {[-1.02, 1.18].map((x) => (
+        <mesh key={`porch-post-${x}`} castShadow position={[x, 1.25, 1.92]} rotation={[0, 0, x < 0 ? -0.025 : 0.025]}>
+          <cylinderGeometry args={[0.075, 0.095, 1.48, 6]} />
+          <meshStandardMaterial color="#795638" roughness={1} />
+          <BuildingInk />
+        </mesh>
+      ))}
+      <mesh castShadow position={[0.26, 0.73, 1.06]}>
+        <boxGeometry args={[0.48, 1.22, 0.08]} />
+        <meshStandardMaterial color="#55392c" roughness={1} />
+        <BuildingInk />
+      </mesh>
+      {[-0.88, 0.92].map((x) => (
+        <group key={`about-window-${x}`} position={[x, 1.2, 1.055]}>
           <mesh>
-            <boxGeometry args={[0.42, 0.44, 0.09]} />
-            <meshStandardMaterial color="#f0d080" emissive="#b98a42" emissiveIntensity={0.28} roughness={0.5} />
+            <boxGeometry args={[0.48, 0.47, 0.08]} />
+            <meshStandardMaterial color="#f0d080" emissive="#b98a42" emissiveIntensity={0.3} roughness={0.5} />
+            <BuildingInk />
           </mesh>
-          <mesh position={[0, 0, 0.055]}>
-            <boxGeometry args={[0.08, 0.48, 0.025]} />
-            <meshStandardMaterial color="#69472f" />
+          <mesh position={[0, -0.34, 0.07]}>
+            <boxGeometry args={[0.66, 0.13, 0.2]} />
+            <meshStandardMaterial color="#70533a" roughness={1} />
+          </mesh>
+          {[-0.18, 0, 0.18].map((flowerX, i) => (
+            <mesh key={`planter-flower-${x}-${i}`} position={[flowerX, -0.19, 0.13]}>
+              <sphereGeometry args={[0.095, 7, 5]} />
+              <meshStandardMaterial color={i === 1 ? '#e8c94f' : '#dc786e'} roughness={0.9} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      <mesh castShadow position={[-1.04, 2.62, -0.48]} rotation={[0, 0, -0.16]}>
+        <boxGeometry args={[0.42, 1.08, 0.48]} />
+        <meshStandardMaterial color="#805b3d" roughness={1} />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[1.42, 2.15, 1.48]}>
+        <boxGeometry args={[0.1, 0.42, 0.1]} />
+        <meshStandardMaterial color="#60442f" />
+      </mesh>
+      <mesh position={[1.42, 1.88, 1.56]}>
+        <octahedronGeometry args={[0.23, 0]} />
+        <meshStandardMaterial color="#f2bd54" emissive="#d88c31" emissiveIntensity={0.65} />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0, 0.35, 0]}>
+        <boxGeometry args={[3.08, 0.14, 2.42]} />
+        <meshStandardMaterial color="#725942" roughness={1} />
+        <BuildingInk />
+      </mesh>
+    </group>
+  )
+}
+
+function HobbiesHut() {
+  return (
+    <group position={[0.6, 0.34, -3.3]} scale={0.82}>
+      <mesh castShadow receiveShadow position={[0, 0.84, 0]}>
+        <cylinderGeometry args={[1.12, 1.28, 1.62, 9]} />
+        <meshStandardMaterial color="#c5a16d" roughness={0.96} flatShading />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0, 1.65, 0]}>
+        <cylinderGeometry args={[1.45, 1.5, 0.2, 11]} />
+        <meshStandardMaterial color="#714b76" roughness={0.94} flatShading />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0, 1.72, 0]}>
+        <sphereGeometry args={[1.55, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#76568c" roughness={0.88} flatShading side={THREE.DoubleSide} />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0.26, 0.64, 1.22]}>
+        <boxGeometry args={[0.43, 0.92, 0.08]} />
+        <meshStandardMaterial color="#55392c" roughness={1} />
+        <BuildingInk />
+      </mesh>
+      {[-0.53, 0.56].map((x, i) => (
+        <group key={`hobby-porthole-${i}`} position={[x, 1.02, 1.16]}>
+          <mesh>
+            <circleGeometry args={[0.22, 10]} />
+            <meshStandardMaterial color={i ? '#f2bd54' : '#79d5d1'} emissive={i ? '#bc793a' : '#237a83'} emissiveIntensity={0.22} />
+            <BuildingInk />
+          </mesh>
+          <mesh position={[0, 0, 0.025]}>
+            <torusGeometry args={[0.24, 0.045, 5, 10]} />
+            <meshStandardMaterial color="#493544" roughness={1} />
           </mesh>
         </group>
       ))}
-      <mesh castShadow position={[1, 2.6, -0.35]}>
-        <boxGeometry args={[0.38, 0.95, 0.42]} />
-        <meshStandardMaterial color="#8b6240" roughness={1} />
-        <BuildingInk />
-      </mesh>
-      <mesh castShadow position={[0, 0.39, 0]}>
-        <boxGeometry args={[3.05, 0.16, 2.36]} />
-        <meshStandardMaterial color="#725942" roughness={1} />
+      <group position={[0.94, 2.15, 0.68]} rotation={[0, 0, -0.42]}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.075, 0.11, 0.82, 6]} />
+          <meshStandardMaterial color="#d38b55" roughness={0.88} />
+          <BuildingInk />
+        </mesh>
+        <mesh position={[0, 0.46, 0]}>
+          <coneGeometry args={[0.14, 0.25, 5]} />
+          <meshStandardMaterial color="#e6c873" roughness={0.8} />
+          <BuildingInk />
+        </mesh>
+        <mesh position={[0, -0.37, 0]} rotation={[Math.PI, 0, 0]}>
+          <coneGeometry args={[0.11, 0.18, 5]} />
+          <meshStandardMaterial color="#79513a" roughness={0.9} />
+        </mesh>
+      </group>
+      <mesh castShadow position={[0, 0.14, 0]}>
+        <cylinderGeometry args={[1.28, 1.36, 0.22, 9]} />
+        <meshStandardMaterial color="#70573f" roughness={1} />
         <BuildingInk />
       </mesh>
     </group>
@@ -423,56 +512,81 @@ function Cottage({ position, scale = 1, wall = '#bd8655', roof = '#a84f39', play
 function Clocktower() {
   return (
     <group position={[-14.7, 0.34, -2.4]}>
-      <mesh castShadow receiveShadow position={[0, 2.55, 0]}>
-        <cylinderGeometry args={[0.92, 1.2, 5.1, 7]} />
+      <mesh castShadow receiveShadow position={[0, 0.95, 0]}>
+        <cylinderGeometry args={[1.05, 1.36, 1.9, 8]} />
+        <meshStandardMaterial color="#90734f" roughness={0.96} flatShading />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow receiveShadow position={[0, 3.7, 0]}>
+        <cylinderGeometry args={[0.77, 0.96, 3.65, 8]} />
         <meshStandardMaterial color="#a7784b" roughness={0.95} flatShading />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[0, 5.33, 0]}>
-        <coneGeometry args={[1.35, 1.45, 7]} />
+      <mesh castShadow position={[0, 5.68, 0]}>
+        <cylinderGeometry args={[1.16, 0.82, 0.3, 8]} />
+        <meshStandardMaterial color="#725942" roughness={1} />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0, 6.18, 0]}>
+        <coneGeometry args={[1.28, 1.05, 8]} />
         <meshStandardMaterial color="#a84b36" roughness={0.9} flatShading />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[0, 6.55, 0]}>
-        <sphereGeometry args={[0.3, 10, 8]} />
-        <meshStandardMaterial color="#f3ce58" emissive="#e6a52a" emissiveIntensity={0.65} />
-      </mesh>
-      <mesh position={[0, 3.75, 0.94]}>
-        <boxGeometry args={[0.48, 0.68, 0.08]} />
-        <meshStandardMaterial color="#f0d080" emissive="#ca8f38" emissiveIntensity={0.42} />
+      <mesh castShadow position={[0, 6.88, 0]}>
+        <coneGeometry args={[0.82, 0.72, 7]} />
+        <meshStandardMaterial color="#bd7548" roughness={0.92} flatShading />
         <BuildingInk />
       </mesh>
-      <group position={[0, 4.08, 1.02]}>
-        <mesh>
-          <circleGeometry args={[0.59, 16]} />
-          <meshStandardMaterial color="#f0dfbb" roughness={1} />
+      <mesh castShadow position={[0, 7.28, 0]}>
+        <cylinderGeometry args={[0.075, 0.11, 0.52, 6]} />
+        <meshStandardMaterial color="#f3ce58" emissive="#c98227" emissiveIntensity={0.48} />
+      </mesh>
+      <mesh castShadow position={[0.2, 7.32, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <coneGeometry args={[0.25, 0.56, 3]} />
+        <meshStandardMaterial color="#f0c75c" roughness={0.8} />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0.96, 1.02, 0.05]} rotation={[0, 0, 0.035]}>
+        <boxGeometry args={[0.82, 1.55, 1.03]} />
+        <meshStandardMaterial color="#9b7049" roughness={0.98} />
+        <BuildingInk />
+      </mesh>
+      <mesh position={[0.97, 1.0, 0.59]}>
+        <boxGeometry args={[0.32, 0.78, 0.08]} />
+        <meshStandardMaterial color="#f0d080" emissive="#ca8f38" emissiveIntensity={0.34} />
+        <BuildingInk />
+      </mesh>
+      <mesh position={[0, 4.08, 0.83]}>
+        <circleGeometry args={[0.72, 16]} />
+        <meshStandardMaterial color="#f0dfbb" roughness={1} />
+        <BuildingInk />
+      </mesh>
+      <mesh position={[0, 4.08, 0.86]}>
+        <torusGeometry args={[0.76, 0.095, 6, 16]} />
+        <meshStandardMaterial color="#634532" roughness={0.92} />
+        <BuildingInk />
+      </mesh>
+      {Array.from({ length: 8 }, (_, i) => (
+        <mesh key={`clock-mark-${i}`} position={[Math.sin(i * Math.PI / 4) * 0.59, 4.08 + Math.cos(i * Math.PI / 4) * 0.59, 0.9]} rotation={[0, 0, -i * Math.PI / 4]}>
+          <boxGeometry args={[0.055, 0.14, 0.035]} />
+          <meshStandardMaterial color="#705239" roughness={1} />
         </mesh>
-        <mesh>
-          <torusGeometry args={[0.61, 0.075, 6, 16]} />
-          <meshStandardMaterial color="#705239" roughness={0.92} />
-        </mesh>
-        {Array.from({ length: 8 }, (_, i) => (
-          <mesh key={`clock-mark-${i}`} position={[Math.sin(i * Math.PI / 4) * 0.46, Math.cos(i * Math.PI / 4) * 0.46, 0.02]} rotation={[0, 0, -i * Math.PI / 4]}>
-            <boxGeometry args={[0.055, 0.13, 0.035]} />
-            <meshStandardMaterial color="#705239" roughness={1} />
-          </mesh>
-        ))}
-        <mesh position={[0.09, 0.04, 0.045]} rotation={[0, 0, -0.78]}>
-          <boxGeometry args={[0.045, 0.31, 0.04]} />
-          <meshStandardMaterial color="#573b2e" roughness={1} />
-          <BuildingInk />
-        </mesh>
-        <mesh position={[-0.09, -0.08, 0.05]} rotation={[0, 0, 0.5]}>
-          <boxGeometry args={[0.04, 0.22, 0.04]} />
-          <meshStandardMaterial color="#573b2e" roughness={1} />
-        </mesh>
-        <mesh position={[0, 0, 0.07]}>
-          <circleGeometry args={[0.075, 10]} />
-          <meshStandardMaterial color="#a84b36" roughness={0.9} />
-        </mesh>
-      </group>
+      ))}
+      <mesh position={[0.09, 4.12, 0.92]} rotation={[0, 0, -0.78]}>
+        <boxGeometry args={[0.05, 0.38, 0.04]} />
+        <meshStandardMaterial color="#573b2e" roughness={1} />
+        <BuildingInk />
+      </mesh>
+      <mesh position={[-0.12, 3.98, 0.92]} rotation={[0, 0, 0.5]}>
+        <boxGeometry args={[0.045, 0.26, 0.04]} />
+        <meshStandardMaterial color="#573b2e" roughness={1} />
+      </mesh>
+      <mesh castShadow position={[0.3, 6.05, 0.62]}>
+        <boxGeometry args={[0.38, 0.62, 0.1]} />
+        <meshStandardMaterial color="#49352e" roughness={1} />
+      </mesh>
       <mesh castShadow position={[0, 0.12, 0]}>
-        <cylinderGeometry args={[1.28, 1.38, 0.24, 8]} />
+        <cylinderGeometry args={[1.34, 1.45, 0.24, 8]} />
         <meshStandardMaterial color="#786344" roughness={1} />
         <BuildingInk />
       </mesh>
@@ -481,33 +595,75 @@ function Clocktower() {
 }
 
 function LearningLab() {
+  const domeRibs = useMemo(() => [-0.78, -0.39, 0, 0.39, 0.78].map((x) => {
+    const halfArc = Math.sqrt(1.46 ** 2 - x ** 2)
+    const points = Array.from({ length: 9 }, (_, i) => {
+      const y = (i / 8) * halfArc
+      const z = Math.sqrt(Math.max(0, 1.46 ** 2 - x ** 2 - y ** 2))
+      return new THREE.Vector3(x, 1.75 + y, z)
+    })
+    const curve = new THREE.CatmullRomCurve3(points)
+    return new THREE.TubeGeometry(curve, 20, 0.035, 5, false)
+  }), [])
   return (
     <group position={[-22.3, 0.38, -1.5]}>
-      <mesh castShadow position={[0, 0.82, 0]}>
-        <cylinderGeometry args={[1.3, 1.42, 1.65, 9]} />
-        <meshStandardMaterial color="#644f9b" roughness={0.75} />
+      <mesh castShadow receiveShadow position={[0, 0.88, 0]}>
+        <cylinderGeometry args={[1.24, 1.42, 1.75, 9]} />
+        <meshStandardMaterial color="#695990" roughness={0.84} flatShading />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[0, 1.85, 0]}>
-        <octahedronGeometry args={[0.9, 0]} />
-        <meshStandardMaterial color="#73dce2" emissive="#34a7d2" emissiveIntensity={1.1} roughness={0.25} />
-        <BuildingInk />
-      </mesh>
-      <mesh position={[0, 0.1, 0]}>
-        <cylinderGeometry args={[1.25, 1.35, 0.2, 7]} />
+      <mesh castShadow position={[0, 0.14, 0]}>
+        <cylinderGeometry args={[1.34, 1.45, 0.24, 9]} />
         <meshStandardMaterial color="#4d526e" roughness={0.9} />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[0, 0.52, 0]}>
-        <cylinderGeometry args={[1.02, 1.18, 0.72, 7]} />
-        <meshStandardMaterial color="#735e9d" roughness={0.86} flatShading />
+      <mesh castShadow position={[0, 1.75, 0]}>
+        <sphereGeometry args={[1.46, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#86d8d0" transparent opacity={0.64} roughness={0.28} side={THREE.DoubleSide} depthWrite={false} />
+        <BuildingInk />
       </mesh>
-      {[-0.58, 0, 0.58].map((x, i) => (
-        <mesh key={`lab-window-${i}`} position={[x, 0.7, 1.19]} rotation={[0, 0, i === 1 ? 0 : 0.08]}>
-          <boxGeometry args={[0.22, 0.32, 0.08]} />
-          <meshStandardMaterial color="#f0d080" emissive="#c78d3d" emissiveIntensity={0.36} roughness={0.4} />
+      <mesh position={[0, 1.76, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1.43, 0.08, 6, 14]} />
+        <meshStandardMaterial color="#76bdb2" roughness={0.8} />
+        <BuildingInk />
+      </mesh>
+      {domeRibs.map((geometry, i) => (
+        <mesh key={`lab-dome-rib-${i}`} geometry={geometry}>
+          <meshStandardMaterial color="#d2f0d3" roughness={0.7} />
         </mesh>
       ))}
+      <mesh castShadow position={[-1.48, 0.92, -0.25]} rotation={[0, 0, -0.035]}>
+        <boxGeometry args={[0.82, 1.28, 1.34]} />
+        <meshStandardMaterial color="#826d9d" roughness={0.88} />
+        <BuildingInk />
+      </mesh>
+      <mesh position={[-1.48, 0.9, 0.45]}>
+        <boxGeometry args={[0.43, 0.58, 0.08]} />
+        <meshStandardMaterial color="#91e2db" emissive="#388e91" emissiveIntensity={0.3} />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[1.18, 1.16, 0.98]} rotation={[0, 0, -0.25]}>
+        <cylinderGeometry args={[0.11, 0.11, 1.18, 7]} />
+        <meshStandardMaterial color="#9bdcc6" transparent opacity={0.8} roughness={0.25} />
+        <BuildingInk />
+      </mesh>
+      <mesh position={[1.18, 1.0, 1.04]}>
+        <sphereGeometry args={[0.14, 8, 6]} />
+        <meshStandardMaterial color="#f0ce68" emissive="#d28e39" emissiveIntensity={0.5} />
+      </mesh>
+      <mesh position={[1.18, 1.42, 1.04]}>
+        <sphereGeometry args={[0.1, 8, 6]} />
+        <meshStandardMaterial color="#d98c83" emissive="#aa524b" emissiveIntensity={0.25} />
+      </mesh>
+      <mesh position={[0, 0.76, 1.25]}>
+        <boxGeometry args={[0.26, 0.43, 0.08]} />
+        <meshStandardMaterial color="#f0d080" emissive="#c78d3d" emissiveIntensity={0.34} />
+      </mesh>
+      <mesh position={[0.05, 2.95, 0]}>
+        <octahedronGeometry args={[0.28, 0]} />
+        <meshStandardMaterial color="#73dce2" emissive="#34a7d2" emissiveIntensity={0.75} roughness={0.25} />
+        <BuildingInk />
+      </mesh>
     </group>
   )
 }
@@ -515,31 +671,79 @@ function LearningLab() {
 function CloudForge() {
   return (
     <group position={[-18, 0.34, 1.1]}>
-      <mesh castShadow receiveShadow position={[0, 1, 0]}>
-        <boxGeometry args={[4.2, 1.9, 2.75]} />
-        <meshStandardMaterial color="#bd7548" roughness={0.95} />
+      <mesh castShadow receiveShadow position={[0, 1.05, 0]}>
+        <boxGeometry args={[4.05, 2, 2.72]} />
+        <meshStandardMaterial color="#b8754d" roughness={0.96} />
         <BuildingInk />
       </mesh>
-      <GableRoof width={4.8} depth={3.1} ridge={3.55} eave={1.85} color="#b84932" />
-      <mesh castShadow position={[1.45, 2.9, -0.5]}>
-        <cylinderGeometry args={[0.37, 0.48, 1.7, 7]} />
-        <meshStandardMaterial color="#7f4c39" roughness={1} />
+      <mesh castShadow position={[0, 2.26, 0]} rotation={[0.035, 0.015, -0.035]}>
+        <cylinderGeometry args={[2.08, 2.44, 0.48, 8]} />
+        <meshStandardMaterial color="#a94e3b" roughness={0.92} flatShading />
         <BuildingInk />
       </mesh>
-      <mesh position={[0.68, 1.1, 1.4]}>
-        <boxGeometry args={[0.72, 1.4, 0.1]} />
-        <meshStandardMaterial color="#573b2e" roughness={1} />
+      <mesh castShadow position={[-1.35, 3.12, -0.55]} rotation={[0.03, 0, -0.08]}>
+        <cylinderGeometry args={[0.38, 0.48, 1.42, 7]} />
+        <meshStandardMaterial color="#765447" roughness={1} />
         <BuildingInk />
       </mesh>
-      {[-1.3, 1.3].map((x) => (
-        <mesh key={`forge-window-${x}`} position={[x, 1.18, 1.39]}>
-          <boxGeometry args={[0.5, 0.46, 0.08]} />
-          <meshStandardMaterial color="#f0d080" emissive="#c78d3d" emissiveIntensity={0.38} roughness={0.45} />
+      <mesh castShadow position={[-1.35, 3.88, -0.55]}>
+        <cylinderGeometry args={[0.48, 0.48, 0.16, 7]} />
+        <meshStandardMaterial color="#51443a" roughness={1} />
+        <BuildingInk />
+      </mesh>
+      <group position={[1.2, 2.76, -0.52]} rotation={[0, 0, 0.18]}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.29, 0.38, 1.15, 7]} />
+          <meshStandardMaterial color="#765447" roughness={1} />
+          <BuildingInk />
+        </mesh>
+        <mesh position={[0, 0.62, 0]}>
+          <cylinderGeometry args={[0.38, 0.38, 0.14, 7]} />
+          <meshStandardMaterial color="#51443a" roughness={1} />
+          <BuildingInk />
+        </mesh>
+      </group>
+      <mesh castShadow position={[-0.72, 0.78, 1.38]}>
+        <boxGeometry args={[1, 1.16, 0.1]} />
+        <meshStandardMaterial color="#47342b" roughness={1} />
+        <BuildingInk />
+      </mesh>
+      <mesh position={[-0.72, 0.77, 1.45]}>
+        <boxGeometry args={[0.68, 0.77, 0.08]} />
+        <meshBasicMaterial color="#332a26" />
+      </mesh>
+      <mesh position={[-0.72, 0.76, 1.5]}>
+        <torusGeometry args={[0.35, 0.095, 7, 14, Math.PI]} />
+        <meshStandardMaterial color="#f09d39" emissive="#e06f1e" emissiveIntensity={0.76} />
+        <BuildingInk />
+      </mesh>
+      <mesh position={[1.24, 1.12, 1.38]}>
+        <boxGeometry args={[0.52, 1.38, 0.08]} />
+        <meshStandardMaterial color="#50382e" roughness={1} />
+        <BuildingInk />
+      </mesh>
+      {[-1.72, 1.72].map((x) => (
+        <mesh key={`forge-window-${x}`} position={[x, 1.36, 1.38]}>
+          <boxGeometry args={[0.44, 0.42, 0.08]} />
+          <meshStandardMaterial color="#f0d080" emissive="#c78d3d" emissiveIntensity={0.36} roughness={0.45} />
+          <BuildingInk />
         </mesh>
       ))}
+      <group position={[1.78, 2.04, 1.43]}>
+        <mesh>
+          <torusGeometry args={[0.28, 0.075, 6, 12]} />
+          <meshStandardMaterial color="#d7ad62" roughness={0.8} />
+          <BuildingInk />
+        </mesh>
+        <mesh rotation={[0, 0, Math.PI / 4]}>
+          <boxGeometry args={[0.58, 0.1, 0.1]} />
+          <meshStandardMaterial color="#d7ad62" roughness={0.8} />
+          <BuildingInk />
+        </mesh>
+      </group>
       <mesh castShadow position={[0, 0.1, 0]}>
-        <boxGeometry args={[4.5, 0.2, 3]} />
-        <meshStandardMaterial color="#73543c" roughness={1} />
+        <boxGeometry args={[4.42, 0.2, 3.08]} />
+        <meshStandardMaterial color="#604c3b" roughness={1} />
         <BuildingInk />
       </mesh>
     </group>
@@ -549,39 +753,78 @@ function CloudForge() {
 function DataTower() {
   return (
     <group position={[-8.8, 0.35, -1.2]}>
-      <mesh castShadow receiveShadow position={[0, 1.3, 0]}>
-        <boxGeometry args={[5.2, 2.5, 3.3]} />
-        <meshStandardMaterial color="#c29a6b" roughness={0.93} />
+      <mesh castShadow receiveShadow position={[-0.08, 0.82, 0]} rotation={[0, 0, -0.025]}>
+        <boxGeometry args={[2.9, 1.52, 2.55]} />
+        <meshStandardMaterial color="#b79a72" roughness={0.96} />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[0, 2.85, 0]} rotation={[0, Math.PI / 4, 0]}>
-        <coneGeometry args={[3.5, 1.75, 4]} />
-        <meshStandardMaterial color="#725344" roughness={0.9} flatShading />
+      <mesh castShadow position={[0.14, 2.22, -0.08]} rotation={[0.015, 0.025, 0.045]}>
+        <boxGeometry args={[2.42, 1.18, 2.25]} />
+        <meshStandardMaterial color="#c9a978" roughness={0.94} />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[1.4, 3.5, -0.72]}>
-        <boxGeometry args={[1.65, 2, 1.55]} />
+      <mesh castShadow position={[-0.17, 3.34, -0.2]} rotation={[-0.025, -0.02, -0.035]}>
+        <boxGeometry args={[1.82, 1.08, 1.86]} />
         <meshStandardMaterial color="#d4ad7a" roughness={0.92} />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[1.4, 4.6, -0.72]} rotation={[0, Math.PI / 4, 0]}>
-        <coneGeometry args={[1.22, 1.1, 4]} />
-        <meshStandardMaterial color="#a9533d" roughness={0.9} flatShading />
+      <mesh castShadow position={[-0.17, 3.95, -0.2]}>
+        <boxGeometry args={[2.02, 0.18, 2.04]} />
+        <meshStandardMaterial color="#705344" roughness={0.94} />
         <BuildingInk />
       </mesh>
-      <mesh position={[0, 1.03, 1.7]}>
-        <boxGeometry args={[0.72, 1.45, 0.08]} />
+      <mesh castShadow position={[1.53, 2.05, 0.95]} rotation={[0, 0, -0.035]}>
+        <boxGeometry args={[0.92, 0.16, 0.78]} />
+        <meshStandardMaterial color="#776047" roughness={1} />
+        <BuildingInk />
+      </mesh>
+      {[-1, 1].map((x) => (
+        <mesh key={`data-balcony-brace-${x}`} position={[1.53 + x * 0.27, 1.72, 0.9]} rotation={[0, 0, -0.32]}>
+          <boxGeometry args={[0.1, 0.52, 0.12]} />
+          <meshStandardMaterial color="#705344" roughness={1} />
+        </mesh>
+      ))}
+      <mesh position={[-0.14, 0.78, 1.3]}>
+        <boxGeometry args={[0.38, 0.92, 0.08]} />
         <meshStandardMaterial color="#593c2c" roughness={1} />
         <BuildingInk />
       </mesh>
-      {[-1.8, -0.8, 0.8, 1.8].map((x) => (
-        <mesh key={x} position={[x, 1.75, 1.7]}>
-          <boxGeometry args={[0.38, 0.42, 0.08]} />
-          <meshStandardMaterial color="#f0d080" emissive="#c78d3d" emissiveIntensity={0.32} roughness={0.45} />
+      {[-0.84, -0.28, 0.34, 0.88].map((x, i) => (
+        <mesh key={`data-window-${i}`} position={[x, 1.18 + (i % 2) * 0.04, 1.3]}>
+          <boxGeometry args={[0.32, 0.36, 0.08]} />
+          <meshStandardMaterial color={i % 2 ? '#8bcac0' : '#f0d080'} emissive={i % 2 ? '#3c8582' : '#c78d3d'} emissiveIntensity={0.28} roughness={0.45} />
+          <BuildingInk />
         </mesh>
       ))}
+      {[-0.55, 0.35].map((x, i) => (
+        <mesh key={`data-upper-window-${i}`} position={[x, 3.37, 0.76]}>
+          <boxGeometry args={[0.36, 0.44, 0.08]} />
+          <meshStandardMaterial color="#8bcac0" emissive="#3c8582" emissiveIntensity={0.32} roughness={0.4} />
+          <BuildingInk />
+        </mesh>
+      ))}
+      <mesh castShadow position={[-0.12, 4.57, -0.2]} rotation={[0.08, 0.12, -0.08]}>
+        <dodecahedronGeometry args={[0.42, 0]} />
+        <meshStandardMaterial color="#68c8c8" emissive="#358990" emissiveIntensity={0.36} roughness={0.35} />
+        <BuildingInk />
+      </mesh>
+      <mesh position={[-0.12, 4.57, -0.2]} rotation={[0.35, 0.2, 0.15]}>
+        <torusGeometry args={[0.63, 0.065, 6, 16]} />
+        <meshStandardMaterial color="#d7ad62" roughness={0.78} />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0.36, 5.12, -0.2]}>
+        <cylinderGeometry args={[0.045, 0.07, 0.92, 5]} />
+        <meshStandardMaterial color="#6d5845" roughness={0.9} />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0.36, 5.52, -0.2]} rotation={[0, 0, Math.PI / 2]}>
+        <coneGeometry args={[0.18, 0.35, 4]} />
+        <meshStandardMaterial color="#d89e4c" roughness={0.82} />
+        <BuildingInk />
+      </mesh>
       <mesh position={[0, 0.12, 0]}>
-        <boxGeometry args={[5.55, 0.2, 3.6]} />
+        <boxGeometry args={[3.12, 0.2, 2.78]} />
         <meshStandardMaterial color="#766047" roughness={1} />
         <BuildingInk />
       </mesh>
@@ -592,6 +835,7 @@ function DataTower() {
 function SignalStation() {
   const beacon = useRef<THREE.MeshStandardMaterial>(null)
   const glow = useRef<THREE.Mesh>(null)
+  const dish = useRef<THREE.Group>(null)
   useFrame(({ clock }) => {
     const pulse = 0.5 + 0.5 * Math.sin(clock.elapsedTime * 2.4)
     if (beacon.current) beacon.current.emissiveIntensity = 0.9 + pulse * 1.1
@@ -599,41 +843,43 @@ function SignalStation() {
       const size = 1 + pulse * 0.16
       glow.current.scale.set(size, size, size)
     }
+    if (dish.current) dish.current.rotation.y = Math.sin(clock.elapsedTime * 0.28) * 0.22
   })
   return (
     <group position={[-1.2, 0.35, 0.1]}>
-      <mesh castShadow position={[0, 1.35, 0]}>
-        <cylinderGeometry args={[0.1, 0.18, 2.7, 7]} />
-        <meshStandardMaterial color="#ad8851" roughness={0.86} />
+      <mesh castShadow receiveShadow position={[0, 0.7, 0]}>
+        <boxGeometry args={[1.7, 1.12, 1.45]} />
+        <meshStandardMaterial color="#ad8851" roughness={0.9} />
         <BuildingInk />
       </mesh>
-      <mesh ref={glow} position={[0, 2.9, 0]}>
-        <sphereGeometry args={[0.9, 14, 12]} />
-        <meshBasicMaterial color="#ffdc52" transparent opacity={0.16} depthWrite={false} />
-      </mesh>
-      <mesh castShadow position={[0, 2.9, 0]} rotation={[0, 0, Math.PI / 4]}>
-        <octahedronGeometry args={[0.55, 0]} />
-        <meshStandardMaterial ref={beacon} color="#ffd950" emissive="#ffad16" emissiveIntensity={1.4} />
+      <mesh castShadow position={[0, 1.38, 0]}>
+        <coneGeometry args={[1.08, 0.48, 6]} />
+        <meshStandardMaterial color="#73563d" roughness={0.94} />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[0.22, 1.78, 0]} rotation={[0, 0, 0.3]}>
-        <boxGeometry args={[0.72, 0.08, 0.08]} />
-        <meshStandardMaterial color="#ad8851" roughness={0.86} />
+      <mesh position={[0, 0.64, 0.76]}>
+        <boxGeometry args={[0.42, 0.78, 0.08]} />
+        <meshStandardMaterial color="#573b2e" roughness={1} />
         <BuildingInk />
       </mesh>
-      <mesh position={[0.49, 1.62, 0]} rotation={[0, 0, -Math.PI / 2]}>
-        <coneGeometry args={[0.24, 0.48, 3]} />
-        <meshStandardMaterial color="#d58a58" roughness={0.95} flatShading />
+      <mesh position={[-0.48, 0.92, 0.76]}>
+        <boxGeometry args={[0.32, 0.29, 0.08]} />
+        <meshStandardMaterial color="#f0d080" emissive="#c78d3d" emissiveIntensity={0.42} />
         <BuildingInk />
       </mesh>
-      <group position={[-0.38, 2.2, 0.16]} rotation={[0, 0, -0.22]}>
-        <mesh>
-          <circleGeometry args={[0.62, 12]} />
+      <mesh castShadow position={[0, 2.15, 0]}>
+        <cylinderGeometry args={[0.09, 0.15, 1.45, 7]} />
+        <meshStandardMaterial color="#92734d" roughness={0.86} />
+        <BuildingInk />
+      </mesh>
+      <group ref={dish} position={[-0.56, 2.16, 0.36]} rotation={[0, 0, -0.22]}>
+        <mesh rotation={[0, 0, -0.18]}>
+          <circleGeometry args={[0.58, 12]} />
           <meshStandardMaterial color="#c1a679" roughness={0.92} side={THREE.DoubleSide} flatShading />
           <BuildingInk />
         </mesh>
-        <mesh>
-          <torusGeometry args={[0.61, 0.07, 5, 12]} />
+        <mesh rotation={[0, 0, -0.18]}>
+          <torusGeometry args={[0.57, 0.075, 5, 12]} />
           <meshStandardMaterial color="#73563d" roughness={1} />
           <BuildingInk />
         </mesh>
@@ -642,8 +888,21 @@ function SignalStation() {
           <meshStandardMaterial color="#ad8851" roughness={0.86} />
         </mesh>
       </group>
-      <mesh position={[0, 0.08, 0]}>
-        <cylinderGeometry args={[0.48, 0.58, 0.16, 8]} />
+      <mesh position={[0, 2.94, 0]}>
+        <sphereGeometry args={[0.72, 14, 12]} />
+        <meshBasicMaterial color="#ffdc52" transparent opacity={0.15} depthWrite={false} />
+      </mesh>
+      <mesh ref={glow} position={[0, 2.94, 0]}>
+        <sphereGeometry args={[0.68, 14, 12]} />
+        <meshBasicMaterial color="#ffdc52" transparent opacity={0.16} depthWrite={false} />
+      </mesh>
+      <mesh castShadow position={[0, 2.94, 0]} rotation={[0, 0, Math.PI / 4]}>
+        <octahedronGeometry args={[0.46, 0]} />
+        <meshStandardMaterial ref={beacon} color="#ffd950" emissive="#ffad16" emissiveIntensity={1.4} />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0, 0.08, 0]}>
+        <boxGeometry args={[1.9, 0.18, 1.62]} />
         <meshStandardMaterial color="#73563d" roughness={1} />
         <BuildingInk />
       </mesh>
@@ -658,18 +917,8 @@ function VillageBlockout() {
       <Clocktower />
       <CloudForge />
       <DataTower />
-      <Cottage position={[-3.75, 0.34, -2.2]} scale={0.9} wall="#d7b785" roof="#a9533d" />
-      <group position={[0.6, 0.34, -3.3]}>
-        <Cottage position={[0, 0, 0]} scale={0.76} wall="#c5a16d" roof="#76568c" playful />
-        <mesh castShadow position={[0.78, 2.13, 0.82]} rotation={[0.08, 0, -0.22]}>
-          <boxGeometry args={[1.35, 0.15, 0.9]} />
-          <meshStandardMaterial color="#76568c" roughness={0.92} flatShading />
-        </mesh>
-        <mesh castShadow position={[0.96, 1.96, 1.16]} rotation={[0, 0, -0.18]}>
-          <boxGeometry args={[0.12, 0.33, 0.12]} />
-          <meshStandardMaterial color="#714835" roughness={1} />
-        </mesh>
-      </group>
+      <AboutCottage />
+      <HobbiesHut />
       <SignalStation />
     </group>
   )

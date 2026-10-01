@@ -16,7 +16,7 @@ Vite prints the local preview URL, usually `http://localhost:5173/`.
 - Fixed, wide three-quarter camera
 - Irregular grass shelf, teal ocean, shallow-water inlet, beach, and foam edge
 - Left-side dock, tide-line stones, shallow inlet, foam, starfish, and a broken boat
-- Seven portfolio landmarks with their existing silhouettes and colors, spaced across the village
+- Seven distinct portfolio landmarks: tapered clocktower, stepped data archive, industrial forge, domed lab, porch cottage, round creative hut, and beacon station
 - A cobbled beach approach, worn footpaths, ground location names, and village residents
 - Palm silhouettes, flowering shrubs, layered distant peaks, and slowly drifting clouds
 - A clickable landmark map that opens the matching portfolio section
