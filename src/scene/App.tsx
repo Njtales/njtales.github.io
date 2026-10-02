@@ -45,8 +45,8 @@ function PortfolioMap({ selectedId, onSelect }: { selectedId: string | null; onS
           <path className="map-route" d="M39 68 Q65 62 83 69 T128 63" />
         </svg>
         {portfolioSpots.map((spot, index) => {
-          const left = 17 + ((spot.position[0] + 26) / 33) * 66
-          const top = 16 + ((spot.position[2] + 4) / 10) * 67
+          const left = 17 + ((spot.position[0] + 12) / 24) * 66
+          const top = 16 + ((spot.position[2] + 8) / 16) * 67
           return (
             <button
               key={spot.id}
