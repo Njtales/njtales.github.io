@@ -73,7 +73,7 @@ export const portfolioSpots: PortfolioSpot[] = [
       { title: 'Off the clock', detail: 'Travel, animation content, and YouTube experiments.' },
       { title: 'Fox avatar', detail: 'The character goes by “Niro” or “creepy”.' },
     ],
-    position: [12, 0.34, -4.5],
+    position: [12, 1.45, -4.5],
   },
   {
     id: 'signal-station', title: 'Signal Station', section: 'Contact, Links & CV',

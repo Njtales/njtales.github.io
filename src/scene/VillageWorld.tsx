@@ -453,8 +453,26 @@ function AboutCottage() {
 }
 
 function HobbiesHut() {
+  const hut = useRef<THREE.Group>(null)
+  const { scene } = useThree()
+
+  useLayoutEffect(() => {
+    if (!hut.current) return
+    hut.current.position.y = 0.34
+    const terrain: THREE.Object3D[] = []
+    scene.traverse((object) => {
+      if (object.userData.walkableTerrain) terrain.push(object)
+    })
+    if (!terrain.length) return
+    scene.updateMatrixWorld(true)
+    const base = hut.current.getWorldPosition(new THREE.Vector3())
+    const ray = new THREE.Raycaster(new THREE.Vector3(base.x, 12, base.z), new THREE.Vector3(0, -1, 0), 0, 24)
+    const surface = ray.intersectObjects(terrain, true)[0]
+    if (surface) hut.current.position.y = Math.max(0.34, surface.point.y - 0.04)
+  }, [scene])
+
   return (
-    <group position={[12, 0.34, -4.5]} scale={0.82}>
+    <group ref={hut} position={[12, 0.34, -4.5]} scale={0.82}>
       <mesh castShadow receiveShadow position={[0, 0.84, 0]}>
         <cylinderGeometry args={[1.12, 1.28, 1.62, 9]} />
         <meshStandardMaterial color="#c5a16d" roughness={0.96} flatShading />
@@ -956,6 +974,7 @@ function makeRoadRibbon(curve: THREE.CatmullRomCurve3, halfWidth: number, y: num
 }
 
 function StonePath({ points, radius = 0.24 }: { points: [number, number, number][]; radius?: number }) {
+  const { scene } = useThree()
   const curve = useMemo(() => new THREE.CatmullRomCurve3(
     points.map((point) => new THREE.Vector3(...point)), false, 'catmullrom', 0.28,
   ), [points])
@@ -969,7 +988,7 @@ function StonePath({ points, radius = 0.24 }: { points: [number, number, number]
     const colors: number[] = []
     const indices: number[] = []
     const palette = ['#b6a381', '#9e9075', '#c3ae86', '#aa9979'].map((color) => new THREE.Color(color))
-    const count = Math.max(10, Math.ceil(curve.getLength() / 0.68))
+    const count = Math.max(12, Math.ceil(curve.getLength() / 0.42))
     let vertexOffset = 0
     for (let i = 0; i <= count; i += 1) {
       const t = (i + 0.22 * Math.sin(i * 12.7 + phase)) / count
@@ -980,8 +999,8 @@ function StonePath({ points, radius = 0.24 }: { points: [number, number, number]
       for (const row of [-1, 0, 1]) {
         if (row === 0 && i % 2 === 1) continue
         const seed = i * 19.13 + row * 7.4 + phase
-        const along = 0.27 * Math.sin(seed * 1.71)
-        const across = row * Math.max(0.16, radius * 0.88) + 0.06 * Math.sin(seed * 0.83)
+        const along = 0.12 * Math.sin(seed * 1.71)
+        const across = row * Math.max(0.16, radius * 0.68) + 0.035 * Math.sin(seed * 0.83)
         const stoneCenter = center.clone().addScaledVector(tangent, along).addScaledVector(side, across)
         const halfLength = 0.2 + (Math.sin(seed * 1.11) + 1) * 0.055
         const halfWidth = 0.16 + (Math.cos(seed * 0.91) + 1) * 0.045
@@ -1013,6 +1032,32 @@ function StonePath({ points, radius = 0.24 }: { points: [number, number, number]
     geometry.computeVertexNormals()
     return geometry
   }, [curve, radius, phase])
+  useLayoutEffect(() => {
+    const terrain: THREE.Object3D[] = []
+    scene.traverse((object) => {
+      if (object.userData.walkableTerrain) terrain.push(object)
+    })
+    if (!terrain.length) return
+    scene.updateMatrixWorld(true)
+    const ray = new THREE.Raycaster()
+    const origin = new THREE.Vector3()
+    const down = new THREE.Vector3(0, -1, 0)
+    ;[[verge, 0.035], [surface, 0.055], [cobbles, 0.075]].forEach(([geometry, lift]) => {
+      const meshGeometry = geometry as THREE.BufferGeometry
+      const raise = lift as number
+      const positions = meshGeometry.attributes.position as THREE.BufferAttribute
+      for (let i = 0; i < positions.count; i += 1) {
+        origin.set(positions.getX(i), 12, positions.getZ(i))
+        ray.set(origin, down)
+        ray.far = 24
+        const hit = ray.intersectObjects(terrain, true)[0]
+        if (hit && hit.point.y > 0.24) positions.setY(i, Math.max(positions.getY(i), hit.point.y + raise))
+      }
+      positions.needsUpdate = true
+      meshGeometry.computeVertexNormals()
+      meshGeometry.computeBoundingSphere()
+    })
+  }, [scene, verge, surface, cobbles])
   return (
     <group>
       <mesh geometry={verge} receiveShadow>
@@ -1358,14 +1403,17 @@ function VillageDetails() {
     <group>
       {/* Worn stone routes: beach approach to the hub, then short branches. */}
       <FlagstoneApproach />
-      <StonePath points={[[-8, 0.39, 10], [-9.4, 0.39, 7], [-7.5, 0.39, 6.3], [-5.1, 0.39, 4.8], [-1.5, 0.39, 6.1], [1.6, 0.39, 4.25], [4.6, 0.39, 6], [8.1, 0.39, 3.7], [10.7, 0.39, 5.2]]} radius={0.36} />
+      <StonePath points={[[-8, 0.39, 10], [-9.4, 0.39, 7], [-7.5, 0.39, 6.3], [-5.1, 0.39, 4.8], [-1.5, 0.39, 6.1], [1.6, 0.39, 4.25]]} radius={0.36} />
+      <StonePath points={[[1.6, 0.39, 4.25], [4.6, 0.39, 6], [8.1, 0.39, 3.7], [10.7, 0.39, 5.2]]} radius={0.34} />
       <StonePath points={[[-7, 0.39, 5.9], [-9.3, 0.39, 4.7], [-11.2, 0.39, 4.4], [-11.5, 0.39, 5.1]]} radius={0.27} />
-      <StonePath points={[[-6.8, 0.39, 5.8], [-7.1, 0.39, 2.4], [-6.8, 0.39, 0.1]]} radius={0.22} />
-      <StonePath points={[[-3, 0.39, 5.4], [-3.8, 0.39, 1.2], [-3.7, 0.39, -2.8], [-3.1, 0.39, -5.4]]} radius={0.24} />
-      <StonePath points={[[0, 0.39, 5.2], [0.3, 0.39, 3], [0, 0.39, 1.4]]} radius={0.23} />
-      <StonePath points={[[3.3, 0.39, 5.35], [4.1, 0.39, 1.1], [4.5, 0.39, -2.1], [4.2, 0.39, -3.5]]} radius={0.24} />
-      <StonePath points={[[5.3, 0.39, 5.8], [6.1, 0.39, 6.2], [6.8, 0.39, 5.9]]} radius={0.22} />
-      <StonePath points={[[9.8, 0.39, 4.4], [11.3, 0.39, 0.8], [12, 0.39, -3.2]]} radius={0.23} />
+      <StonePath points={[[-7.5, 0.39, 6.3], [-8.7, 0.39, 4.6], [-7.1, 0.39, 2.8], [-8.1, 0.39, 1.5], [-6.8, 0.39, 0.1]]} radius={0.22} />
+      <StonePath points={[[-2.6, 0.39, 5.4], [-4.5, 0.39, 3.8], [-3.7, 0.39, 2.1], [-5.1, 0.39, 0.6], [-2.9, 0.39, -0.8], [-3.8, 0.39, -3], [-3.1, 0.39, -5.4]]} radius={0.24} />
+      <StonePath points={[[-1.5, 0.39, 6.1], [-0.3, 0.39, 4.5], [1.4, 0.39, 3], [0.6, 0.39, 1.5]]} radius={0.23} />
+      <StonePath points={[[1.6, 0.39, 4.25], [2.9, 0.39, 2.5], [4.9, 0.39, 0.4], [3.6, 0.39, -1.1], [5.1, 0.39, -2.8], [4.2, 0.39, -3.5]]} radius={0.24} />
+      <StonePath points={[[8.1, 0.39, 3.7], [9.1, 0.39, 4.5], [8.4, 0.39, 6.2], [6.8, 0.39, 5.9]]} radius={0.22} />
+      <StonePath points={[[10.7, 0.39, 5.2], [12.2, 0.39, 3.4], [10.9, 0.39, 1.2], [12.4, 0.39, -1], [11.3, 0.39, -3.7], [12, 0.39, -3.2]]} radius={0.23} />
+      <StonePath points={[[-6.8, 0.39, 0.1], [-5.1, 0.39, -0.9], [-3.2, 0.39, -2.1], [-3.8, 0.39, -3]]} radius={0.2} />
+      <StonePath points={[[-2.9, 0.39, -0.8], [-1.2, 0.39, 0.6], [0.5, 0.39, -0.3], [2.4, 0.39, 0.6], [3.6, 0.39, -1.1]]} radius={0.2} />
       {/* A subtle worn meeting patch, not a geometric building layout. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.245, 4.8]}>
         <circleGeometry args={[1.15, 32]} />
@@ -1669,9 +1717,11 @@ function SkyBackdrop() {
 function OceanGlints() {
   const glints = useRef<THREE.Group>(null)
   const streaks = useMemo(() => [
-    [-31, -25, 1.5], [-24, -20, 2.2], [-15, -29, 1.2], [-7, -23, 1.8], [2, -32, 2.4],
-    [10, -25, 1.4], [18, -30, 2], [27, -22, 1.5], [-35, -34, 2.3], [-2, -18, 1.1],
-    [22, -17, 1.3], [35, -31, 1.8],
+    [-36, -18, 1.5], [-31, -25, 1.5], [-24, -20, 2.2], [-15, -29, 1.2], [-7, -23, 1.8], [2, -32, 2.4],
+    [10, -25, 1.4], [18, -30, 2], [27, -22, 1.5], [-35, -34, 2.3], [-2, -18, 1.1], [22, -17, 1.3],
+    [35, -31, 1.8], [-29, -42, 1.8], [-20, -37, 1.3], [-12, -45, 2], [-3, -39, 1.4], [7, -44, 2.1],
+    [16, -38, 1.4], [26, -46, 1.9], [36, -40, 1.5], [-40, -28, 1.2], [-26, -49, 1.6], [-9, -34, 1.1],
+    [4, -19, 1.3], [19, -48, 1.4], [31, -36, 1.2], [42, -24, 1.6],
   ] as const, [])
   useFrame(({ clock }) => {
     if (!glints.current) return
@@ -1684,9 +1734,78 @@ function OceanGlints() {
   return (
     <group ref={glints}>
       {streaks.map(([x, z, length], i) => (
-        <mesh key={`water-glint-${i}`} position={[x, -0.225, z]} rotation={[-Math.PI / 2, 0, Math.sin(i * 4.1) * 0.07]}>
-          <planeGeometry args={[length, 0.055 + (i % 3) * 0.025]} />
-          <meshBasicMaterial color={i % 3 ? '#c6e9da' : '#e1f0cf'} transparent opacity={0.18} depthWrite={false} />
+        <mesh key={`water-glint-${i}`} position={[x, -0.12, z]} rotation={[-Math.PI / 2, 0, Math.sin(i * 4.1) * 0.07]}>
+          <planeGeometry args={[length, 0.17 + (i % 3) * 0.07]} />
+          <meshBasicMaterial color={i % 3 ? '#9de0d5' : '#e1f0cf'} transparent opacity={0.46} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function OceanShallows() {
+  const group = useRef<THREE.Group>(null)
+  const patches: [number, number, number, number, number, string][] = [
+    [-34, -16, 2.5, 0.38, -0.14, '#70c8c4'], [-25, -21, 3.4, 0.42, 0.08, '#2c8996'],
+    [-15, -18, 2.1, 0.32, -0.1, '#83d4cd'], [-5, -23, 3.2, 0.44, 0.13, '#388f9a'],
+    [8, -17, 2.8, 0.36, -0.08, '#75cbc5'], [19, -22, 3.6, 0.45, 0.1, '#2d8290'],
+    [31, -18, 2.3, 0.34, -0.12, '#80d1ca'], [-39, -27, 3.5, 0.46, 0.1, '#287b8a'],
+    [-29, -31, 2.6, 0.36, -0.12, '#7acbc5'], [-18, -28, 3.8, 0.48, 0.1, '#347f8e'],
+    [-7, -34, 2.6, 0.4, -0.12, '#80d0c9'], [5, -29, 3.3, 0.42, 0.08, '#2b7a89'],
+    [17, -34, 3.8, 0.46, -0.1, '#6fc4c1'], [29, -29, 2.5, 0.38, 0.12, '#337f8e'],
+    [39, -34, 3.1, 0.4, -0.08, '#77cbc5'], [-34, -41, 2.8, 0.4, 0.13, '#327e8b'],
+    [-22, -44, 3.6, 0.46, -0.1, '#6dbdc0'], [-9, -43, 2.5, 0.36, 0.12, '#2b7485'],
+    [7, -47, 3.3, 0.42, -0.08, '#65b4ba'], [24, -43, 3.7, 0.48, 0.1, '#2b7888'],
+    [39, -46, 2.5, 0.36, -0.12, '#63b6bb'],
+  ]
+  useFrame(({ clock }) => {
+    if (!group.current) return
+    group.current.children.forEach((child, i) => {
+      const x = patches[i][0]
+      child.position.x = x + Math.sin(clock.elapsedTime * 0.045 + i * 1.6) * 0.22
+    })
+  })
+  return (
+    <group ref={group}>
+      {patches.map(([x, z, sx, sz, rotation, color], i) => (
+        <mesh key={`sea-shallow-${i}`} position={[x, -0.08, z]} rotation={[-Math.PI / 2, 0, rotation]} scale={[sx * 1.25, sz * 2.4, 1]}>
+          <circleGeometry args={[1, 11]} />
+          <meshBasicMaterial color={color} transparent opacity={0.31} depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function OceanWaveBands() {
+  const waves = useMemo(() => {
+    const rows = [
+      { z: -13, color: '#8bd7d1' }, { z: -18, color: '#287f91' }, { z: -24, color: '#73c7c6' },
+      { z: -30, color: '#246e82' }, { z: -36, color: '#5db4bb' },
+    ]
+    return rows.flatMap((row, rowIndex) => Array.from({ length: 6 }, (_, segment) => {
+      const phase = rowIndex * 1.31 + segment * 2.17
+      const startX = -40 + segment * 14.5 + Math.sin(phase) * 2.4
+      const length = 5.5 + (0.5 + 0.5 * Math.sin(phase * 1.7)) * 6
+      const points = Array.from({ length: 7 }, (_, i) => {
+        const x = startX + (i / 6) * length
+        const z = row.z + Math.sin(x * 0.19 + phase) * 0.52 + Math.sin(x * 0.061 + phase * 2) * 0.34
+        const y = -0.105 + Math.sin(x * 0.23 + phase) * 0.025
+        return new THREE.Vector3(x, y, z)
+      })
+      return {
+        geometry: new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.065, 5, false),
+        color: row.color,
+        opacity: 0.4 + (segment % 3) * 0.08,
+      }
+    }))
+  }, [])
+
+  return (
+    <group>
+      {waves.map((wave, i) => (
+        <mesh key={`ocean-wave-${i}`} geometry={wave.geometry}>
+          <meshBasicMaterial color={wave.color} transparent opacity={wave.opacity} depthWrite={false} />
         </mesh>
       ))}
     </group>
@@ -1695,14 +1814,22 @@ function OceanGlints() {
 
 function Ocean() {
   const oceanGeometry = useMemo(() => {
-    const geometry = new THREE.PlaneGeometry(180, 180, 1, 80)
+    const geometry = new THREE.PlaneGeometry(180, 180, 64, 80)
     const positions = geometry.attributes.position
     const colors: number[] = []
-    const near = new THREE.Color('#3aa8b0')
-    const far = new THREE.Color('#1a6f7a')
+    const near = new THREE.Color('#48b5bb')
+    const mid = new THREE.Color('#257f91')
+    const far = new THREE.Color('#164d66')
     for (let i = 0; i < positions.count; i += 1) {
-      const t = THREE.MathUtils.clamp((positions.getY(i) + 90) / 180, 0, 1)
-      const color = near.clone().lerp(far, t)
+      const x = positions.getX(i)
+      const y = positions.getY(i)
+      const t = THREE.MathUtils.clamp((y + 90) / 180, 0, 1)
+      const color = t < 0.54
+        ? near.clone().lerp(mid, t / 0.54)
+        : mid.clone().lerp(far, (t - 0.54) / 0.46)
+      const ripple = (Math.sin(x * 0.17 + y * 0.13) + Math.sin(x * 0.31 - y * 0.08 + 1.7) * 0.55) / 1.55
+      const tone = ripple > 0 ? new THREE.Color('#69c9c4') : new THREE.Color('#124c63')
+      color.lerp(tone, Math.abs(ripple) * 0.42)
       colors.push(color.r, color.g, color.b)
     }
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
@@ -1716,13 +1843,23 @@ function Ocean() {
         <primitive object={oceanGeometry} attach="geometry" />
         <meshStandardMaterial vertexColors roughness={0.4} metalness={0.02} />
       </mesh>
+      <OceanShallows />
+      <OceanWaveBands />
       <OceanGlints />
-      <group position={[0, 1.45, -30]}>
-        {[-29, -21, -12, -2, 8, 19, 29].map((x, i) => (
-          <mesh key={x} position={[x, (i % 3) * 0.35, 0]} scale={[5 + (i % 2) * 2, 0.75 + (i % 3) * 0.25, 0.8]}>
-            <dodecahedronGeometry args={[1, 0]} />
-            <meshBasicMaterial color={i % 2 ? '#67b9b8' : '#58aeb3'} transparent opacity={0.64} />
-          </mesh>
+      <group position={[0, 0.58, -27]}>
+        {[-30, -22, -13, -3, 8, 19, 29].map((x, i) => (
+          <group key={`sea-islet-${i}`} position={[x, 0, Math.sin(i * 1.8) * 0.7]}>
+            <mesh position={[0, 0.18, 0]} scale={[3.2 + (i % 2) * 1.4, 0.54 + (i % 3) * 0.08, 1.05 + (i % 2) * 0.3]}>
+              <dodecahedronGeometry args={[1, 0]} />
+              <meshBasicMaterial color={['#286e79', '#357f83', '#438f8d', '#2c7880'][i % 4]} />
+            </mesh>
+            {i % 2 === 0 && (
+              <mesh position={[0.25, 0.53, 0.04]} scale={[1.15, 0.22, 0.72]}>
+                <dodecahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial color="#68aa83" />
+              </mesh>
+            )}
+          </group>
         ))}
       </group>
       <DistantPeaks />
@@ -1755,22 +1892,23 @@ function Ocean() {
 
 function DistantPeaks() {
   const peaks: [number, number, number, number, number, string][] = [
-    [-29, 0.15, -38, 4.7, 2.7, '#58aeb3'], [-22, 0.35, -39, 3.4, 3.2, '#67b9b8'],
-    [-12, 0.2, -40, 5.6, 3.7, '#58aeb3'], [-2, 0.1, -42, 3.7, 2.7, '#67b9b8'],
-    [9, 0.22, -40, 4.6, 3.4, '#58aeb3'], [20, 0.12, -39, 5.1, 2.9, '#67b9b8'],
-    [30, 0.25, -37, 4, 2.5, '#58aeb3'],
+    [-29, 0.15, -38, 4.7, 2.7, '#276b78'], [-22, 0.35, -39, 3.4, 3.2, '#438e96'],
+    [-12, 0.2, -40, 5.6, 3.7, '#246875'], [-2, 0.1, -42, 3.7, 2.7, '#559ba0'],
+    [9, 0.22, -40, 4.6, 3.4, '#2b7480'], [20, 0.12, -39, 5.1, 2.9, '#4a9299'],
+    [30, 0.25, -37, 4, 2.5, '#286b79'],
   ]
+  const faces = ['#70b3b1', '#255e70', '#85bfba', '#327e88', '#6da9a9', '#235e70', '#91c9c2']
   return (
     <group>
       {peaks.map(([x, y, z, radius, height, color], i) => (
         <group key={`distant-peak-${i}`} position={[x, y, z]}>
           <mesh position={[0, height * 0.38, 0]} scale={[1.45, 0.84, 0.75]}>
             <coneGeometry args={[radius, height, i % 2 ? 5 : 4]} />
-            <meshBasicMaterial color={color} transparent opacity={0.56} depthWrite={false} />
+            <meshBasicMaterial color={color} transparent opacity={0.84} depthWrite={false} />
           </mesh>
           <mesh position={[radius * 0.48, height * 0.28, -0.08]} scale={[0.92, 0.68, 0.72]}>
             <coneGeometry args={[radius * 0.72, height * 0.76, 5]} />
-            <meshBasicMaterial color={i % 2 ? '#58aeb3' : '#67b9b8'} transparent opacity={0.38} depthWrite={false} />
+            <meshBasicMaterial color={faces[i]} transparent opacity={0.66} depthWrite={false} />
           </mesh>
         </group>
       ))}
@@ -1846,10 +1984,10 @@ function FarIslands() {
   return (
     <group>
       <mesh geometry={distant} position={[0, 0.25, -67]}>
-        <meshBasicMaterial color="#428f9a" transparent opacity={0.2} depthWrite={false} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#b1d9d9" transparent opacity={0.44} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={back} position={[0, 0.3, -58]}>
-        <meshBasicMaterial color="#58aeb3" transparent opacity={0.34} depthWrite={false} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#58a9ae" transparent opacity={0.63} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
     </group>
   )
