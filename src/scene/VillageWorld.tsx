@@ -1,6 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { Html, Outlines, Text } from '@react-three/drei'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { portfolioSpots, type PortfolioSpot } from './portfolioData'
 
@@ -307,7 +307,7 @@ function TerrainRise({ position, scale, color }: {
   color: string
 }) {
   return (
-    <mesh position={position} scale={scale} castShadow receiveShadow>
+    <mesh position={position} scale={scale} castShadow receiveShadow userData={{ walkableTerrain: true }}>
       <dodecahedronGeometry args={[1, 1]} />
       <meshStandardMaterial color={color} roughness={1} flatShading />
     </mesh>
@@ -375,9 +375,13 @@ function BuildingInk() {
   return <Outlines color="#3d1f0a" thickness={0.032} screenspace transparent opacity={0.82} angle={0} />
 }
 
+function TreeInk() {
+  return <Outlines color="#315634" thickness={0.021} screenspace transparent opacity={0.72} angle={0} />
+}
+
 function AboutCottage() {
   return (
-    <group position={[-3.75, 0.34, -2.2]} scale={0.9}>
+    <group position={[-1.6, 0.34, -2.8]} scale={0.9}>
       <mesh castShadow receiveShadow position={[0, 0.9, 0]} rotation={[0, 0, -0.025]}>
         <boxGeometry args={[2.65, 1.8, 2.05]} />
         <meshStandardMaterial color="#d7b785" roughness={0.96} />
@@ -450,7 +454,7 @@ function AboutCottage() {
 
 function HobbiesHut() {
   return (
-    <group position={[0.6, 0.34, -3.3]} scale={0.82}>
+    <group position={[3, 0.34, -3.8]} scale={0.82}>
       <mesh castShadow receiveShadow position={[0, 0.84, 0]}>
         <cylinderGeometry args={[1.12, 1.28, 1.62, 9]} />
         <meshStandardMaterial color="#c5a16d" roughness={0.96} flatShading />
@@ -511,7 +515,7 @@ function HobbiesHut() {
 
 function Clocktower() {
   return (
-    <group position={[-14.7, 0.34, -2.4]}>
+    <group position={[-13.7, 0.34, -2]}>
       <mesh castShadow receiveShadow position={[0, 0.95, 0]}>
         <cylinderGeometry args={[1.05, 1.36, 1.9, 8]} />
         <meshStandardMaterial color="#90734f" roughness={0.96} flatShading />
@@ -606,7 +610,7 @@ function LearningLab() {
     return new THREE.TubeGeometry(curve, 20, 0.035, 5, false)
   }), [])
   return (
-    <group position={[-22.3, 0.38, -1.5]}>
+    <group position={[-22.6, 0.38, -1.8]}>
       <mesh castShadow receiveShadow position={[0, 0.88, 0]}>
         <cylinderGeometry args={[1.24, 1.42, 1.75, 9]} />
         <meshStandardMaterial color="#695990" roughness={0.84} flatShading />
@@ -670,7 +674,7 @@ function LearningLab() {
 
 function CloudForge() {
   return (
-    <group position={[-18, 0.34, 1.1]}>
+    <group position={[-18.3, 0.34, 1.5]}>
       <mesh castShadow receiveShadow position={[0, 1.05, 0]}>
         <boxGeometry args={[4.05, 2, 2.72]} />
         <meshStandardMaterial color="#b8754d" roughness={0.96} />
@@ -752,7 +756,7 @@ function CloudForge() {
 
 function DataTower() {
   return (
-    <group position={[-8.8, 0.35, -1.2]}>
+    <group position={[-7.2, 0.35, -0.8]}>
       <mesh castShadow receiveShadow position={[-0.08, 0.82, 0]} rotation={[0, 0, -0.025]}>
         <boxGeometry args={[2.9, 1.52, 2.55]} />
         <meshStandardMaterial color="#b79a72" roughness={0.96} />
@@ -846,7 +850,7 @@ function SignalStation() {
     if (dish.current) dish.current.rotation.y = Math.sin(clock.elapsedTime * 0.28) * 0.22
   })
   return (
-    <group position={[-1.2, 0.35, 0.1]}>
+    <group position={[1.1, 0.35, 0.5]}>
       <mesh castShadow receiveShadow position={[0, 0.7, 0]}>
         <boxGeometry args={[1.7, 1.12, 1.45]} />
         <meshStandardMaterial color="#ad8851" roughness={0.9} />
@@ -1024,8 +1028,27 @@ function VillageResident({ position, coat, ear }: {
 }
 
 function PalmTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  const group = useRef<THREE.Group>(null)
+  const { scene } = useThree()
+
+  useLayoutEffect(() => {
+    if (!group.current) return
+    group.current.position.y = position[1]
+    const terrain: THREE.Object3D[] = []
+    scene.traverse((object) => {
+      if (object.userData.walkableTerrain) terrain.push(object)
+    })
+    if (terrain.length === 0) return
+    scene.updateMatrixWorld(true)
+    group.current.updateWorldMatrix(true, false)
+    const base = group.current.getWorldPosition(new THREE.Vector3())
+    const raycaster = new THREE.Raycaster(new THREE.Vector3(base.x, 12, base.z), new THREE.Vector3(0, -1, 0), 0, 24)
+    const surface = raycaster.intersectObjects(terrain, true)[0]
+    if (surface && surface.point.y > 0.24) group.current.position.y += surface.point.y - 0.23
+  }, [scene, position[0], position[1], position[2]])
+
   return (
-    <group position={position} scale={scale}>
+    <group ref={group} position={position} scale={scale}>
       <mesh castShadow position={[0, 1.55, 0]} rotation={[0, 0, -0.08]}>
         <cylinderGeometry args={[0.12, 0.24, 3.1, 7]} />
         <meshStandardMaterial color="#8a6240" roughness={1} flatShading />
@@ -1054,22 +1077,50 @@ function Tree({ position, scale = 1, tint = '#3c8950' }: {
   scale?: number
   tint?: string
 }) {
+  const group = useRef<THREE.Group>(null)
+  const { scene } = useThree()
+
+  useLayoutEffect(() => {
+    if (!group.current) return
+    // Reset first so React StrictMode's development effect replay cannot
+    // accumulate the terrain offset more than once.
+    group.current.position.y = position[1]
+    const terrain: THREE.Object3D[] = []
+    scene.traverse((object) => {
+      if (object.userData.walkableTerrain) terrain.push(object)
+    })
+    if (terrain.length === 0) return
+    scene.updateMatrixWorld(true)
+    group.current.updateWorldMatrix(true, false)
+    const base = group.current.getWorldPosition(new THREE.Vector3())
+    const raycaster = new THREE.Raycaster(new THREE.Vector3(base.x, 12, base.z), new THREE.Vector3(0, -1, 0), 0, 24)
+    const surface = raycaster.intersectObjects(terrain, true)[0]
+    // Trees keep their existing flat-ground planting height; only lift those
+    // that intersect the raised landscape so the trunk never starts underground.
+    if (surface && surface.point.y > 0.24) group.current.position.y += surface.point.y - 0.23
+  }, [scene])
+
   return (
-    <group position={position} scale={scale}>
+    <group ref={group} position={position} scale={scale}>
       <mesh castShadow position={[0, 0.8, 0]}>
         <cylinderGeometry args={[0.16, 0.25, 1.6, 6]} />
         <meshStandardMaterial color="#8a6240" roughness={1} flatShading />
-        <BuildingInk />
+        <TreeInk />
       </mesh>
       <mesh castShadow position={[0, 1.7, 0]}>
         <dodecahedronGeometry args={[0.95, 1]} />
         <meshStandardMaterial color={tint} roughness={1} flatShading />
-        <BuildingInk />
+        <TreeInk />
       </mesh>
       <mesh castShadow position={[0.55, 1.45, 0.1]} scale={0.66}>
         <dodecahedronGeometry args={[0.8, 0]} />
         <meshStandardMaterial color="#72b84d" roughness={1} flatShading />
-        <BuildingInk />
+        <TreeInk />
+      </mesh>
+      <mesh castShadow position={[-0.48, 1.49, 0.08]} scale={0.58}>
+        <dodecahedronGeometry args={[0.8, 0]} />
+        <meshStandardMaterial color="#4d9948" roughness={1} flatShading />
+        <TreeInk />
       </mesh>
     </group>
   )
@@ -1231,8 +1282,19 @@ function HeroCharacter({ onOpen }: { onOpen: (spot: PortfolioSpot) => void }) {
   const rightArm = useRef<THREE.Mesh>(null)
   const pressed = useRef<Record<string, boolean>>({})
   const nearestId = useRef<string | null>(null)
-  const { camera } = useThree()
+  const { camera, scene } = useThree()
+  const terrain = useRef<THREE.Object3D[]>([])
+  const groundRay = useRef(new THREE.Raycaster())
+  const rayOrigin = useMemo(() => new THREE.Vector3(), [])
+  const rayDown = useMemo(() => new THREE.Vector3(0, -1, 0), [])
   const [nearby, setNearby] = useState<PortfolioSpot | null>(null)
+
+  useLayoutEffect(() => {
+    terrain.current = []
+    scene.traverse((object) => {
+      if (object.userData.walkableTerrain) terrain.current.push(object)
+    })
+  }, [scene])
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
@@ -1312,10 +1374,24 @@ function HeroCharacter({ onOpen }: { onOpen: (spot: PortfolioSpot) => void }) {
       if (bob.current) bob.current.rotation.y = Math.atan2(direction.x, direction.z)
     }
 
-    // Camera follows the player by translation only; its angle and lens stay fixed.
+    // Sample the visible hill meshes under the player's feet. Vertical damping
+    // prevents the faceted terrain from making movement pop between triangles.
     const player = root.current.position
-    const target = new THREE.Vector3(player.x + 3, 0, player.z - 5.5)
-    const cameraPosition = new THREE.Vector3(player.x + 3, 8.8, player.z + 27.5)
+    let groundY = 0.23
+    if (terrain.current.length > 0) {
+      rayOrigin.set(player.x, 12, player.z)
+      groundRay.current.set(rayOrigin, rayDown)
+      groundRay.current.far = 24
+      const surface = groundRay.current.intersectObjects(terrain.current, true)[0]
+      if (surface) groundY = Math.max(groundY, surface.point.y)
+    }
+    const groundedY = Math.max(0.34, groundY + 0.1)
+    player.y = THREE.MathUtils.damp(player.y, groundedY, 12, delta)
+
+    // Camera translates with the player while preserving its exact relative
+    // framing and angle, including when crossing a rise.
+    const target = new THREE.Vector3(player.x + 3, player.y, player.z - 5.5)
+    const cameraPosition = new THREE.Vector3(player.x + 3, player.y + 8.8, player.z + 27.5)
     camera.position.lerp(cameraPosition, 1 - Math.exp(-4 * delta))
     camera.lookAt(target)
 
