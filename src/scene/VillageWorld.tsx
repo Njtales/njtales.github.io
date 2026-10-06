@@ -379,6 +379,50 @@ function TreeInk() {
   return <Outlines color="#315634" thickness={0.021} screenspace transparent opacity={0.72} angle={0} />
 }
 
+function VillageDoor({ position, width, height, color = '#654633', trim = '#b99a69' }: {
+  position: [number, number, number]
+  width: number
+  height: number
+  color?: string
+  trim?: string
+}) {
+  return (
+    <group position={position}>
+      <mesh castShadow position={[0, 0, -0.025]}>
+        <boxGeometry args={[width + 0.14, height + 0.12, 0.1]} />
+        <meshStandardMaterial color={trim} roughness={0.86} />
+        <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0, 0, 0.035]}>
+        <boxGeometry args={[width, height, 0.065]} />
+        <meshStandardMaterial color={color} roughness={0.9} />
+        <BuildingInk />
+      </mesh>
+      {[-0.27, 0, 0.27].map((fraction, i) => (
+        <mesh key={`door-plank-${i}`} position={[fraction * width, 0, 0.074]}>
+          <boxGeometry args={[0.018, height * 0.82, 0.012]} />
+          <meshStandardMaterial color={trim} roughness={1} />
+        </mesh>
+      ))}
+      {[height * 0.28, -height * 0.31].map((y, i) => (
+        <mesh key={`door-brace-${i}`} position={[0, y, 0.078]}>
+          <boxGeometry args={[width * 0.82, 0.045, 0.018]} />
+          <meshStandardMaterial color={trim} roughness={0.88} />
+        </mesh>
+      ))}
+      <mesh castShadow position={[width * 0.32, -0.015, 0.092]}>
+        <sphereGeometry args={[Math.min(0.055, width * 0.1), 9, 7]} />
+        <meshStandardMaterial color="#d9b86f" metalness={0.35} roughness={0.42} />
+      </mesh>
+      <mesh castShadow position={[0, -height / 2 - 0.08, 0.055]}>
+        <boxGeometry args={[width + 0.3, 0.13, 0.34]} />
+        <meshStandardMaterial color="#95856a" roughness={1} />
+        <BuildingInk />
+      </mesh>
+    </group>
+  )
+}
+
 function AboutCottage() {
   return (
     <group position={[6.8, 0.34, 4.5]} scale={0.9}>
@@ -405,11 +449,7 @@ function AboutCottage() {
           <BuildingInk />
         </mesh>
       ))}
-      <mesh castShadow position={[0.26, 0.73, 1.06]}>
-        <boxGeometry args={[0.48, 1.22, 0.08]} />
-        <meshStandardMaterial color="#55392c" roughness={1} />
-        <BuildingInk />
-      </mesh>
+      <VillageDoor position={[0.26, 0.73, 1.12]} width={0.48} height={1.22} />
       {[-0.88, 0.92].map((x) => (
         <group key={`about-window-${x}`} position={[x, 1.2, 1.055]}>
           <mesh>
@@ -488,11 +528,7 @@ function HobbiesHut() {
         <meshStandardMaterial color="#76568c" roughness={0.88} flatShading side={THREE.DoubleSide} />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[0.26, 0.64, 1.22]}>
-        <boxGeometry args={[0.43, 0.92, 0.08]} />
-        <meshStandardMaterial color="#55392c" roughness={1} />
-        <BuildingInk />
-      </mesh>
+      <VillageDoor position={[0.26, 0.64, 1.29]} width={0.43} height={0.92} color="#634633" trim="#bda477" />
       {[-0.53, 0.56].map((x, i) => (
         <group key={`hobby-porthole-${i}`} position={[x, 1.02, 1.16]}>
           <mesh>
@@ -560,13 +596,20 @@ function Clocktower() {
         <BuildingInk />
       </mesh>
       <mesh castShadow position={[0, 7.28, 0]}>
-        <cylinderGeometry args={[0.075, 0.11, 0.52, 6]} />
-        <meshStandardMaterial color="#f3ce58" emissive="#c98227" emissiveIntensity={0.48} />
+        <cylinderGeometry args={[0.035, 0.06, 0.72, 8]} />
+        <meshStandardMaterial color="#d4a453" metalness={0.32} roughness={0.52} />
       </mesh>
-      <mesh castShadow position={[0.2, 7.32, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <coneGeometry args={[0.25, 0.56, 3]} />
-        <meshStandardMaterial color="#f0c75c" roughness={0.8} />
-        <BuildingInk />
+      <mesh castShadow position={[0, 7.48, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.035, 0.035, 0.78, 7]} />
+        <meshStandardMaterial color="#725239" metalness={0.2} roughness={0.7} />
+      </mesh>
+      <mesh castShadow position={[0.44, 7.48, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <coneGeometry args={[0.105, 0.22, 4]} />
+        <meshStandardMaterial color="#d6ad5e" roughness={0.72} />
+      </mesh>
+      <mesh position={[0, 7.48, 0]}>
+        <sphereGeometry args={[0.075, 8, 6]} />
+        <meshStandardMaterial color="#f0cb75" metalness={0.32} roughness={0.42} />
       </mesh>
       <mesh castShadow position={[0.96, 1.02, 0.05]} rotation={[0, 0, 0.035]}>
         <boxGeometry args={[0.82, 1.55, 1.03]} />
@@ -677,10 +720,7 @@ function LearningLab() {
         <sphereGeometry args={[0.1, 8, 6]} />
         <meshStandardMaterial color="#d98c83" emissive="#aa524b" emissiveIntensity={0.25} />
       </mesh>
-      <mesh position={[0, 0.76, 1.25]}>
-        <boxGeometry args={[0.26, 0.43, 0.08]} />
-        <meshStandardMaterial color="#f0d080" emissive="#c78d3d" emissiveIntensity={0.34} />
-      </mesh>
+      <VillageDoor position={[0, 0.72, 1.3]} width={0.5} height={0.8} color="#58645b" trim="#b8a274" />
       <mesh position={[0.05, 2.95, 0]}>
         <octahedronGeometry args={[0.28, 0]} />
         <meshStandardMaterial color="#73dce2" emissive="#34a7d2" emissiveIntensity={0.75} roughness={0.25} />
@@ -725,15 +765,7 @@ function CloudForge() {
           <BuildingInk />
         </mesh>
       </group>
-      <mesh castShadow position={[-0.72, 0.78, 1.38]}>
-        <boxGeometry args={[1, 1.16, 0.1]} />
-        <meshStandardMaterial color="#47342b" roughness={1} />
-        <BuildingInk />
-      </mesh>
-      <mesh position={[-0.72, 0.77, 1.45]}>
-        <boxGeometry args={[0.68, 0.77, 0.08]} />
-        <meshBasicMaterial color="#332a26" />
-      </mesh>
+      <VillageDoor position={[-0.72, 0.78, 1.47]} width={0.84} height={1.12} color="#49372d" trim="#8d6448" />
       <mesh position={[-0.72, 0.76, 1.5]}>
         <torusGeometry args={[0.35, 0.095, 7, 14, Math.PI]} />
         <meshStandardMaterial color="#f09d39" emissive="#e06f1e" emissiveIntensity={0.76} />
@@ -751,18 +783,6 @@ function CloudForge() {
           <BuildingInk />
         </mesh>
       ))}
-      <group position={[1.78, 2.04, 1.43]}>
-        <mesh>
-          <torusGeometry args={[0.28, 0.075, 6, 12]} />
-          <meshStandardMaterial color="#d7ad62" roughness={0.8} />
-          <BuildingInk />
-        </mesh>
-        <mesh rotation={[0, 0, Math.PI / 4]}>
-          <boxGeometry args={[0.58, 0.1, 0.1]} />
-          <meshStandardMaterial color="#d7ad62" roughness={0.8} />
-          <BuildingInk />
-        </mesh>
-      </group>
       <mesh castShadow position={[0, 0.1, 0]}>
         <boxGeometry args={[4.42, 0.2, 3.08]} />
         <meshStandardMaterial color="#604c3b" roughness={1} />
@@ -775,17 +795,17 @@ function CloudForge() {
 function DataTower() {
   return (
     <group position={[4.2, 0.35, -4.8]}>
-      <mesh castShadow receiveShadow position={[-0.08, 0.82, 0]} rotation={[0, 0, -0.025]}>
+      <mesh castShadow receiveShadow position={[0, 0.82, 0]} rotation={[0, 0, -0.015]}>
         <boxGeometry args={[2.9, 1.52, 2.55]} />
         <meshStandardMaterial color="#b79a72" roughness={0.96} />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[0.14, 2.22, -0.08]} rotation={[0.015, 0.025, 0.045]}>
+      <mesh castShadow position={[0, 2.22, -0.08]} rotation={[0.01, 0.012, 0.015]}>
         <boxGeometry args={[2.42, 1.18, 2.25]} />
         <meshStandardMaterial color="#c9a978" roughness={0.94} />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[-0.17, 3.34, -0.2]} rotation={[-0.025, -0.02, -0.035]}>
+      <mesh castShadow position={[0, 3.34, -0.2]} rotation={[-0.012, -0.01, -0.015]}>
         <boxGeometry args={[1.82, 1.08, 1.86]} />
         <meshStandardMaterial color="#d4ad7a" roughness={0.92} />
         <BuildingInk />
@@ -794,6 +814,14 @@ function DataTower() {
         <boxGeometry args={[2.02, 0.18, 2.04]} />
         <meshStandardMaterial color="#705344" roughness={0.94} />
         <BuildingInk />
+      </mesh>
+      <mesh castShadow position={[0, 1.6, 1.32]}>
+        <boxGeometry args={[2.94, 0.1, 0.16]} />
+        <meshStandardMaterial color="#d0b68a" roughness={0.86} />
+      </mesh>
+      <mesh castShadow position={[0, 2.82, 1.08]}>
+        <boxGeometry args={[2.48, 0.1, 0.16]} />
+        <meshStandardMaterial color="#d6bd92" roughness={0.84} />
       </mesh>
       <mesh castShadow position={[1.53, 2.05, 0.95]} rotation={[0, 0, -0.035]}>
         <boxGeometry args={[0.92, 0.16, 0.78]} />
@@ -806,14 +834,10 @@ function DataTower() {
           <meshStandardMaterial color="#705344" roughness={1} />
         </mesh>
       ))}
-      <mesh position={[-0.14, 0.78, 1.3]}>
-        <boxGeometry args={[0.38, 0.92, 0.08]} />
-        <meshStandardMaterial color="#593c2c" roughness={1} />
-        <BuildingInk />
-      </mesh>
-      {[-0.84, -0.28, 0.34, 0.88].map((x, i) => (
-        <mesh key={`data-window-${i}`} position={[x, 1.18 + (i % 2) * 0.04, 1.3]}>
-          <boxGeometry args={[0.32, 0.36, 0.08]} />
+      <VillageDoor position={[0, 0.75, 1.35]} width={0.52} height={1.02} color="#594331" trim="#c5a977" />
+      {[-0.92, 0.92].map((x, i) => (
+        <mesh key={`data-window-${i}`} position={[x, 1.21, 1.3]}>
+          <boxGeometry args={[0.4, 0.38, 0.08]} />
           <meshStandardMaterial color={i % 2 ? '#8bcac0' : '#f0d080'} emissive={i % 2 ? '#3c8582' : '#c78d3d'} emissiveIntensity={0.28} roughness={0.45} />
           <BuildingInk />
         </mesh>
@@ -879,11 +903,7 @@ function SignalStation() {
         <meshStandardMaterial color="#73563d" roughness={0.94} />
         <BuildingInk />
       </mesh>
-      <mesh position={[0, 0.64, 0.76]}>
-        <boxGeometry args={[0.42, 0.78, 0.08]} />
-        <meshStandardMaterial color="#573b2e" roughness={1} />
-        <BuildingInk />
-      </mesh>
+      <VillageDoor position={[0, 0.62, 0.82]} width={0.48} height={0.76} color="#49392d" trim="#aa8d61" />
       <mesh position={[-0.48, 0.92, 0.76]}>
         <boxGeometry args={[0.32, 0.29, 0.08]} />
         <meshStandardMaterial color="#f0d080" emissive="#c78d3d" emissiveIntensity={0.42} />
@@ -981,14 +1001,16 @@ function StonePath({ points, radius = 0.24 }: { points: [number, number, number]
   const phase = points[0][0] * 0.73 + points[0][2] * 0.29
   // Keep the worn dirt visibly proud of both the island top and beach mesh;
   // otherwise the shallow camera makes the route disappear into z-fighting.
-  const verge = useMemo(() => makeRoadRibbon(curve, Math.max(0.62, radius * 1.9), 0.33, phase), [curve, radius, phase])
-  const surface = useMemo(() => makeRoadRibbon(curve, Math.max(0.43, radius * 1.35), 0.35, phase + 2), [curve, radius, phase])
+  // `radius` is the half-width of each route. Keep the broad village lane
+  // readable, but let door approaches taper instead of inheriting a wide floor.
+  const verge = useMemo(() => makeRoadRibbon(curve, Math.max(0.19, radius * 1.15), 0.33, phase), [curve, radius, phase])
+  const surface = useMemo(() => makeRoadRibbon(curve, Math.max(0.13, radius * 0.76), 0.35, phase + 2), [curve, radius, phase])
   const cobbles = useMemo(() => {
     const positions: number[] = []
     const colors: number[] = []
     const indices: number[] = []
-    const palette = ['#b6a381', '#9e9075', '#c3ae86', '#aa9979'].map((color) => new THREE.Color(color))
-    const count = Math.max(12, Math.ceil(curve.getLength() / 0.42))
+    const palette = ['#a49a83', '#928873', '#b0a38b', '#898574'].map((color) => new THREE.Color(color))
+    const count = Math.max(12, Math.ceil(curve.getLength() / 0.37))
     let vertexOffset = 0
     for (let i = 0; i <= count; i += 1) {
       const t = (i + 0.22 * Math.sin(i * 12.7 + phase)) / count
@@ -996,14 +1018,15 @@ function StonePath({ points, radius = 0.24 }: { points: [number, number, number]
       const center = curve.getPoint(safeT)
       const tangent = curve.getTangent(safeT)
       const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize()
-      for (const row of [-1, 0, 1]) {
-        if (row === 0 && i % 2 === 1) continue
+      // Two offset rows make a foot-worn flagstone lane; alternating the
+      // stagger keeps the stones from forming a regular brick grid.
+      for (const row of [-1, 1]) {
         const seed = i * 19.13 + row * 7.4 + phase
-        const along = 0.12 * Math.sin(seed * 1.71)
-        const across = row * Math.max(0.16, radius * 0.68) + 0.035 * Math.sin(seed * 0.83)
+        const along = (i % 2 ? 0.16 : -0.07) + 0.055 * Math.sin(seed * 1.71)
+        const across = row * Math.max(0.085, radius * 0.36) + 0.018 * Math.sin(seed * 0.83)
         const stoneCenter = center.clone().addScaledVector(tangent, along).addScaledVector(side, across)
-        const halfLength = 0.2 + (Math.sin(seed * 1.11) + 1) * 0.055
-        const halfWidth = 0.16 + (Math.cos(seed * 0.91) + 1) * 0.045
+        const halfLength = 0.145 + (Math.sin(seed * 1.11) + 1) * 0.045
+        const halfWidth = Math.min(0.105, Math.max(0.065, radius * 0.27)) + (Math.cos(seed * 0.91) + 1) * 0.012
         const sides = 7
         const color = palette[Math.abs(Math.floor(seed * 3)) % palette.length]
         positions.push(stoneCenter.x, 0.374, stoneCenter.z)
@@ -1061,10 +1084,10 @@ function StonePath({ points, radius = 0.24 }: { points: [number, number, number]
   return (
     <group>
       <mesh geometry={verge} receiveShadow>
-        <meshStandardMaterial color="#a68c61" roughness={1} side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#81775f" roughness={1} side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={surface} receiveShadow>
-        <meshStandardMaterial color="#d5bf8d" roughness={1} side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#a99a7d" roughness={1} side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={cobbles} receiveShadow castShadow>
         <meshStandardMaterial vertexColors roughness={1} side={THREE.DoubleSide} />
@@ -1086,15 +1109,16 @@ function FlagstoneApproach() {
       const tangent = route.getTangent(t)
       const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize()
       for (let row = -1; row <= 1; row += 1) {
+        if (row === 0 && i % 2 === 1) continue
         const jitter = Math.sin(i * 13.1 + row * 7.7) * 0.09
-        const center = point.clone().addScaledVector(side, row * 0.52 + jitter)
+        const center = point.clone().addScaledVector(side, row * 0.4 + jitter)
         const along = (Math.cos(i * 9.2 + row * 3.3) * 0.12)
         center.addScaledVector(tangent, along)
         const scale = 0.86 + (Math.sin(i * 5.4 + row) + 1) * 0.08
         layout.push({
           position: [center.x, center.y + 0.02, center.z],
           rotation: Math.atan2(tangent.x, tangent.z) + jitter * 0.6,
-          scale: [scale, 0.13 + (i % 3) * 0.015, 0.72 + (Math.cos(i * 3.4 + row) + 1) * 0.08],
+          scale: [scale * 0.78, 0.1 + (i % 3) * 0.012, 0.58 + (Math.cos(i * 3.4 + row) + 1) * 0.07],
           shade: shades[Math.abs(i * 3 + row) % shades.length],
         })
       }
@@ -1163,6 +1187,19 @@ function VillageResident({ position, coat, ear }: {
 function PalmTree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   const group = useRef<THREE.Group>(null)
   const { scene } = useThree()
+  const frondCurve = useMemo(() => new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.62, 0.2, 0),
+    new THREE.Vector3(1.3, 0.1, 0), new THREE.Vector3(2, -0.34, 0),
+  ]), [])
+  const frondStem = useMemo(() => new THREE.TubeGeometry(frondCurve, 16, 0.035, 5, false), [frondCurve])
+  const leafletGeometry = useMemo(() => {
+    const shape = new THREE.Shape()
+    shape.moveTo(0, 0)
+    shape.quadraticCurveTo(0.17, -0.055, 0.48, -0.22)
+    shape.quadraticCurveTo(0.34, -0.06, 0, 0.035)
+    shape.closePath()
+    return new THREE.ShapeGeometry(shape, 4)
+  }, [])
 
   useLayoutEffect(() => {
     if (!group.current) return
@@ -1189,15 +1226,27 @@ function PalmTree({ position, scale = 1 }: { position: [number, number, number];
       {Array.from({ length: 7 }, (_, i) => {
         const angle = i * Math.PI * 2 / 7
         return (
-          <group key={`palm-leaf-${i}`} rotation={[0, angle, 0]}>
-            <mesh castShadow position={[0.85, 3.1, 0]} rotation={[0, 0, -0.23]}>
-              <boxGeometry args={[1.85, 0.1, 0.2]} />
-              <meshStandardMaterial color={i % 2 ? '#438843' : '#4e9d46'} roughness={1} flatShading />
+          <group key={`palm-frond-${i}`} position={[0, 3.0, 0]} rotation={[0, angle, 0]}>
+            <mesh geometry={frondStem} castShadow>
+              <meshStandardMaterial color={i % 2 ? '#438843' : '#4e9d46'} roughness={0.88} />
             </mesh>
-            <mesh position={[1.52, 2.94, 0]} rotation={[0, 0, -0.08]}>
-              <boxGeometry args={[0.6, 0.07, 0.16]} />
-              <meshStandardMaterial color="#367d43" roughness={1} flatShading />
-            </mesh>
+            {Array.from({ length: 6 }, (_, leaflet) => {
+              const x = 0.28 + leaflet * 0.22
+              const y = 0.16 - leaflet * 0.035
+              const length = 0.92 - leaflet * 0.055
+              return [-1, 1].map((side) => (
+                <mesh
+                  key={`palm-leaflet-${leaflet}-${side}`}
+                  geometry={leafletGeometry}
+                  position={[x, y, 0]}
+                  rotation={[0.08, side * Math.PI / 2, side * 0.14]}
+                  scale={[length, 1, 1]}
+                  castShadow
+                >
+                  <meshStandardMaterial color={(leaflet + i) % 3 === 0 ? '#65ab48' : i % 2 ? '#438843' : '#4e9d46'} roughness={0.92} side={THREE.DoubleSide} />
+                </mesh>
+              ))
+            })}
           </group>
         )
       })}
@@ -1344,6 +1393,10 @@ function Crate({ position }: { position: [number, number, number] }) {
 }
 
 function VillageLamp({ position }: { position: [number, number, number] }) {
+  const bracket = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 2.08, 0), new THREE.Vector3(0.18, 2.14, 0),
+    new THREE.Vector3(0.4, 2.12, 0), new THREE.Vector3(0.51, 2.0, 0),
+  ]), 12, 0.045, 6, false), [])
   return (
     <group position={position}>
       <mesh castShadow receiveShadow position={[0, 0.12, 0]}>
@@ -1355,27 +1408,27 @@ function VillageLamp({ position }: { position: [number, number, number] }) {
         <meshStandardMaterial color="#614b35" roughness={1} flatShading />
         <BuildingInk />
       </mesh>
-      <mesh castShadow position={[0.24, 2.08, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.045, 0.055, 0.58, 6]} />
-        <meshStandardMaterial color="#614b35" roughness={1} flatShading />
+      <mesh geometry={bracket} castShadow>
+        <meshStandardMaterial color="#614b35" roughness={0.82} />
       </mesh>
       <mesh castShadow position={[0.48, 1.94, 0]}>
-        <boxGeometry args={[0.38, 0.48, 0.38]} />
-        <meshStandardMaterial color="#ffe6a1" emissive="#ffc34f" emissiveIntensity={1.1} />
+        <boxGeometry args={[0.32, 0.4, 0.32]} />
+        <meshStandardMaterial color="#f5d995" emissive="#eab755" emissiveIntensity={0.48} roughness={0.48} />
       </mesh>
+      <pointLight position={[0.48, 1.94, 0.08]} color="#ffd992" intensity={0.62} distance={4.4} decay={2} />
       {[0.29, 0.67].flatMap((x) => [-0.19, 0.19].map((z) => (
         <mesh key={`lamp-frame-${x}-${z}`} position={[x, 1.94, z]}>
-          <boxGeometry args={[0.045, 0.54, 0.045]} />
-          <meshStandardMaterial color="#604731" roughness={1} />
+          <boxGeometry args={[0.045, 0.47, 0.045]} />
+          <meshStandardMaterial color="#493b2d" roughness={0.9} metalness={0.1} />
         </mesh>
       )))}
       <mesh castShadow position={[0.48, 2.22, 0]}>
-        <coneGeometry args={[0.31, 0.2, 5]} />
-        <meshStandardMaterial color="#754b34" roughness={1} flatShading />
+        <coneGeometry args={[0.27, 0.18, 6]} />
+        <meshStandardMaterial color="#694a35" roughness={0.9} flatShading />
       </mesh>
       <mesh castShadow position={[0.48, 1.62, 0]}>
-        <boxGeometry args={[0.43, 0.08, 0.42]} />
-        <meshStandardMaterial color="#604731" roughness={1} />
+        <boxGeometry args={[0.36, 0.075, 0.36]} />
+        <meshStandardMaterial color="#493b2d" roughness={0.9} />
       </mesh>
       <mesh castShadow position={[0.48, 2.34, 0]}>
         <sphereGeometry args={[0.055, 6, 5]} />
@@ -1412,8 +1465,6 @@ function VillageDetails() {
       <StonePath points={[[1.6, 0.39, 4.25], [2.9, 0.39, 2.5], [4.9, 0.39, 0.4], [3.6, 0.39, -1.1], [5.1, 0.39, -2.8], [4.2, 0.39, -3.5]]} radius={0.24} />
       <StonePath points={[[8.1, 0.39, 3.7], [9.1, 0.39, 4.5], [8.4, 0.39, 6.2], [6.8, 0.39, 5.9]]} radius={0.22} />
       <StonePath points={[[10.7, 0.39, 5.2], [12.2, 0.39, 3.4], [10.9, 0.39, 1.2], [12.4, 0.39, -1], [11.3, 0.39, -3.7], [12, 0.39, -3.2]]} radius={0.23} />
-      <StonePath points={[[-6.8, 0.39, 0.1], [-5.1, 0.39, -0.9], [-3.2, 0.39, -2.1], [-3.8, 0.39, -3]]} radius={0.2} />
-      <StonePath points={[[-2.9, 0.39, -0.8], [-1.2, 0.39, 0.6], [0.5, 0.39, -0.3], [2.4, 0.39, 0.6], [3.6, 0.39, -1.1]]} radius={0.2} />
       {/* A subtle worn meeting patch, not a geometric building layout. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.245, 4.8]}>
         <circleGeometry args={[1.15, 32]} />
@@ -1813,23 +1864,23 @@ function OceanShallows() {
 function OceanWaveBands() {
   const waves = useMemo(() => {
     const rows = [
-      { z: -13, color: '#8bd7d1' }, { z: -18, color: '#287f91' }, { z: -24, color: '#73c7c6' },
-      { z: -30, color: '#246e82' }, { z: -36, color: '#5db4bb' },
+      { z: -14, color: '#83d0ca' }, { z: -20.5, color: '#287f91' },
+      { z: -29, color: '#6abfc0' }, { z: -39, color: '#327f8c' },
     ]
-    return rows.flatMap((row, rowIndex) => Array.from({ length: 6 }, (_, segment) => {
+    return rows.flatMap((row, rowIndex) => Array.from({ length: 5 }, (_, segment) => {
       const phase = rowIndex * 1.31 + segment * 2.17
-      const startX = -40 + segment * 14.5 + Math.sin(phase) * 2.4
-      const length = 5.5 + (0.5 + 0.5 * Math.sin(phase * 1.7)) * 6
+      const startX = -42 + segment * 17.2 + Math.sin(phase) * 3.1
+      const length = 4.2 + (0.5 + 0.5 * Math.sin(phase * 1.7)) * 7.8
       const points = Array.from({ length: 7 }, (_, i) => {
         const x = startX + (i / 6) * length
-        const z = row.z + Math.sin(x * 0.19 + phase) * 0.52 + Math.sin(x * 0.061 + phase * 2) * 0.34
+        const z = row.z + Math.sin(x * 0.19 + phase) * 0.76 + Math.sin(x * 0.061 + phase * 2) * 0.5
         const y = -0.105 + Math.sin(x * 0.23 + phase) * 0.025
         return new THREE.Vector3(x, y, z)
       })
       return {
-        geometry: new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.065, 5, false),
+        geometry: new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.043, 5, false),
         color: row.color,
-        opacity: 0.4 + (segment % 3) * 0.08,
+        opacity: 0.28 + (segment % 3) * 0.07,
       }
     }))
   }, [])
@@ -1860,9 +1911,13 @@ function Ocean() {
       const color = t < 0.54
         ? near.clone().lerp(mid, t / 0.54)
         : mid.clone().lerp(far, (t - 0.54) / 0.46)
-      const ripple = (Math.sin(x * 0.17 + y * 0.13) + Math.sin(x * 0.31 - y * 0.08 + 1.7) * 0.55) / 1.55
+      const ripple = (
+        Math.sin(x * 0.17 + y * 0.13)
+        + Math.sin(x * 0.31 - y * 0.08 + 1.7) * 0.55
+        + Math.sin(x * 0.073 - y * 0.22 + 2.8) * 0.38
+      ) / 1.93
       const tone = ripple > 0 ? new THREE.Color('#69c9c4') : new THREE.Color('#124c63')
-      color.lerp(tone, Math.abs(ripple) * 0.42)
+      color.lerp(tone, Math.abs(ripple) * 0.5)
       colors.push(color.r, color.g, color.b)
     }
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
@@ -1880,12 +1935,18 @@ function Ocean() {
       <OceanWaveBands />
       <OceanGlints />
       <group position={[0, 0.58, -27]}>
-        {[-30, -22, -13, -3, 8, 19, 29].map((x, i) => (
+        {[-32, -23, -12, 1, 14, 26, 37].map((x, i) => (
           <group key={`sea-islet-${i}`} position={[x, 0, Math.sin(i * 1.8) * 0.7]}>
-            <mesh position={[0, 0.18, 0]} scale={[3.2 + (i % 2) * 1.4, 0.54 + (i % 3) * 0.08, 1.05 + (i % 2) * 0.3]}>
+            <mesh position={[0, 0.18, 0]} scale={[2.9 + (i % 3) * 1.05, 0.5 + (i % 3) * 0.1, 0.92 + (i % 2) * 0.42]}>
               <dodecahedronGeometry args={[1, 0]} />
               <meshBasicMaterial color={['#286e79', '#357f83', '#438f8d', '#2c7880'][i % 4]} />
             </mesh>
+            {(i === 1 || i === 3 || i === 5) && (
+              <mesh position={[0.28, 0.76 + (i % 2) * 0.24, -0.04]} rotation={[0.02, i * 0.37, -0.045]} scale={[1.5, 0.82 + (i % 2) * 0.18, 0.82]}>
+                <coneGeometry args={[1.05 + (i % 2) * 0.24, 1.75 + (i % 3) * 0.35, i === 3 ? 5 : 4]} />
+                <meshBasicMaterial color={i === 3 ? '#3d8d8a' : '#347f82'} />
+              </mesh>
+            )}
             {i % 2 === 0 && (
               <mesh position={[0.25, 0.53, 0.04]} scale={[1.15, 0.22, 0.72]}>
                 <dodecahedronGeometry args={[1, 0]} />
