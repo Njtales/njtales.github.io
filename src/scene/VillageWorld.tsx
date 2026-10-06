@@ -1463,6 +1463,13 @@ function HeroCharacter({ onOpen }: { onOpen: (spot: PortfolioSpot) => void }) {
   const leftArm = useRef<THREE.Mesh>(null)
   const rightArm = useRef<THREE.Mesh>(null)
   const tail = useRef<THREE.Group>(null)
+  const tailCurve = useMemo(() => new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0.29, 0.02, -0.08),
+    new THREE.Vector3(0.49, 0.2, -0.1),
+    new THREE.Vector3(0.44, 0.43, -0.1),
+  ]), [])
+  const tailGeometry = useMemo(() => new THREE.TubeGeometry(tailCurve, 16, 0.105, 8, false), [tailCurve])
   const pressed = useRef<Record<string, boolean>>({})
   const nearestId = useRef<string | null>(null)
   const { camera, scene } = useThree()
@@ -1524,23 +1531,23 @@ function HeroCharacter({ onOpen }: { onOpen: (spot: PortfolioSpot) => void }) {
     )
     const moving = direction.lengthSq() > 0
     const gait = moving
-      ? Math.sin(clock.elapsedTime * 12) * 0.5
+      ? Math.sin(clock.elapsedTime * 13.5) * 0.68
       : 0
     if (bob.current) {
       if (moving) {
-        const bounce = Math.sin(clock.elapsedTime * 9)
+        const bounce = Math.sin(clock.elapsedTime * 8.5)
         const lift = Math.max(0, bounce)
         const landing = Math.max(0, -bounce)
-        bob.current.position.y = lift * 0.19
-        bob.current.scale.set(1 - lift * 0.055 + landing * 0.07, 1 + lift * 0.16 - landing * 0.12, 1 - lift * 0.055 + landing * 0.07)
+        bob.current.position.y = lift * 0.22
+        bob.current.scale.set(1 - lift * 0.065 + landing * 0.09, 1 + lift * 0.2 - landing * 0.16, 1 - lift * 0.065 + landing * 0.09)
       } else {
         bob.current.scale.set(1, 1, 1)
       }
     }
     if (leftLeg.current) leftLeg.current.rotation.x = gait
     if (rightLeg.current) rightLeg.current.rotation.x = -gait
-    if (leftArm.current) leftArm.current.rotation.x = -gait * 0.75
-    if (rightArm.current) rightArm.current.rotation.x = gait * 0.75
+    if (leftArm.current) leftArm.current.rotation.x = -gait * 1.05
+    if (rightArm.current) rightArm.current.rotation.x = gait * 1.05
     if (tail.current) {
       tail.current.rotation.x = Math.sin(clock.elapsedTime * (moving ? 7 : 2.2)) * (moving ? 0.12 : 0.045)
       tail.current.rotation.y = Math.sin(clock.elapsedTime * (moving ? 8 : 1.8)) * (moving ? 0.16 : 0.08)
@@ -1649,73 +1656,65 @@ function HeroCharacter({ onOpen }: { onOpen: (spot: PortfolioSpot) => void }) {
           <boxGeometry args={[0.29, 0.28, 0.06]} />
           <meshStandardMaterial color="#e5c788" roughness={1} />
         </mesh>
-        {/* A small curled tail sways along with the biped walk cycle. */}
+        {/* A soft curled robot-cat tail sways along with the biped walk cycle. */}
         <group ref={tail} position={[0.08, 0.49, -0.35]}>
-          <mesh castShadow position={[0.22, 0.15, -0.16]} rotation={[0, 0, -0.42]}>
-            <capsuleGeometry args={[0.11, 0.52, 5, 9]} />
-            <meshStandardMaterial color="#e98a39" roughness={0.84} />
+          <mesh geometry={tailGeometry} castShadow>
+            <meshStandardMaterial color="#f3a24d" roughness={0.76} />
             <BuildingInk />
           </mesh>
-          <mesh castShadow position={[0.43, 0.44, -0.16]}>
+          <mesh castShadow position={[0.44, 0.43, -0.1]}>
             <sphereGeometry args={[0.13, 10, 8]} />
-            <meshStandardMaterial color="#f3dfbd" roughness={0.88} />
+            <meshStandardMaterial color="#fff3dc" roughness={0.8} />
           </mesh>
         </group>
         <mesh castShadow position={[0, 1.52, 0.04]}>
-          <sphereGeometry args={[0.62, 20, 16]} />
-          <meshStandardMaterial color="#fff3dc" roughness={0.78} flatShading />
+          <sphereGeometry args={[0.62, 24, 20]} />
+          <meshStandardMaterial color="#fff8e9" roughness={0.58} />
           <BuildingInk />
         </mesh>
-        {/* Off-center orange mask gives Niro a custom, readable face. */}
-        <mesh castShadow position={[-0.28, 1.57, 0.49]} scale={[0.34, 0.48, 0.12]}>
-          <sphereGeometry args={[1, 18, 14]} />
-          <meshStandardMaterial color="#f19a31" roughness={0.8} flatShading />
+        {/* Dark glass faceplate is a soft-tech cue; the surrounding cat ears keep the silhouette warm. */}
+        <mesh castShadow position={[0, 1.55, 0.51]} scale={[0.45, 0.47, 0.16]}>
+          <sphereGeometry args={[1, 20, 16]} />
+          <meshStandardMaterial color="#244a5a" roughness={0.28} metalness={0.16} />
+          <BuildingInk />
+        </mesh>
+        <mesh position={[0, 1.91, 0.49]} scale={[0.18, 0.035, 0.05]}>
+          <sphereGeometry args={[1, 12, 8]} />
+          <meshBasicMaterial color="#b9f4eb" transparent opacity={0.8} />
         </mesh>
         {[-0.39, 0.39].map((x, i) => (
           <group key={`ear-${i}`}>
             <mesh castShadow position={[x, 1.98, 0.01]} rotation={[0, 0, x < 0 ? 0.2 : -0.2]}>
-              <coneGeometry args={[0.24, 0.65, 5]} />
-              <meshStandardMaterial color={x < 0 ? '#f19a31' : '#f4e6cd'} roughness={0.88} flatShading />
+              <coneGeometry args={[0.24, 0.65, 6]} />
+              <meshStandardMaterial color="#fff7e7" roughness={0.68} />
               <BuildingInk />
             </mesh>
             <mesh position={[x, 1.99, 0.18]} rotation={[0, 0, x < 0 ? 0.2 : -0.2]} scale={[0.56, 0.62, 0.3]}>
-              <coneGeometry args={[0.19, 0.53, 5]} />
-              <meshBasicMaterial color="#e98577" />
+              <coneGeometry args={[0.17, 0.49, 6]} />
+              <meshBasicMaterial color={i === 0 ? '#f3a24d' : '#6ed4d0'} />
             </mesh>
           </group>
         ))}
         {[-0.21, 0.21].map((x, i) => (
-          <group key={`eye-${i}`} position={[x, 1.58, 0.535]}>
-            <mesh>
-              <sphereGeometry args={[0.125, 14, 11]} />
-              <meshStandardMaterial color="#fffdf8" roughness={0.32} />
+          <group key={`eye-${i}`} position={[x, 1.58, 0.64]}>
+            <mesh scale={[0.7, 1.15, 0.52]}>
+              <sphereGeometry args={[0.105, 14, 11]} />
+              <meshBasicMaterial color={i === 0 ? '#87f1eb' : '#a9f6e8'} />
             </mesh>
-            <mesh position={[0.016, -0.008, 0.093]}>
-              <sphereGeometry args={[0.078, 12, 10]} />
-              <meshBasicMaterial color="#49352e" />
-            </mesh>
-            <mesh position={[0.037, 0.031, 0.15]}>
-              <sphereGeometry args={[0.027, 8, 6]} />
+            <mesh position={[-0.022, 0.035, 0.055]}>
+              <sphereGeometry args={[0.018, 8, 6]} />
               <meshBasicMaterial color="#ffffff" />
-            </mesh>
-            <mesh position={[-0.025, -0.033, 0.15]}>
-              <sphereGeometry args={[0.012, 7, 5]} />
-              <meshBasicMaterial color="#f4c966" />
             </mesh>
           </group>
         ))}
-        <mesh position={[0, 1.36, 0.59]}>
-          <sphereGeometry args={[0.155, 14, 10]} />
-          <meshStandardMaterial color="#fffaf0" roughness={0.85} />
+        <mesh position={[0, 1.38, 0.67]}>
+          <sphereGeometry args={[0.045, 10, 8]} />
+          <meshStandardMaterial color="#f3a24d" roughness={0.48} />
         </mesh>
-        <mesh position={[0, 1.42, 0.725]}>
-          <sphereGeometry args={[0.06, 10, 8]} />
-          <meshStandardMaterial color="#67443a" roughness={0.7} />
-        </mesh>
-        {[-0.35, 0.35].map((x, i) => (
-          <mesh key={`cheek-${i}`} position={[x, 1.34, 0.52]}>
-            <sphereGeometry args={[0.075, 10, 8]} />
-            <meshBasicMaterial color="#ec9b8c" transparent opacity={0.82} />
+        {[-0.31, 0.31].map((x, i) => (
+          <mesh key={`cheek-${i}`} position={[x, 1.38, 0.62]}>
+            <sphereGeometry args={[0.045, 10, 8]} />
+            <meshBasicMaterial color={i === 0 ? '#f3a24d' : '#6ed4d0'} transparent opacity={0.9} />
           </mesh>
         ))}
         <mesh ref={leftArm} castShadow position={[-0.4, 0.79, 0.04]} rotation={[0, 0, 0.48]}>
