@@ -1520,7 +1520,7 @@ function HeroCharacter({ onOpen }: { onOpen: (spot: PortfolioSpot) => void }) {
   }, [nearby, onOpen])
 
   useFrame(({ clock }, delta) => {
-    if (bob.current) bob.current.position.y = Math.sin(clock.elapsedTime * 2.2) * 0.055
+    if (bob.current) bob.current.position.y = Math.sin(clock.elapsedTime * 1.6) * 0.008
     if (!root.current) return
     const speed = 6.2 * delta
     const key = (...codes: string[]) => Number(codes.some((code) => pressed.current[code] === true))
@@ -1530,27 +1530,18 @@ function HeroCharacter({ onOpen }: { onOpen: (spot: PortfolioSpot) => void }) {
       key('KeyS', 'ArrowDown') - key('KeyW', 'ArrowUp'),
     )
     const moving = direction.lengthSq() > 0
-    const gait = moving
-      ? Math.sin(clock.elapsedTime * 13.5) * 0.68
-      : 0
+    const gait = moving ? Math.sin(clock.elapsedTime * 9.5) * 0.43 : 0
     if (bob.current) {
-      if (moving) {
-        const bounce = Math.sin(clock.elapsedTime * 8.5)
-        const lift = Math.max(0, bounce)
-        const landing = Math.max(0, -bounce)
-        bob.current.position.y = lift * 0.22
-        bob.current.scale.set(1 - lift * 0.065 + landing * 0.09, 1 + lift * 0.2 - landing * 0.16, 1 - lift * 0.065 + landing * 0.09)
-      } else {
-        bob.current.scale.set(1, 1, 1)
-      }
+      bob.current.position.y = moving ? Math.abs(Math.sin(clock.elapsedTime * 9.5)) * 0.018 : 0
+      bob.current.scale.set(1, 1, 1)
     }
     if (leftLeg.current) leftLeg.current.rotation.x = gait
     if (rightLeg.current) rightLeg.current.rotation.x = -gait
-    if (leftArm.current) leftArm.current.rotation.x = -gait * 1.05
-    if (rightArm.current) rightArm.current.rotation.x = gait * 1.05
+    if (leftArm.current) leftArm.current.rotation.x = -gait * 0.68
+    if (rightArm.current) rightArm.current.rotation.x = gait * 0.68
     if (tail.current) {
-      tail.current.rotation.x = Math.sin(clock.elapsedTime * (moving ? 7 : 2.2)) * (moving ? 0.12 : 0.045)
-      tail.current.rotation.y = Math.sin(clock.elapsedTime * (moving ? 8 : 1.8)) * (moving ? 0.16 : 0.08)
+      tail.current.rotation.x = Math.sin(clock.elapsedTime * (moving ? 5.5 : 1.4)) * (moving ? 0.045 : 0.018)
+      tail.current.rotation.y = Math.sin(clock.elapsedTime * (moving ? 5 : 1.2)) * (moving ? 0.055 : 0.025)
     }
     if (direction.lengthSq() > 0) {
       direction.normalize()
@@ -1611,126 +1602,114 @@ function HeroCharacter({ onOpen }: { onOpen: (spot: PortfolioSpot) => void }) {
         <meshBasicMaterial color="#294a32" transparent opacity={0.2} depthWrite={false} />
       </mesh>
       <group ref={bob}>
-        {/* Niro is a small upright coast rover: soft suit shapes, cat silhouette, clear face. */}
-        <mesh ref={leftLeg} castShadow position={[-0.17, 0.23, 0]}>
-          <capsuleGeometry args={[0.13, 0.27, 4, 8]} />
-          <meshStandardMaterial color="#e7d5b2" roughness={0.88} />
+        {/* Compact, practical rover robot: ceramic shell, dark joints and restrained teal hardware. */}
+        <mesh ref={leftLeg} castShadow position={[-0.16, 0.25, 0]}>
+          <capsuleGeometry args={[0.105, 0.28, 4, 8]} />
+          <meshStandardMaterial color="#d9e3dd" roughness={0.62} metalness={0.12} />
           <BuildingInk />
         </mesh>
-        <mesh ref={rightLeg} castShadow position={[0.17, 0.23, 0]}>
-          <capsuleGeometry args={[0.13, 0.27, 4, 8]} />
-          <meshStandardMaterial color="#e7d5b2" roughness={0.88} />
+        <mesh ref={rightLeg} castShadow position={[0.16, 0.25, 0]}>
+          <capsuleGeometry args={[0.105, 0.28, 4, 8]} />
+          <meshStandardMaterial color="#d9e3dd" roughness={0.62} metalness={0.12} />
           <BuildingInk />
         </mesh>
-        {[-0.17, 0.17].map((x) => (
-          <mesh key={`boot-${x}`} castShadow position={[x, 0.12, 0.055]}>
-            <sphereGeometry args={[0.17, 12, 9]} />
-            <meshStandardMaterial color="#5a4037" roughness={0.9} />
-            <BuildingInk />
-          </mesh>
+        {[-0.16, 0.16].map((x) => (
+          <group key={`boot-${x}`} position={[x, 0.12, 0.055]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.26, 0.16, 0.36]} />
+              <meshStandardMaterial color="#334a50" roughness={0.72} metalness={0.18} />
+              <BuildingInk />
+            </mesh>
+            <mesh position={[0, -0.075, 0.015]}>
+              <boxGeometry args={[0.27, 0.035, 0.37]} />
+              <meshStandardMaterial color="#c88e4f" roughness={0.9} />
+            </mesh>
+          </group>
         ))}
-        <mesh castShadow position={[0, 0.76, 0]}>
-          <capsuleGeometry args={[0.34, 0.47, 5, 10]} />
-          <meshStandardMaterial color="#f0e5ce" roughness={0.82} />
+        <mesh castShadow position={[0, 0.77, 0]}>
+          <capsuleGeometry args={[0.31, 0.43, 5, 10]} />
+          <meshStandardMaterial color="#edf0df" roughness={0.62} metalness={0.1} />
           <BuildingInk />
         </mesh>
-        <mesh castShadow position={[0, 1.02, 0.035]}>
-          <torusGeometry args={[0.255, 0.07, 8, 16]} />
-          <meshStandardMaterial color="#e77f43" roughness={0.8} />
+        <mesh castShadow position={[0, 1.08, 0.02]}>
+          <torusGeometry args={[0.22, 0.045, 8, 18]} />
+          <meshStandardMaterial color="#405c60" roughness={0.5} metalness={0.25} />
         </mesh>
-        <mesh castShadow position={[0, 0.77, 0.315]}>
-          <boxGeometry args={[0.3, 0.34, 0.07]} />
-          <meshStandardMaterial color="#4f9da0" roughness={0.55} />
-          <BuildingInk />
-        </mesh>
-        <mesh position={[0, 0.79, 0.365]}>
-          <circleGeometry args={[0.09, 12]} />
-          <meshBasicMaterial color="#f7cb72" />
-        </mesh>
-        <mesh castShadow position={[0, 0.57, -0.25]}>
-          <boxGeometry args={[0.47, 0.5, 0.29]} />
-          <meshStandardMaterial color="#cf7545" roughness={0.88} />
-          <BuildingInk />
-        </mesh>
-        <mesh castShadow position={[0, 0.57, -0.42]}>
+        <mesh castShadow position={[0, 0.76, 0.292]}>
           <boxGeometry args={[0.29, 0.28, 0.06]} />
-          <meshStandardMaterial color="#e5c788" roughness={1} />
+          <meshStandardMaterial color="#426e70" roughness={0.48} metalness={0.28} />
+          <BuildingInk />
         </mesh>
-        {/* A soft curled robot-cat tail sways along with the biped walk cycle. */}
-        <group ref={tail} position={[0.08, 0.49, -0.35]}>
+        <mesh position={[0, 0.77, 0.33]}>
+          <circleGeometry args={[0.048, 12]} />
+          <meshBasicMaterial color="#efb85d" />
+        </mesh>
+        <mesh castShadow position={[0, 0.61, -0.27]}>
+          <boxGeometry args={[0.4, 0.44, 0.25]} />
+          <meshStandardMaterial color="#586c68" roughness={0.75} metalness={0.14} />
+          <BuildingInk />
+        </mesh>
+        {/* Narrow feline sensor tail, kept close to the body rather than used as a comic prop. */}
+        <group ref={tail} position={[0.08, 0.52, -0.34]}>
           <mesh geometry={tailGeometry} castShadow>
-            <meshStandardMaterial color="#f3a24d" roughness={0.76} />
+            <meshStandardMaterial color="#637e7b" roughness={0.58} metalness={0.2} />
             <BuildingInk />
           </mesh>
-          <mesh castShadow position={[0.44, 0.43, -0.1]}>
-            <sphereGeometry args={[0.13, 10, 8]} />
-            <meshStandardMaterial color="#fff3dc" roughness={0.8} />
+          <mesh position={[0.44, 0.43, -0.1]}>
+            <sphereGeometry args={[0.09, 10, 8]} />
+            <meshStandardMaterial color="#efb85d" roughness={0.48} metalness={0.2} />
           </mesh>
         </group>
         <mesh castShadow position={[0, 1.52, 0.04]}>
-          <sphereGeometry args={[0.62, 24, 20]} />
-          <meshStandardMaterial color="#fff8e9" roughness={0.58} />
+          <sphereGeometry args={[0.44, 24, 20]} />
+          <meshStandardMaterial color="#edf0e4" roughness={0.52} metalness={0.12} />
           <BuildingInk />
         </mesh>
-        {/* Dark glass faceplate is a soft-tech cue; the surrounding cat ears keep the silhouette warm. */}
-        <mesh castShadow position={[0, 1.55, 0.51]} scale={[0.45, 0.47, 0.16]}>
+        {/* A compact dark sensor window replaces the oversized toy-like face. */}
+        <mesh castShadow position={[0, 1.52, 0.395]} scale={[0.33, 0.3, 0.115]}>
           <sphereGeometry args={[1, 20, 16]} />
-          <meshStandardMaterial color="#244a5a" roughness={0.28} metalness={0.16} />
+          <meshStandardMaterial color="#263e46" roughness={0.36} metalness={0.32} />
           <BuildingInk />
         </mesh>
-        <mesh position={[0, 1.91, 0.49]} scale={[0.18, 0.035, 0.05]}>
-          <sphereGeometry args={[1, 12, 8]} />
-          <meshBasicMaterial color="#b9f4eb" transparent opacity={0.8} />
-        </mesh>
-        {[-0.39, 0.39].map((x, i) => (
-          <group key={`ear-${i}`}>
-            <mesh castShadow position={[x, 1.98, 0.01]} rotation={[0, 0, x < 0 ? 0.2 : -0.2]}>
-              <coneGeometry args={[0.24, 0.65, 6]} />
-              <meshStandardMaterial color="#fff7e7" roughness={0.68} />
-              <BuildingInk />
-            </mesh>
-            <mesh position={[x, 1.99, 0.18]} rotation={[0, 0, x < 0 ? 0.2 : -0.2]} scale={[0.56, 0.62, 0.3]}>
-              <coneGeometry args={[0.17, 0.49, 6]} />
-              <meshBasicMaterial color={i === 0 ? '#f3a24d' : '#6ed4d0'} />
-            </mesh>
-          </group>
-        ))}
-        {[-0.21, 0.21].map((x, i) => (
-          <group key={`eye-${i}`} position={[x, 1.58, 0.64]}>
-            <mesh scale={[0.7, 1.15, 0.52]}>
-              <sphereGeometry args={[0.105, 14, 11]} />
-              <meshBasicMaterial color={i === 0 ? '#87f1eb' : '#a9f6e8'} />
-            </mesh>
-            <mesh position={[-0.022, 0.035, 0.055]}>
-              <sphereGeometry args={[0.018, 8, 6]} />
-              <meshBasicMaterial color="#ffffff" />
-            </mesh>
-          </group>
-        ))}
-        <mesh position={[0, 1.38, 0.67]}>
-          <sphereGeometry args={[0.045, 10, 8]} />
-          <meshStandardMaterial color="#f3a24d" roughness={0.48} />
-        </mesh>
-        {[-0.31, 0.31].map((x, i) => (
-          <mesh key={`cheek-${i}`} position={[x, 1.38, 0.62]}>
-            <sphereGeometry args={[0.045, 10, 8]} />
-            <meshBasicMaterial color={i === 0 ? '#f3a24d' : '#6ed4d0'} transparent opacity={0.9} />
+        {[-0.145, 0.145].map((x, i) => (
+          <mesh key={`sensor-eye-${i}`} position={[x, 1.54, 0.513]} scale={[0.65, 1.5, 0.45]}>
+            <sphereGeometry args={[0.052, 12, 10]} />
+            <meshBasicMaterial color={i === 0 ? '#86d8d0' : '#a2e1d5'} />
           </mesh>
         ))}
-        <mesh ref={leftArm} castShadow position={[-0.4, 0.79, 0.04]} rotation={[0, 0, 0.48]}>
-          <capsuleGeometry args={[0.13, 0.31, 4, 8]} />
-          <meshStandardMaterial color="#e98b45" roughness={0.85} />
+        <mesh position={[0, 1.43, 0.511]}>
+          <sphereGeometry args={[0.025, 8, 6]} />
+          <meshBasicMaterial color="#e9b35c" />
+        </mesh>
+        {/* Short ceramic cat-ear sensors; no oversized ears or face markings. */}
+        {[-0.29, 0.29].map((x, i) => (
+          <group key={`ear-${i}`}>
+            <mesh castShadow position={[x, 1.87, 0.01]} rotation={[0, 0, x < 0 ? 0.18 : -0.18]}>
+              <coneGeometry args={[0.16, 0.43, 6]} />
+              <meshStandardMaterial color="#edf0e4" roughness={0.54} metalness={0.1} />
+              <BuildingInk />
+            </mesh>
+            <mesh position={[x, 1.88, 0.11]} rotation={[0, 0, x < 0 ? 0.18 : -0.18]} scale={[0.52, 0.58, 0.3]}>
+              <coneGeometry args={[0.1, 0.29, 6]} />
+              <meshBasicMaterial color={i === 0 ? '#d4a05d' : '#62b5b0'} />
+            </mesh>
+          </group>
+        ))}
+        <mesh ref={leftArm} castShadow position={[-0.39, 0.78, 0.02]} rotation={[0, 0, 0.35]}>
+          <capsuleGeometry args={[0.115, 0.3, 4, 8]} />
+          <meshStandardMaterial color="#dfe8df" roughness={0.58} metalness={0.12} />
           <BuildingInk />
         </mesh>
-        <mesh ref={rightArm} castShadow position={[0.4, 0.79, 0.04]} rotation={[0, 0, -0.48]}>
-          <capsuleGeometry args={[0.13, 0.31, 4, 8]} />
-          <meshStandardMaterial color="#f0e5ce" roughness={0.85} />
+        <mesh ref={rightArm} castShadow position={[0.39, 0.78, 0.02]} rotation={[0, 0, -0.35]}>
+          <capsuleGeometry args={[0.115, 0.3, 4, 8]} />
+          <meshStandardMaterial color="#dfe8df" roughness={0.58} metalness={0.12} />
           <BuildingInk />
         </mesh>
-        {[-0.48, 0.48].map((x) => (
-          <mesh key={`paw-${x}`} castShadow position={[x, 0.55, 0.09]}>
-            <sphereGeometry args={[0.13, 10, 8]} />
-            <meshStandardMaterial color="#60463a" roughness={0.86} />
+        {[-0.45, 0.45].map((x) => (
+          <mesh key={`hand-${x}`} castShadow position={[x, 0.54, 0.06]}>
+            <sphereGeometry args={[0.105, 10, 8]} />
+            <meshStandardMaterial color="#40575a" roughness={0.58} metalness={0.22} />
+            <BuildingInk />
           </mesh>
         ))}
       </group>
