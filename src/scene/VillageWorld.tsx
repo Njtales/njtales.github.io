@@ -28,11 +28,12 @@ beachShape.bezierCurveTo(-12, -13.4, -8, -10.8, -5, -11.1)
 beachShape.bezierCurveTo(-1, -14.1, 2, -13.5, 5, -12.8)
 beachShape.bezierCurveTo(9, -12.1, 11, -13.1, 15, -10.5)
 beachShape.bezierCurveTo(19, -8.1, 21, -7.4, 24.8, -3.2)
-beachShape.lineTo(28, -24)
-beachShape.bezierCurveTo(22, -21.4, 18, -23.2, 12, -21.8)
-beachShape.bezierCurveTo(5, -20.2, 0, -23.6, -6, -21.9)
-beachShape.bezierCurveTo(-13, -20.1, -18, -23.6, -24, -21.8)
-beachShape.bezierCurveTo(-26, -21.4, -28, -22.4, -29, -24)
+beachShape.lineTo(28, -19.5)
+beachShape.bezierCurveTo(25, -18.2, 22, -15.4, 18, -16.4)
+beachShape.bezierCurveTo(13, -16, 10, -20.1, 5, -19.2)
+beachShape.bezierCurveTo(0, -18.2, -3, -15.9, -8, -16.5)
+beachShape.bezierCurveTo(-13, -16, -16, -20, -21, -19)
+beachShape.bezierCurveTo(-25, -18.2, -27, -15.4, -29, -19.5)
 beachShape.closePath()
 
 const islandWalkPolygon = footprint.getPoints(48)
@@ -81,7 +82,7 @@ inletShape.closePath()
 function Island() {
   const texturedGeometry = useMemo(() => {
     const geometry = new THREE.ExtrudeGeometry(footprint, {
-      depth: 0.48,
+      depth: 0.86,
       bevelEnabled: true,
       bevelSegments: 2,
       steps: 1,
@@ -111,9 +112,9 @@ function Island() {
   }, [])
 
   return (
-    <group rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.25, 0]}>
+    <group rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.63, 0]}>
       <mesh geometry={texturedGeometry} receiveShadow castShadow userData={{ walkableTerrain: true }}>
-        <meshStandardMaterial color="#ffffff" vertexColors roughness={1} flatShading />
+        <meshStandardMaterial attach="material-0" color="#ffffff" vertexColors roughness={1} flatShading />
         <meshStandardMaterial attach="material-1" color="#ffffff" vertexColors roughness={1} flatShading />
       </mesh>
     </group>
@@ -153,6 +154,16 @@ function Beach() {
     const line = new THREE.CatmullRomCurve3(coast.points.map((point) => new THREE.Vector3(point.x, 0.105, point.z + 0.31)), false, 'catmullrom', 0.35)
     return new THREE.TubeGeometry(line, 120, 0.065, 6, false)
   }, [coast])
+  const surfFoamGeometry = useMemo(() => {
+    const points: [number, number, number][] = [
+      [-29, 0.08, 19.5], [-25, 0.08, 17.4], [-21, 0.08, 18.8], [-16, 0.08, 20],
+      [-12, 0.08, 18], [-8, 0.08, 16.5], [-3, 0.08, 16.2], [1, 0.08, 17.1],
+      [5, 0.08, 19.2], [10, 0.08, 20], [14, 0.08, 17.3], [18, 0.08, 16.4],
+      [22, 0.08, 15.8], [25, 0.08, 17.6], [28, 0.08, 19.5],
+    ]
+    const line = new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(...point)), false, 'centripetal', 0.3)
+    return new THREE.TubeGeometry(line, 120, 0.075, 6, false)
+  }, [])
 
   return (
     <>
@@ -175,6 +186,9 @@ function Beach() {
       <mesh geometry={outerFoamGeometry}>
         <meshBasicMaterial color="#d8efdf" transparent opacity={0.46} depthWrite={false} />
       </mesh>
+      <mesh geometry={surfFoamGeometry}>
+        <meshBasicMaterial color="#d5ece0" transparent opacity={0.58} depthWrite={false} />
+      </mesh>
       <BeachDetails />
       <SandRidges />
     </>
@@ -183,8 +197,8 @@ function Beach() {
 
 function SandRidges() {
   const bands = useMemo(() => [
-    [[-24, 0.305, 19.2], [-18, 0.305, 18.4], [-10, 0.305, 19.4], [-2, 0.305, 18.7], [7, 0.305, 19.8], [16, 0.305, 18.1], [24, 0.305, 15.5]],
-    [[-22, 0.304, 22.3], [-14, 0.304, 21.4], [-5, 0.304, 22.5], [4, 0.304, 21.7], [14, 0.304, 21.9], [23, 0.304, 18.9]],
+    [[-24, 0.305, 15.4], [-18, 0.305, 15], [-10, 0.305, 15.8], [-2, 0.305, 15.2], [7, 0.305, 16], [16, 0.305, 14.7], [24, 0.305, 12.7]],
+    [[-22, 0.304, 16.2], [-14, 0.304, 15.6], [-5, 0.304, 16.4], [4, 0.304, 15.9], [14, 0.304, 15.9], [23, 0.304, 13.7]],
   ].map((points) => {
     const curve = new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(...point)), false, 'catmullrom', 0.3)
     return new THREE.TubeGeometry(curve, 64, 0.055, 5, false)
@@ -204,20 +218,20 @@ function BeachDetails() {
   return (
     <group>
       {/* Low tide rocks and coral accents sit on the near beach, not on the grass. */}
-      <mesh position={[-10.5, 0.52, 17]} rotation={[0.15, 0.45, 0.2]} castShadow>
+      <mesh position={[-10.5, 0.52, 14]} rotation={[0.15, 0.45, 0.2]} castShadow>
         <dodecahedronGeometry args={[0.55, 0]} />
         <meshStandardMaterial color="#aa8d6f" roughness={1} flatShading />
       </mesh>
-      <mesh position={[-9.8, 0.46, 17.5]} scale={[0.62, 0.7, 0.55]} castShadow>
+      <mesh position={[-9.8, 0.46, 14.5]} scale={[0.62, 0.7, 0.55]} castShadow>
         <dodecahedronGeometry args={[0.43, 0]} />
         <meshStandardMaterial color="#c4a27c" roughness={1} flatShading />
       </mesh>
-      <mesh position={[-3.4, 0.47, 20]} rotation={[0, 0.25, -0.04]} castShadow>
+      <mesh position={[-3.4, 0.47, 15.1]} rotation={[0, 0.25, -0.04]} castShadow>
         <dodecahedronGeometry args={[0.48, 0]} />
         <meshStandardMaterial color="#dc806e" roughness={1} flatShading />
       </mesh>
       {/* Broken boat ribs: a few weathered boards rather than a full extra asset. */}
-      <group position={[12.5, 0.48, 18]} rotation={[0, -0.25, 0.1]}>
+      <group position={[12.5, 0.48, 15]} rotation={[0, -0.25, 0.1]}>
         <mesh castShadow rotation={[0, 0, -0.12]}>
           <boxGeometry args={[3.4, 0.22, 0.38]} />
           <meshStandardMaterial color="#795536" roughness={1} />
@@ -231,7 +245,7 @@ function BeachDetails() {
           <meshStandardMaterial color="#694b31" roughness={1} />
         </mesh>
       </group>
-      <Starfish position={[5.4, 0.33, 17.2]} />
+      <Starfish position={[5.4, 0.33, 14]} />
       <TideLine />
       <Dock />
     </group>
@@ -1771,7 +1785,7 @@ function OceanGlints() {
   return (
     <group ref={glints}>
       {streaks.map(([x, z, length], i) => (
-        <mesh key={`water-glint-${i}`} position={[x, -0.12, z]} rotation={[-Math.PI / 2, 0, Math.sin(i * 4.1) * 0.07]}>
+        <mesh key={`water-glint-${i}`} position={[x, 0.08, z]} rotation={[-Math.PI / 2, 0, Math.sin(i * 4.1) * 0.07]}>
           <planeGeometry args={[length, 0.17 + (i % 3) * 0.07]} />
           <meshBasicMaterial color={i % 3 ? '#9de0d5' : '#e1f0cf'} transparent opacity={0.46} depthWrite={false} />
         </mesh>
@@ -1805,7 +1819,7 @@ function OceanShallows() {
   return (
     <group ref={group}>
       {patches.map(([x, z, sx, sz, rotation, color], i) => (
-        <mesh key={`sea-shallow-${i}`} position={[x, -0.08, z]} rotation={[-Math.PI / 2, 0, rotation]} scale={[sx * 1.25, sz * 2.4, 1]}>
+        <mesh key={`sea-shallow-${i}`} position={[x, 0.075, z]} rotation={[-Math.PI / 2, 0, rotation]} scale={[sx * 1.25, sz * 2.4, 1]}>
           <circleGeometry args={[1, 11]} />
           <meshBasicMaterial color={color} transparent opacity={0.31} depthWrite={false} side={THREE.DoubleSide} />
         </mesh>
@@ -1827,7 +1841,7 @@ function OceanWaveBands() {
       const points = Array.from({ length: 7 }, (_, i) => {
         const x = startX + (i / 6) * length
         const z = row.z + Math.sin(x * 0.19 + phase) * 0.76 + Math.sin(x * 0.061 + phase * 2) * 0.5
-        const y = -0.105 + Math.sin(x * 0.23 + phase) * 0.025
+        const y = 0.08 + Math.sin(x * 0.23 + phase) * 0.025
         return new THREE.Vector3(x, y, z)
       })
       return {
@@ -1880,7 +1894,7 @@ function Ocean() {
   return (
     <>
       <SkyBackdrop />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.27, -5]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, -5]} receiveShadow>
         <primitive object={oceanGeometry} attach="geometry" />
         <meshStandardMaterial vertexColors roughness={0.4} metalness={0.02} />
       </mesh>
