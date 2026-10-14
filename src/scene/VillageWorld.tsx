@@ -28,8 +28,11 @@ beachShape.bezierCurveTo(-12, -13.4, -8, -10.8, -5, -11.1)
 beachShape.bezierCurveTo(-1, -14.1, 2, -13.5, 5, -12.8)
 beachShape.bezierCurveTo(9, -12.1, 11, -13.1, 15, -10.5)
 beachShape.bezierCurveTo(19, -8.1, 21, -7.4, 24.8, -3.2)
-beachShape.lineTo(29, -25)
-beachShape.lineTo(-29, -25)
+beachShape.lineTo(28, -24)
+beachShape.bezierCurveTo(22, -21.4, 18, -23.2, 12, -21.8)
+beachShape.bezierCurveTo(5, -20.2, 0, -23.6, -6, -21.9)
+beachShape.bezierCurveTo(-13, -20.1, -18, -23.6, -24, -21.8)
+beachShape.bezierCurveTo(-26, -21.4, -28, -22.4, -29, -24)
 beachShape.closePath()
 
 const islandWalkPolygon = footprint.getPoints(48)
@@ -76,27 +79,65 @@ inletShape.bezierCurveTo(-22, -8, -25, -7, -28, -5)
 inletShape.closePath()
 
 function Island() {
-  const geometry = useMemo(() => new THREE.ExtrudeGeometry(footprint, {
-    depth: 0.48,
-    bevelEnabled: true,
-    bevelSegments: 2,
-    steps: 1,
-    bevelSize: 0.18,
-    bevelThickness: 0.1,
-    curveSegments: 12,
-  }), [])
+  const texturedGeometry = useMemo(() => {
+    const geometry = new THREE.ExtrudeGeometry(footprint, {
+      depth: 0.48,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      steps: 1,
+      bevelSize: 0.18,
+      bevelThickness: 0.1,
+      curveSegments: 12,
+    })
+    const positions = geometry.attributes.position
+    const normals = geometry.attributes.normal
+    const colors = new Float32Array(positions.count * 3)
+    const grass = new THREE.Color('#61ad43')
+    const cliff = new THREE.Color('#485d46')
+    for (let i = 0; i < positions.count; i += 1) {
+      const x = positions.getX(i)
+      const z = positions.getY(i)
+      const topFace = normals.getZ(i) > 0.66
+      const broadVariation = Math.sin(x * 0.24 + z * 0.31) * 0.5 + Math.sin(x * 0.11 - z * 0.27 + 1.4) * 0.34
+      const smallVariation = Math.sin(x * 0.8 + z * 0.55) * 0.16
+      const value = topFace ? 0.96 + broadVariation * 0.08 + smallVariation * 0.035 : 0.9 + broadVariation * 0.06
+      const shade = (topFace ? grass : cliff).clone().multiplyScalar(value)
+      colors[i * 3] = shade.r
+      colors[i * 3 + 1] = shade.g
+      colors[i * 3 + 2] = shade.b
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+    return geometry
+  }, [])
 
   return (
     <group rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.25, 0]}>
-      <mesh geometry={geometry} receiveShadow castShadow userData={{ walkableTerrain: true }}>
-        <meshStandardMaterial color="#5aaa3c" roughness={1} flatShading />
+      <mesh geometry={texturedGeometry} receiveShadow castShadow userData={{ walkableTerrain: true }}>
+        <meshStandardMaterial color="#ffffff" vertexColors roughness={1} flatShading />
+        <meshStandardMaterial attach="material-1" color="#ffffff" vertexColors roughness={1} flatShading />
       </mesh>
     </group>
   )
 }
 
 function Beach() {
-  const sandGeometry = useMemo(() => new THREE.ShapeGeometry(beachShape, 32), [])
+  const sandGeometry = useMemo(() => {
+    const geometry = new THREE.ShapeGeometry(beachShape, 32)
+    const positions = geometry.attributes.position
+    const colors = new Float32Array(positions.count * 3)
+    const sand = new THREE.Color('#ddc79d')
+    for (let i = 0; i < positions.count; i += 1) {
+      const x = positions.getX(i)
+      const z = positions.getY(i)
+      const ripple = Math.sin(x * 0.26 + z * 0.34) * 0.5 + Math.sin(x * 0.13 - z * 0.21 + 1.8) * 0.5
+      const shade = sand.clone().multiplyScalar(0.96 + ripple * 0.045)
+      colors[i * 3] = shade.r
+      colors[i * 3 + 1] = shade.g
+      colors[i * 3 + 2] = shade.b
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+    return geometry
+  }, [])
   const inletGeometry = useMemo(() => new THREE.ShapeGeometry(inletShape, 16), [])
   const coast = useMemo(() => new THREE.CatmullRomCurve3([
     [-25, 0.13, 7.5], [-22, 0.13, 9.2], [-18, 0.13, 12.3], [-13, 0.13, 13.1],
@@ -117,7 +158,7 @@ function Beach() {
     <>
       <group rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.29, 0]}>
         <mesh geometry={sandGeometry} receiveShadow>
-          <meshStandardMaterial color="#d4b483" roughness={1} side={THREE.DoubleSide} />
+          <meshStandardMaterial color="#ffffff" vertexColors roughness={1} side={THREE.DoubleSide} />
         </mesh>
       </group>
       <group rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.245, 0]}>
@@ -301,15 +342,35 @@ function MapEdgeFraming() {
   )
 }
 
-function TerrainRise({ position, scale, color }: {
+function TerrainRise({ position, scale, color, rotation = [0, 0, 0] }: {
   position: [number, number, number]
   scale: [number, number, number]
   color: string
+  rotation?: [number, number, number]
 }) {
+  const geometry = useMemo(() => {
+    const geometry = new THREE.DodecahedronGeometry(1, 1)
+    const positions = geometry.attributes.position
+    const colors = new Float32Array(positions.count * 3)
+    const base = new THREE.Color(color)
+    for (let i = 0; i < positions.count; i += 1) {
+      const x = positions.getX(i)
+      const y = positions.getY(i)
+      const z = positions.getZ(i)
+      const sunFacing = Math.max(-0.2, x * -0.12 + y * 0.2 + z * 0.14)
+      const painterlyVariation = Math.sin(x * 8.1 + z * 3.7) * 0.035 + Math.sin(y * 9.2 - x * 4.3) * 0.025
+      const heightTint = Math.max(0, y) * 0.055
+      const shade = base.clone().multiplyScalar(0.86 + sunFacing + painterlyVariation + heightTint)
+      colors[i * 3] = shade.r
+      colors[i * 3 + 1] = shade.g
+      colors[i * 3 + 2] = shade.b
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+    return geometry
+  }, [color])
   return (
-    <mesh position={position} scale={scale} castShadow receiveShadow userData={{ walkableTerrain: true }}>
-      <dodecahedronGeometry args={[1, 1]} />
-      <meshStandardMaterial color={color} roughness={1} flatShading />
+    <mesh position={position} scale={scale} rotation={rotation} geometry={geometry} castShadow receiveShadow userData={{ walkableTerrain: true }}>
+      <meshStandardMaterial vertexColors roughness={1} flatShading />
     </mesh>
   )
 }
@@ -468,7 +529,7 @@ function VillageWindow({ position, width = 0.42, height = 0.42, pane = '#efd38d'
 
 function AboutCottage() {
   return (
-    <group position={[11.4, 0.34, 4.3]} scale={0.9}>
+    <group position={[9.2, 0.34, 4.1]} scale={0.9}>
       <mesh castShadow receiveShadow position={[0, 0.9, 0]} rotation={[0, 0, -0.025]}>
         <boxGeometry args={[2.65, 1.8, 2.05]} />
         <meshStandardMaterial color="#d7b785" roughness={0.96} />
@@ -547,7 +608,7 @@ function HobbiesHut() {
   }, [scene])
 
   return (
-    <group ref={hut} position={[17, 0.34, -4.5]} scale={0.82}>
+    <group ref={hut} position={[14.4, 0.34, -2.9]} scale={0.82}>
       <mesh castShadow receiveShadow position={[0, 0.84, 0]}>
         <cylinderGeometry args={[1.12, 1.28, 1.62, 9]} />
         <meshStandardMaterial color="#c5a16d" roughness={0.96} flatShading />
@@ -604,7 +665,7 @@ function HobbiesHut() {
 
 function Clocktower() {
   return (
-    <group position={[-4.1, 0.34, -7]}>
+    <group position={[-4.8, 0.34, -6.7]}>
       <mesh castShadow receiveShadow position={[0, 0.95, 0]}>
         <cylinderGeometry args={[1.05, 1.36, 1.9, 8]} />
         <meshStandardMaterial color="#90734f" roughness={0.96} flatShading />
@@ -693,7 +754,7 @@ function LearningLab() {
     return new THREE.TubeGeometry(curve, 20, 0.035, 5, false)
   }), [])
   return (
-    <group position={[-16.7, 0.38, 3.7]}>
+    <group position={[-14.2, 0.38, 2.8]}>
       <mesh castShadow receiveShadow position={[0, 0.88, 0]}>
         <cylinderGeometry args={[1.24, 1.42, 1.75, 9]} />
         <meshStandardMaterial color="#695990" roughness={0.84} flatShading />
@@ -754,7 +815,7 @@ function LearningLab() {
 
 function CloudForge() {
   return (
-    <group position={[-10.3, 0.34, -1.8]}>
+    <group position={[-9.6, 0.34, -1.5]}>
       <mesh castShadow receiveShadow position={[0, 1.05, 0]}>
         <boxGeometry args={[4.05, 2, 2.72]} />
         <meshStandardMaterial color="#b8754d" roughness={0.96} />
@@ -812,7 +873,7 @@ function CloudForge() {
 
 function DataTower() {
   return (
-    <group position={[6.8, 0.35, -4.8]}>
+    <group position={[5.4, 0.35, -4.4]}>
       <mesh castShadow receiveShadow position={[0, 0.82, 0]} rotation={[0, 0, -0.015]}>
         <boxGeometry args={[2.9, 1.52, 2.55]} />
         <meshStandardMaterial color="#b79a72" roughness={0.96} />
@@ -900,7 +961,7 @@ function SignalStation() {
     }
   })
   return (
-    <group position={[1.2, 0.35, 0.6]}>
+    <group position={[0.3, 0.35, 0.2]}>
       <mesh castShadow receiveShadow position={[0, 0.7, 0]}>
         <boxGeometry args={[1.7, 1.12, 1.45]} />
         <meshStandardMaterial color="#ad8851" roughness={0.9} />
@@ -1277,31 +1338,51 @@ function VillageLamp({ position }: { position: [number, number, number] }) {
 
 function VillageDetails() {
   const trees: [number, number, number, number, string?][] = [
-    [-25.5, 0.32, -5.3, 0.96, '#347e4b'], [-22, 0.34, -5.8, 0.82], [-20, 0.34, -5.7, 0.82],
-    [-12.2, 0.34, -5.6, 1.02, '#367d43'], [-7.2, 0.34, -5.2, 0.78], [0.7, 0.34, -8.5, 0.94],
-    [20.5, 0.34, -7.5, 1.15, '#397f42'], [22.3, 0.34, -5.2, 1.12, '#347648'],
+    [-25.5, 0.32, -5.3, 0.96, '#347e4b'], [-22, 0.34, -5.8, 0.82], [-19.4, 0.34, -6.6, 0.82],
+    [-15.5, 0.34, -7.2, 0.92, '#367d43'], [-12.2, 0.34, -7.9, 0.78], [0.7, 0.34, -8.5, 0.94],
+    [11.5, 0.34, -7.5, 1.02, '#397f42'], [18.8, 0.34, -7.2, 1.15, '#347648'],
     [21.2, 0.34, -2.6, 0.96], [24.2, 0.34, -5.5, 1.12, '#347c4a'],
   ]
   const bushes: [number, number, number, number, boolean?][] = [
-    [-23, 0.34, 1.8, 0.76, true], [-20.8, 0.34, 3.4, 0.78], [-14.7, 0.34, 4.9, 0.8, true],
-    [-13.1, 0.34, 1.8, 0.68], [-19.2, 0.34, -3.7, 0.68], [-17.1, 0.34, -3.7, 0.6, true],
-    [3.5, 0.34, -1, 0.9], [8.2, 0.34, 4.9, 0.8], [14.5, 0.34, 5.7, 0.8, true],
+    [-23, 0.34, 1.8, 0.76, true], [-20.8, 0.34, 3.4, 0.78], [-14.7, 0.34, 6.4, 0.8, true],
+    [-13.1, 0.34, -4, 0.68], [-19.2, 0.34, -3.7, 0.68], [-17.1, 0.34, -3.7, 0.6, true],
+    [3.5, 0.34, 1.8, 0.9], [8.2, 0.34, 6.2, 0.8], [14.5, 0.34, 5.7, 0.8, true],
     [18.8, 0.34, 1.1, 0.82], [23, 0.34, 4.8, 0.74, true],
   ]
 
   return (
     <group>
+      <Footpath points={[
+        [-22, 0.365, 6.2], [-18, 0.365, 4.9], [-14, 0.365, 6.1], [-10, 0.365, 4.5],
+        [-7, 0.365, 5.1], [-3.2, 0.365, 3.9], [0.8, 0.365, 4.5], [4.2, 0.365, 3.55],
+        [7.6, 0.365, 4.65], [10.8, 0.365, 3.25], [14.4, 0.365, 4.2], [16.5, 0.365, 8.1],
+      ]} width={0.62} />
+      <Footpath points={[
+        [-3.2, 0.365, 3.9], [-4.7, 0.365, 1.3], [-5.3, 0.365, -1.6], [-5.1, 0.365, -4.5],
+      ]} width={0.38} />
+      <Footpath points={[
+        [-10, 0.365, 4.5], [-11.6, 0.365, 2.2], [-11.2, 0.365, 0.3], [-10.5, 0.365, -0.25],
+      ]} width={0.34} />
+      <Footpath points={[
+        [0.8, 0.365, 4.5], [0.2, 0.365, 2.8], [0.5, 0.365, 1.1],
+      ]} width={0.38} />
+      <Footpath points={[
+        [4.2, 0.365, 3.55], [5.2, 0.365, 1.4], [5.7, 0.365, -1.1], [6.3, 0.365, -2.7],
+      ]} width={0.34} />
+      <Footpath points={[
+        [14.4, 0.365, 4.2], [14.9, 0.365, 1.5], [14.1, 0.365, -0.5], [14.3, 0.365, -1.7],
+      ]} width={0.32} />
       <Text position={[-4.8, 0.43, 7.2]} rotation={[-Math.PI / 2, 0, -0.12]} fontSize={0.48} color="#435837" anchorX="center" anchorY="middle" letterSpacing={0.04}>
         STAR CLIFF
       </Text>
       <Text position={[15.5, 0.43, 4.4]} rotation={[-Math.PI / 2, 0, -0.1]} fontSize={0.46} color="#435837" anchorX="center" anchorY="middle" letterSpacing={0.04}>
         DUSTY BEACH
       </Text>
-      <VillageResident position={[-10.2, 0.38, 4.3]} coat="#8a6240" ear="#c78b62" />
-      <VillageResident position={[1.5, 0.38, 3.7]} coat="#d8c5a3" ear="#b9826b" />
-      <VillageResident position={[8.2, 0.38, 5.15]} coat="#765b50" ear="#a47c6e" />
-      <PalmTree position={[-19.8, 0.32, -7.1]} scale={0.94} />
-      <PalmTree position={[14.8, 0.32, -7.7]} scale={0.82} />
+      <VillageResident position={[-7.7, 0.38, 2.7]} coat="#8a6240" ear="#c78b62" />
+      <VillageResident position={[2.4, 0.38, 2.6]} coat="#d8c5a3" ear="#b9826b" />
+      <VillageResident position={[12.5, 0.38, 2.2]} coat="#765b50" ear="#a47c6e" />
+      <PalmTree position={[-21.2, 0.32, -7.1]} scale={0.94} />
+      <PalmTree position={[20.1, 0.32, -7.7]} scale={0.82} />
 
       {trees.map(([x, y, z, scale, tint], i) => (
         <Tree key={`tree-${i}`} position={[x, y, z]} scale={scale} tint={tint} variant={i} />
@@ -1312,18 +1393,69 @@ function VillageDetails() {
 
       {/* Functional props cluster around the workshop; extras mark the hub approach. */}
       {[
-        [-16.2, 0.34, 1.4], [-15.3, 0.34, 1.2], [-15.8, 0.34, 2.05], [-12.2, 0.34, 3.4],
-        [-8.4, 0.34, 3.5], [6.8, 0.34, 1.3], [15.8, 0.34, 1.5],
+        [-12.6, 0.34, -0.7], [-11.7, 0.34, -0.9], [-12.1, 0.34, 0.05], [-7.9, 0.34, 2.7],
+        [-6.3, 0.34, 2.4], [6.9, 0.34, 1.5], [15.8, 0.34, 0.7],
       ].map((p, i) => <Barrel key={`barrel-${i}`} position={p as [number, number, number]} scale={i === 3 ? 0.86 : 1} />)}
       {[
-        [-16.8, 0.34, 0.25], [-11.8, 0.34, 0.1], [-7.5, 0.34, 2.4], [-2.4, 0.34, 0.6],
-        [4.8, 0.34, 0.8], [8.1, 0.34, 0.4], [15.8, 0.34, 0.2],
+        [-15.4, 0.34, 1.1], [-10.8, 0.34, 1.4], [-7.5, 0.34, 1.8], [1.8, 0.34, 1.1],
+        [4.8, 0.34, 0.8], [9.6, 0.34, 0.7], [15.8, 0.34, -0.2],
       ].map((p, i) => <Crate key={`crate-${i}`} position={p as [number, number, number]} />)}
       {[
-        [-12.8, 0.34, 5.8], [-5.9, 0.34, 6.1], [1.2, 0.34, 5.8],
-        [8.5, 0.34, 5.1], [12.1, 0.34, 2.2],
+        [-17.8, 0.34, 5.4], [-8.7, 0.34, 5.3], [1.9, 0.34, 5.7],
+        [9.6, 0.34, 5.9], [15.1, 0.34, 2.1],
       ].map((p, i) => <VillageLamp key={`village-lamp-${i}`} position={p as [number, number, number]} />)}
     </group>
+  )
+}
+
+function Footpath({ points, width = 0.6 }: {
+  points: [number, number, number][]
+  width?: number
+}) {
+  const curve = useMemo(() => new THREE.CatmullRomCurve3(
+    points.map((point) => new THREE.Vector3(...point)), false, 'catmullrom', 0.35,
+  ), [points])
+  const geometry = useMemo(() => {
+    const divisions = Math.max(36, Math.ceil(curve.getLength() * 9))
+    const positions: number[] = []
+    const colors: number[] = []
+    const indices: number[] = []
+    const centerColor = new THREE.Color('#b5a57b')
+    const edgeColor = new THREE.Color('#777750')
+    const hash = (value: number) => {
+      const sample = Math.sin(value * 127.1 + points[0][0] * 11.3 + points[0][2] * 7.7) * 43758.5453
+      return sample - Math.floor(sample)
+    }
+    for (let i = 0; i <= divisions; i += 1) {
+      const t = i / divisions
+      const center = curve.getPoint(t)
+      const tangent = curve.getTangent(t)
+      const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize()
+      const distance = t * curve.getLength()
+      const halfWidth = width * (0.84 + Math.sin(distance * 1.24) * 0.07 + (hash(Math.floor(distance * 1.7)) - 0.5) * 0.14)
+      for (const [offset, edgeAmount] of [[-1, 0.72], [0, 0.08], [1, 0.72]] as const) {
+        const color = centerColor.clone().lerp(edgeColor, edgeAmount + (hash(i * 3 + offset + 5) - 0.5) * 0.12)
+        color.offsetHSL((hash(i + 19) - 0.5) * 0.012, 0, (hash(i + 41) - 0.5) * 0.07)
+        positions.push(center.x + side.x * halfWidth * offset, center.y, center.z + side.z * halfWidth * offset)
+        colors.push(color.r, color.g, color.b)
+      }
+      if (i < divisions) {
+        const a = i * 3
+        indices.push(a, a + 3, a + 1, a + 1, a + 3, a + 4)
+        indices.push(a + 1, a + 4, a + 2, a + 2, a + 4, a + 5)
+      }
+    }
+    const result = new THREE.BufferGeometry()
+    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    result.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+    result.setIndex(indices)
+    result.computeVertexNormals()
+    return result
+  }, [curve, points, width])
+  return (
+    <mesh geometry={geometry} receiveShadow>
+      <meshStandardMaterial vertexColors roughness={1} metalness={0} flatShading side={THREE.DoubleSide} />
+    </mesh>
   )
 }
 
@@ -1756,8 +1888,11 @@ function Ocean() {
       <OceanWaveBands />
       <OceanGlints />
       <group position={[0, 0.58, -27]}>
-        {[-32, -23, -12, 1, 14, 26, 37].map((x, i) => (
-          <group key={`sea-islet-${i}`} position={[x, 0, Math.sin(i * 1.8) * 0.7]}>
+        {[
+          [-35, -27, 1.3], [-25, -35, 0.82], [-15, -23, 1], [-5, -31, 1.22],
+          [8, -24, 0.9], [21, -34, 1.28], [34, -26, 1.15],
+        ].map(([x, z, size], i) => (
+          <group key={i} position={[x, 0.58, z]} scale={size}>
             <mesh position={[0, 0.18, 0]} scale={[2.9 + (i % 3) * 1.05, 0.5 + (i % 3) * 0.1, 0.92 + (i % 2) * 0.42]}>
               <dodecahedronGeometry args={[1, 0]} />
               <meshBasicMaterial color={['#286e79', '#357f83', '#438f8d', '#2c7880'][i % 4]} />
@@ -1915,9 +2050,11 @@ export function VillageWorld({ onOpen }: { onOpen: (spot: PortfolioSpot) => void
       <Island />
       <Beach />
       <MapEdgeFraming />
-      {/* Broad low rises establish the future rear-left / rear-right skyline. */}
-      <TerrainRise position={[-15, 0.45, -4]} scale={[5.8, 1.05, 2.5]} color="#76b744" />
-      <TerrainRise position={[13, 0.45, -5.2]} scale={[6.2, 1.2, 3]} color="#6eaa40" />
+      {/* Faceted coastal ridges frame the village without blocking its landmarks. */}
+      <TerrainRise position={[-18.7, 1.45, -6.6]} scale={[4.5, 2.15, 3.1]} rotation={[0.02, -0.18, 0.04]} color="#719b49" />
+      <TerrainRise position={[-21, 1.1, 1.4]} scale={[3.7, 1.55, 2.7]} rotation={[0, 0.22, -0.03]} color="#527e40" />
+      <TerrainRise position={[18.6, 1.45, -6.7]} scale={[4.8, 2.1, 3.2]} rotation={[0.02, 0.26, -0.04]} color="#6b9143" />
+      <TerrainRise position={[21.2, 1.15, 1.35]} scale={[4.1, 1.7, 2.8]} rotation={[0, -0.16, 0.03]} color="#4f7b3c" />
       <VillageBlockout />
       <VillageDetails />
       <HeroCharacter onOpen={onOpen} />
