@@ -468,7 +468,7 @@ function VillageWindow({ position, width = 0.42, height = 0.42, pane = '#efd38d'
 
 function AboutCottage() {
   return (
-    <group position={[6.8, 0.34, 4.5]} scale={0.9}>
+    <group position={[11.4, 0.34, 4.3]} scale={0.9}>
       <mesh castShadow receiveShadow position={[0, 0.9, 0]} rotation={[0, 0, -0.025]}>
         <boxGeometry args={[2.65, 1.8, 2.05]} />
         <meshStandardMaterial color="#d7b785" roughness={0.96} />
@@ -547,7 +547,7 @@ function HobbiesHut() {
   }, [scene])
 
   return (
-    <group ref={hut} position={[12, 0.34, -4.5]} scale={0.82}>
+    <group ref={hut} position={[17, 0.34, -4.5]} scale={0.82}>
       <mesh castShadow receiveShadow position={[0, 0.84, 0]}>
         <cylinderGeometry args={[1.12, 1.28, 1.62, 9]} />
         <meshStandardMaterial color="#c5a16d" roughness={0.96} flatShading />
@@ -604,7 +604,7 @@ function HobbiesHut() {
 
 function Clocktower() {
   return (
-    <group position={[-3.1, 0.34, -7]}>
+    <group position={[-4.1, 0.34, -7]}>
       <mesh castShadow receiveShadow position={[0, 0.95, 0]}>
         <cylinderGeometry args={[1.05, 1.36, 1.9, 8]} />
         <meshStandardMaterial color="#90734f" roughness={0.96} flatShading />
@@ -693,7 +693,7 @@ function LearningLab() {
     return new THREE.TubeGeometry(curve, 20, 0.035, 5, false)
   }), [])
   return (
-    <group position={[-11.5, 0.38, 4]}>
+    <group position={[-16.7, 0.38, 3.7]}>
       <mesh castShadow receiveShadow position={[0, 0.88, 0]}>
         <cylinderGeometry args={[1.24, 1.42, 1.75, 9]} />
         <meshStandardMaterial color="#695990" roughness={0.84} flatShading />
@@ -754,7 +754,7 @@ function LearningLab() {
 
 function CloudForge() {
   return (
-    <group position={[-6.7, 0.34, -1.7]}>
+    <group position={[-10.3, 0.34, -1.8]}>
       <mesh castShadow receiveShadow position={[0, 1.05, 0]}>
         <boxGeometry args={[4.05, 2, 2.72]} />
         <meshStandardMaterial color="#b8754d" roughness={0.96} />
@@ -812,7 +812,7 @@ function CloudForge() {
 
 function DataTower() {
   return (
-    <group position={[4.2, 0.35, -4.8]}>
+    <group position={[6.8, 0.35, -4.8]}>
       <mesh castShadow receiveShadow position={[0, 0.82, 0]} rotation={[0, 0, -0.015]}>
         <boxGeometry args={[2.9, 1.52, 2.55]} />
         <meshStandardMaterial color="#b79a72" roughness={0.96} />
@@ -900,7 +900,7 @@ function SignalStation() {
     }
   })
   return (
-    <group position={[0, 0.35, 0.6]}>
+    <group position={[1.2, 0.35, 0.6]}>
       <mesh castShadow receiveShadow position={[0, 0.7, 0]}>
         <boxGeometry args={[1.7, 1.12, 1.45]} />
         <meshStandardMaterial color="#ad8851" roughness={0.9} />
@@ -971,154 +971,6 @@ function VillageBlockout() {
       <AboutCottage />
       <HobbiesHut />
       <SignalStation />
-    </group>
-  )
-}
-
-function makeRoadRibbon(curve: THREE.CatmullRomCurve3, halfWidth: number, y: number, phase: number) {
-  const divisions = Math.max(48, Math.ceil(curve.getLength() * 11))
-  const positions: number[] = []
-  const colors: number[] = []
-  const indices: number[] = []
-  const edgeColor = new THREE.Color('#817451')
-  const centerColor = new THREE.Color('#ad8b60')
-  const hash = (n: number) => {
-    const value = Math.sin(n * 127.1 + phase * 311.7) * 43758.5453
-    return value - Math.floor(value)
-  }
-  const smoothNoise = (distance: number, salt: number) => {
-    const sample = distance * 1.35
-    const cell = Math.floor(sample)
-    const fraction = sample - cell
-    const blend = fraction * fraction * (3 - 2 * fraction)
-    return THREE.MathUtils.lerp(hash(cell + salt), hash(cell + 1 + salt), blend) * 2 - 1
-  }
-  for (let i = 0; i <= divisions; i += 1) {
-    const t = i / divisions
-    const distance = t * curve.getLength()
-    const center = curve.getPoint(t)
-    const tangent = curve.getTangent(t)
-    const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize()
-    const leftWidth = halfWidth * (0.9 + 0.09 * Math.sin(distance * 0.58 + phase) + smoothNoise(distance, 17) * 0.12)
-    const rightWidth = halfWidth * (0.92 + 0.07 * Math.sin(distance * 0.73 + phase + 1.4) + smoothNoise(distance, 83) * 0.11)
-    for (const [sign, width] of [[1, leftWidth], [-1, rightWidth]] as const) {
-      positions.push(center.x + side.x * width * sign, y, center.z + side.z * width * sign)
-      const shoulder = 0.5 + 0.5 * smoothNoise(distance, sign > 0 ? 41 : 109)
-      const lateralTint = THREE.MathUtils.smoothstep(width / halfWidth, 0.42, 1)
-      const tint = THREE.MathUtils.clamp(lateralTint * 0.72 + shoulder * 0.12, 0, 1)
-      const variation = (smoothNoise(distance * 0.7, sign > 0 ? 131 : 163) + 1) * 0.025
-      const color = centerColor.clone().lerp(edgeColor, tint)
-      color.offsetHSL(-variation * 0.16, variation * 0.3, variation * 0.5)
-      colors.push(color.r, color.g, color.b)
-    }
-    if (i < divisions) {
-      const a = i * 2
-      indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3)
-    }
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
-}
-
-function StonePath({ points, radius = 0.24 }: { points: [number, number, number][]; radius?: number }) {
-  const { scene } = useThree()
-  const curve = useMemo(() => new THREE.CatmullRomCurve3(
-    points.map((point) => new THREE.Vector3(...point)), false, 'catmullrom', 0.28,
-  ), [points])
-  const phase = points[0][0] * 0.73 + points[0][2] * 0.29
-  const dirt = useMemo(() => makeRoadRibbon(curve, Math.max(0.2, radius * 1.15), 0.33, phase), [curve, radius, phase])
-  const embeddedStones = useMemo(() => {
-    const positions: number[] = []
-    const colors: number[] = []
-    const indices: number[] = []
-    const palette = ['#766d57', '#8c8065', '#a09275', '#827860'].map((color) => new THREE.Color(color))
-    const count = Math.max(8, Math.ceil(curve.getLength() / 0.62))
-    let vertexOffset = 0
-    for (let i = 0; i <= count; i += 1) {
-      const seed = i * 37.71 + phase * 5.13
-      const random = (offset: number) => {
-        const value = Math.sin(seed + offset * 17.17) * 43758.5453
-        return value - Math.floor(value)
-      }
-      if (random(1) > 0.58) continue
-      const t = (i + random(2) * 0.45) / count
-      const safeT = THREE.MathUtils.clamp(t, 0, 1)
-      const center = curve.getPoint(safeT)
-      const tangent = curve.getTangent(safeT)
-      const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize()
-      const stoneCenter = center.clone()
-        .addScaledVector(tangent, (random(3) - 0.5) * 0.24)
-        .addScaledVector(side, (random(4) - 0.5) * radius * 1.25)
-      const halfLength = 0.07 + random(5) * 0.065
-      const halfWidth = 0.035 + random(6) * 0.045
-      const sides = 5 + Math.floor(random(7) * 3)
-      const color = palette[Math.floor(random(8) * palette.length)]
-      positions.push(stoneCenter.x, 0.344, stoneCenter.z)
-      colors.push(color.r, color.g, color.b)
-      for (let edge = 0; edge < sides; edge += 1) {
-        const angle = (edge / sides) * Math.PI * 2
-        const shape = 0.76 + random(edge + 11) * 0.4
-        const alongEdge = Math.cos(angle) * halfLength * shape
-        const acrossEdge = Math.sin(angle) * halfWidth * shape
-        positions.push(
-          stoneCenter.x + tangent.x * alongEdge + side.x * acrossEdge,
-          0.344 + random(edge + 19) * 0.006,
-          stoneCenter.z + tangent.z * alongEdge + side.z * acrossEdge,
-        )
-        colors.push(color.r, color.g, color.b)
-      }
-      for (let edge = 0; edge < sides; edge += 1) {
-        indices.push(vertexOffset, vertexOffset + 1 + edge, vertexOffset + 1 + ((edge + 1) % sides))
-      }
-      vertexOffset += sides + 1
-    }
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-    geometry.setIndex(indices)
-    geometry.computeVertexNormals()
-    return geometry
-  }, [curve, radius, phase])
-  useLayoutEffect(() => {
-    const terrain: THREE.Object3D[] = []
-    scene.traverse((object) => {
-      if (object.userData.walkableTerrain) terrain.push(object)
-    })
-    if (!terrain.length) return
-    scene.updateMatrixWorld(true)
-    const ray = new THREE.Raycaster()
-    const origin = new THREE.Vector3()
-    const down = new THREE.Vector3(0, -1, 0)
-    // Lift each vertex just clear of the triangulated island. The previous
-    // lower offsets let the grass mesh show through as pink/green hatching.
-    ;[[dirt, 0.028], [embeddedStones, 0.04]].forEach(([geometry, lift]) => {
-      const meshGeometry = geometry as THREE.BufferGeometry
-      const raise = lift as number
-      const positions = meshGeometry.attributes.position as THREE.BufferAttribute
-      for (let i = 0; i < positions.count; i += 1) {
-        origin.set(positions.getX(i), 12, positions.getZ(i))
-        ray.set(origin, down)
-        ray.far = 24
-        const hit = ray.intersectObjects(terrain, true)[0]
-        if (hit && hit.point.y > 0.24) positions.setY(i, Math.max(positions.getY(i), hit.point.y + raise))
-      }
-      positions.needsUpdate = true
-      meshGeometry.computeVertexNormals()
-      meshGeometry.computeBoundingSphere()
-    })
-  }, [scene, dirt, embeddedStones])
-  return (
-    <group>
-      <mesh geometry={dirt} receiveShadow>
-        <meshStandardMaterial vertexColors roughness={1} metalness={0} flatShading side={THREE.DoubleSide} />
-      </mesh>
-      <mesh geometry={embeddedStones} receiveShadow>
-        <meshStandardMaterial vertexColors roughness={1} metalness={0} flatShading side={THREE.DoubleSide} />
-      </mesh>
     </group>
   )
 }
@@ -1425,29 +1277,20 @@ function VillageLamp({ position }: { position: [number, number, number] }) {
 
 function VillageDetails() {
   const trees: [number, number, number, number, string?][] = [
-    [-25.5, 0.32, -5.3, 0.96, '#347e4b'], [-22, 0.34, -5.8, 0.82], [-17.5, 0.34, -5.7, 0.82],
+    [-25.5, 0.32, -5.3, 0.96, '#347e4b'], [-22, 0.34, -5.8, 0.82], [-20, 0.34, -5.7, 0.82],
     [-12.2, 0.34, -5.6, 1.02, '#367d43'], [-7.2, 0.34, -5.2, 0.78], [0.7, 0.34, -8.5, 0.94],
-    [10.2, 0.34, -6.5, 1.24, '#397f42'], [15.1, 0.34, -5.2, 1.35, '#347648'],
-    [18.2, 0.34, -3.2, 0.96], [22.7, 0.34, -5.5, 1.12, '#347c4a'],
+    [20.5, 0.34, -7.5, 1.15, '#397f42'], [22.3, 0.34, -5.2, 1.12, '#347648'],
+    [21.2, 0.34, -2.6, 0.96], [24.2, 0.34, -5.5, 1.12, '#347c4a'],
   ]
   const bushes: [number, number, number, number, boolean?][] = [
-    [-23, 0.34, 1.8, 0.76, true], [-18.8, 0.34, 3.4, 0.78], [-15, 0.34, 4.4, 0.92, true],
+    [-23, 0.34, 1.8, 0.76, true], [-20.8, 0.34, 3.4, 0.78], [-14.7, 0.34, 4.9, 0.8, true],
     [-13.1, 0.34, 1.8, 0.68], [-19.2, 0.34, -3.7, 0.68], [-17.1, 0.34, -3.7, 0.6, true],
-    [6.2, 0.34, -1, 0.9], [10.3, 0.34, 4.9, 0.8], [16, 0.34, 5.1, 0.8, true],
-    [18.1, 0.34, 1.1, 0.82], [23, 0.34, 4.8, 0.74, true],
+    [3.5, 0.34, -1, 0.9], [8.2, 0.34, 4.9, 0.8], [14.5, 0.34, 5.7, 0.8, true],
+    [18.8, 0.34, 1.1, 0.82], [23, 0.34, 4.8, 0.74, true],
   ]
 
   return (
     <group>
-      {/* A single wandering dirt lane, with narrower paths worn toward nearby doors. */}
-      <StonePath points={[[-22.6, 0.39, 7.6], [-18.4, 0.39, 6.5], [-13.2, 0.39, 6.25], [-9.5, 0.39, 5.2], [-7.5, 0.39, 6.3], [-5.1, 0.39, 4.8], [-1.5, 0.39, 6.1], [1.6, 0.39, 4.25], [4.6, 0.39, 6], [8.1, 0.39, 3.7], [10.7, 0.39, 5.2]]} radius={0.36} />
-      <StonePath points={[[-7.5, 0.39, 6.3], [-8.7, 0.39, 4.6], [-7.1, 0.39, 2.8], [-8.1, 0.39, 1.5], [-6.8, 0.39, 0.1]]} radius={0.22} />
-      <StonePath points={[[-2.6, 0.39, 5.4], [-4.5, 0.39, 3.8], [-3.7, 0.39, 2.1], [-5.1, 0.39, 0.6], [-2.9, 0.39, -0.8], [-3.8, 0.39, -3], [-3.1, 0.39, -5.4]]} radius={0.23} />
-      <StonePath points={[[-1.5, 0.39, 6.1], [-0.3, 0.39, 4.5], [1.4, 0.39, 3], [0.6, 0.39, 1.5]]} radius={0.2} />
-      <StonePath points={[[1.6, 0.39, 4.25], [2.9, 0.39, 2.5], [4.9, 0.39, 0.4], [3.6, 0.39, -1.1], [5.1, 0.39, -2.8], [4.2, 0.39, -3.5]]} radius={0.22} />
-      <StonePath points={[[8.1, 0.39, 3.7], [9.1, 0.39, 4.5], [8.4, 0.39, 6.2], [6.8, 0.39, 5.9]]} radius={0.18} />
-      <StonePath points={[[10.7, 0.39, 5.2], [12.2, 0.39, 3.4], [10.9, 0.39, 1.2], [12.4, 0.39, -1], [11.3, 0.39, -3.7], [12, 0.39, -3.2]]} radius={0.2} />
-      {/* A subtle worn meeting patch, not a geometric building layout. */}
       <Text position={[-4.8, 0.43, 7.2]} rotation={[-Math.PI / 2, 0, -0.12]} fontSize={0.48} color="#435837" anchorX="center" anchorY="middle" letterSpacing={0.04}>
         STAR CLIFF
       </Text>
@@ -1457,8 +1300,8 @@ function VillageDetails() {
       <VillageResident position={[-10.2, 0.38, 4.3]} coat="#8a6240" ear="#c78b62" />
       <VillageResident position={[1.5, 0.38, 3.7]} coat="#d8c5a3" ear="#b9826b" />
       <VillageResident position={[8.2, 0.38, 5.15]} coat="#765b50" ear="#a47c6e" />
-      <PalmTree position={[-18.4, 0.32, -7.1]} scale={0.94} />
-      <PalmTree position={[11.8, 0.32, -7.7]} scale={0.82} />
+      <PalmTree position={[-19.8, 0.32, -7.1]} scale={0.94} />
+      <PalmTree position={[14.8, 0.32, -7.7]} scale={0.82} />
 
       {trees.map(([x, y, z, scale, tint], i) => (
         <Tree key={`tree-${i}`} position={[x, y, z]} scale={scale} tint={tint} variant={i} />
