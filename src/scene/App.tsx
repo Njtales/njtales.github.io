@@ -1,7 +1,10 @@
-import { Canvas } from '@react-three/fiber'
-import { Suspense, useEffect, useRef, useState } from 'react'
-import { VillageWorld } from './VillageWorld'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { portfolioSpots, type PortfolioSpot } from './portfolioData'
+import { mapPosition, sectionNames } from './portfolioUi'
+import { readViewPreferences, ViewSettings } from './ViewSettings'
+import { SceneBoundary } from './SceneBoundary'
+
+const VillageCanvas = lazy(() => import('./VillageCanvas'))
 
 const padButtons = [
   { code: 'KeyW', direction: 'up', label: 'Move forward' },
@@ -15,7 +18,7 @@ function MovementPad() {
     new CustomEvent('coastlight:move', { detail: { code, down } }),
   )
   return (
-    <div className="movement-pad" aria-label="Character movement">
+    <div className="movement-pad" role="group" aria-label="Character movement">
       {padButtons.map(({ code, direction, label }) => (
         <button
           key={code}
@@ -35,40 +38,100 @@ function MovementPad() {
   )
 }
 
-function PortfolioMap({ selectedId, onSelect }: { selectedId: string | null; onSelect: (spot: PortfolioSpot) => void }) {
+function PortfolioMap({ selectedId, onSelect, playerMarker, isCompact }: { selectedId: string | null; onSelect: (spot: PortfolioSpot) => void;
+  playerMarker: RefObject<HTMLSpanElement | null>; isCompact: boolean }) {
   return (
     <aside className="portfolio-map" aria-label="Portfolio landmarks">
       <div className="map-heading"><span>COASTLIGHT</span><small>7 LANDMARKS</small></div>
       <div className="map-body">
         <svg viewBox="0 0 180 112" aria-hidden="true">
           <path d="M17 24 38 15 61 19 78 12 104 18 126 14 154 25 163 44 156 63 164 78 145 91 119 90 99 101 74 94 51 100 31 88 19 68 24 49Z" />
-          <path className="map-route" d="M39 68 Q65 62 83 69 T128 63" />
         </svg>
         {portfolioSpots.map((spot, index) => {
-          const left = 17 + ((spot.position[0] + 12) / 24) * 66
-          const top = 16 + ((spot.position[2] + 8) / 16) * 67
+          const { left, top } = mapPosition(spot.position[0], spot.position[2])
           return (
             <button
               key={spot.id}
               type="button"
               className={`map-pin${selectedId === spot.id ? ' is-selected' : ''}`}
               style={{ left: `${left}%`, top: `${top}%` }}
-              title={spot.title}
+              title={`${sectionNames[spot.id]} · ${spot.title}`}
               aria-label={`Open ${spot.title}`}
               aria-pressed={selectedId === spot.id}
               onClick={() => onSelect(spot)}
             >{index + 1}</button>
           )
         })}
+        <span ref={playerMarker} className="map-player" role="img" aria-label="Niro’s current position"
+          style={{ left: `${mapPosition(-3, 5.5).left}%`, top: `${mapPosition(-3, 5.5).top}%` }}><span>Niro</span></span>
       </div>
-      <div className="map-caption">SELECT A LANDMARK TO EXPLORE</div>
+      <details className="map-sections" open={!isCompact}>
+        <summary>Explore sections</summary>
+        <div>{portfolioSpots.map((spot, index) => <button key={spot.id} type="button" aria-label={`Open ${sectionNames[spot.id]}`}
+          aria-pressed={selectedId === spot.id} onClick={() => onSelect(spot)}><span>{index + 1}</span>{sectionNames[spot.id]}</button>)}</div>
+      </details>
     </aside>
+  )
+}
+
+const portfolioShortcuts = [
+  { id: 'clocktower', label: 'Experience' },
+  { id: 'cloud-forge', label: 'Skills' },
+  { id: 'data-tower', label: 'Projects' },
+  { id: 'signal-station', label: 'Contact' },
+]
+
+function PortfolioShortcuts({ selectedId, onSelect }: { selectedId: string | null; onSelect: (spot: PortfolioSpot) => void }) {
+  return (
+    <nav className="portfolio-shortcuts" aria-label="Portfolio sections">
+      {portfolioShortcuts.map(({ id, label }) => {
+        const spot = portfolioSpots.find((candidate) => candidate.id === id)
+        if (!spot) return null
+        return (
+          <button
+            key={id}
+            type="button"
+            data-active={selectedId === id ? 'true' : undefined}
+            onClick={() => onSelect(spot)}
+          >{label}</button>
+        )
+      })}
+    </nav>
   )
 }
 
 export default function App() {
   const [selected, setSelected] = useState<PortfolioSpot | null>(null)
+  const [sceneReady, setSceneReady] = useState(false)
+  const [sceneUnavailable, setSceneUnavailable] = useState(false)
+  const [preferences, setPreferences] = useState(readViewPreferences)
+  const [isCompact, setIsCompact] = useState(() => typeof window !== 'undefined' && (
+    window.matchMedia('(max-width: 700px)').matches || window.matchMedia('(pointer: coarse)').matches
+  ))
   const dialogRef = useRef<HTMLElement>(null)
+  const playerMarker = useRef<HTMLSpanElement>(null)
+  const updatePosition = useCallback((x: number, z: number) => {
+    if (!playerMarker.current) return
+    const position = mapPosition(x, z)
+    playerMarker.current.style.left = `${position.left}%`; playerMarker.current.style.top = `${position.top}%`
+    playerMarker.current.dataset.worldX = x.toFixed(2); playerMarker.current.dataset.worldZ = z.toFixed(2)
+  }, [])
+  const markReady = useCallback(() => setSceneReady(true), [])
+  const handleUnavailable = useCallback(() => { setSceneReady(true); setSceneUnavailable(true) }, [])
+  useEffect(() => { try { localStorage.setItem('coastlight-view', JSON.stringify(preferences)) } catch { /* private browsing */ } }, [preferences])
+
+  useEffect(() => {
+    const smallViewport = window.matchMedia('(max-width: 700px)')
+    const coarsePointer = window.matchMedia('(pointer: coarse)')
+    const updateViewport = () => setIsCompact(smallViewport.matches || coarsePointer.matches)
+    updateViewport()
+    smallViewport.addEventListener('change', updateViewport)
+    coarsePointer.addEventListener('change', updateViewport)
+    return () => {
+      smallViewport.removeEventListener('change', updateViewport)
+      coarsePointer.removeEventListener('change', updateViewport)
+    }
+  }, [])
 
   useEffect(() => {
     if (!selected) return
@@ -77,8 +140,10 @@ export default function App() {
     const closeButton = dialog?.querySelector<HTMLButtonElement>('[data-dialog-close]')
     closeButton?.focus()
     const handleDialogKeys = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.code === 'KeyE' && event.repeat) { event.preventDefault(); event.stopImmediatePropagation(); return }
+      if (event.key === 'Escape' || event.code === 'KeyE') {
         event.preventDefault()
+        event.stopImmediatePropagation()
         setSelected(null)
         return
       }
@@ -95,51 +160,34 @@ export default function App() {
         first.focus()
       }
     }
-    window.addEventListener('keydown', handleDialogKeys)
+    window.addEventListener('keydown', handleDialogKeys, true)
     return () => {
-      window.removeEventListener('keydown', handleDialogKeys)
+      window.removeEventListener('keydown', handleDialogKeys, true)
       previousFocus?.focus()
     }
   }, [selected])
 
   return (
-    <main className="app-shell">
-      <Canvas
-        shadows
-        dpr={[1, 1.7]}
-        camera={{ position: [0, 8.8, 33], fov: 42, near: 0.1, far: 180 }}
-        gl={{ antialias: true, toneMapping: 3 }}
-        onCreated={({ gl }) => { gl.domElement.tabIndex = 0 }}
-      >
-        <color attach="background" args={['#70d4e8']} />
-        <fog attach="fog" args={['#a6e5e9', 48, 105]} />
-        <ambientLight intensity={1.5} />
-        <directionalLight
-          castShadow
-          position={[-10, 22, 12]}
-          intensity={2.1}
-          color="#fff2ce"
-          shadow-mapSize={[2048, 2048]}
-          shadow-camera-left={-36}
-          shadow-camera-right={36}
-          shadow-camera-top={34}
-          shadow-camera-bottom={-34}
-        />
-        <Suspense fallback={null}>
-          <VillageWorld onOpen={setSelected} />
-        </Suspense>
-      </Canvas>
+    <main className="app-shell" data-panel-open={Boolean(selected)} data-scene-unavailable={sceneUnavailable}>
+      <SceneBoundary onUnavailable={handleUnavailable}><Suspense fallback={null}>
+        <VillageCanvas isCompact={isCompact} onReady={markReady} onOpen={setSelected} onPlayerPosition={updatePosition}
+          quality={preferences.quality} reducedMotion={preferences.reducedMotion} panelOpen={Boolean(selected)} />
+      </Suspense></SceneBoundary>
+      {!sceneReady && <div className="scene-loading" role="status" aria-live="polite">Preparing your world</div>}
+      <div inert={Boolean(selected)}>
       <div className="title-card">
         <span className="eyebrow">Nikhil Jatale · London, UK</span>
         <h1>Coastlight Village</h1>
         <p>Enterprise data analyst building toward cloud data platforms.</p>
+        <PortfolioShortcuts selectedId={selected?.id ?? null} onSelect={setSelected} />
       </div>
-      <PortfolioMap selectedId={selected?.id ?? null} onSelect={setSelected} />
-      <div className="scene-note">WORLD 01 <span>·</span> THE SHORE</div>
+      <PortfolioMap selectedId={selected?.id ?? null} onSelect={setSelected} playerMarker={playerMarker} isCompact={isCompact} />
       <MovementPad />
+      <ViewSettings value={preferences} onChange={setPreferences} />
       <div className="control-hint">
-        <span className="desktop-controls"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows to explore <i>·</i> walk to a landmark and press <kbd>E</kbd></span>
-        <span className="touch-controls">Use arrows to move <i>·</i> tap a map pin to explore</span>
+        <span className="desktop-controls">Click ground to walk <i>·</i> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to steer <i>·</i> <kbd>E</kbd> to open / close</span>
+        <span className="touch-controls">Tap ground to walk <i>·</i> choose a section to explore</span>
+      </div>
       </div>
       {selected && (
         <div className="panel-backdrop" role="presentation" onClick={() => setSelected(null)}>
@@ -156,6 +204,13 @@ export default function App() {
                 </article>
               ))}
             </div>
+            {selected.id === 'signal-station' && <nav className="contact-actions" aria-label="Contact links">
+              <a href="mailto:nikhiljatale@gmail.com">Email Nikhil</a>
+              <a href="https://www.linkedin.com/in/nikhil-jatale/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+              <a href="https://github.com/Njtales" target="_blank" rel="noopener noreferrer">GitHub</a>
+            </nav>}
+            <p className="panel-close-hint"><span className="desktop-controls">Press E or Escape to return to the island.</span>
+              <span className="touch-controls">Close this card to return to the island.</span></p>
             <div className="panel-footer"><span>COASTLIGHT VILLAGE</span><span>{portfolioSpots.findIndex((spot) => spot.id === selected.id) + 1} / {portfolioSpots.length}</span></div>
           </section>
         </div>

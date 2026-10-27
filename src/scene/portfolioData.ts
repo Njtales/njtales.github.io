@@ -24,7 +24,7 @@ export const portfolioSpots: PortfolioSpot[] = [
       { title: 'Career direction', detail: 'Building toward Cloud Data Engineer and Data Platform Engineer roles, with a focus on scalable systems.', tags: ['Cloud data', 'Platform engineering'] },
       { title: 'Working principles', detail: 'Engineering excellence over basic analytics; competence, independence, disciplined thinking, and logical reasoning.' },
     ],
-    position: [-4.8, 0.34, -6.7],
+    position: [-5.9, 0.34, -8.2],
   },
   {
     id: 'cloud-forge', title: 'Cloud Forge', section: 'Skills & Tech Stack',
@@ -34,17 +34,17 @@ export const portfolioSpots: PortfolioSpot[] = [
       { title: 'Data engineering', detail: 'Python processing, API ingestion, and ETL pipeline development.', tags: ['Python', 'ETL'] },
       { title: 'Platform engineering', detail: 'Infrastructure as Code, automation, and data platform architecture; advancing into Kafka/Kinesis streaming and production-scale deployments.', tags: ['IaC', 'Automation', 'Kafka / Kinesis'] },
     ],
-    position: [-9.6, 0.34, -1.5],
+    position: [-11.8, 0.34, -2.1],
   },
   {
     id: 'data-tower', title: 'Data Tower', section: 'Projects & GitHub',
-    description: 'Two engineering project tracks, presented with clear architecture and implementation evidence.',
+    description: 'Two engineering project tracks focused on dependable pipelines and repeatable cloud infrastructure.',
     entries: [
-      { title: 'Automated Data Pipeline', detail: 'An API-to-S3-to-data-warehouse pipeline. Add the chosen warehouse, architecture diagram, and repository link when ready.', tags: ['API', 'Amazon S3', 'Data warehouse'] },
-      { title: 'Infrastructure Automation', detail: 'Automation for production-like environments. Add the infrastructure scope, tooling, and repository link when ready.', tags: ['Infrastructure as Code', 'Automation'] },
-      { title: 'Project standard', detail: 'Each portfolio project should include a GitHub repository, a clean README, and an architecture diagram.' },
+      { title: 'Automated Data Pipeline', detail: 'API ingestion → Amazon S3 → data warehouse. The design focuses on repeatable extraction, traceable transformations, and a documented architecture.', tags: ['API', 'Amazon S3', 'Data warehouse'] },
+      { title: 'Infrastructure Automation', detail: 'Automate production-like infrastructure with Infrastructure as Code, focusing on repeatable deployments, clear environment boundaries, and safe operations.', tags: ['Infrastructure as Code', 'Automation'] },
+      { title: 'Project standard', detail: 'Every published project will include a GitHub repository, a clear README, and an architecture diagram.' },
     ],
-    position: [5.4, 0.35, -4.4],
+    position: [6.9, 0.35, -5.8],
   },
   {
     id: 'learning-lab', title: 'Learning Lab', section: 'Learning & Certifications',
@@ -54,7 +54,7 @@ export const portfolioSpots: PortfolioSpot[] = [
       { title: 'Data engineering', detail: 'Developing advanced practices for reliable, scalable pipelines and data platforms.' },
       { title: 'Creative practice', detail: 'Exploring audience dynamics and storytelling for side projects.' },
     ],
-    position: [-14.2, 0.38, 2.8],
+    position: [-17.6, 0.38, 3.6],
   },
   {
     id: 'about-cottage', title: 'About Cottage', section: 'About Me',
@@ -64,7 +64,7 @@ export const portfolioSpots: PortfolioSpot[] = [
       { title: 'Personal philosophy', detail: '“Skill → Income → Investment → Freedom.”' },
       { title: 'Long-term mission', detail: 'Build wealth and time freedom while creating security for family.' },
     ],
-    position: [9.2, 0.34, 4.1],
+    position: [11.2, 0.34, 5.0],
   },
   {
     id: 'hobbies-hut', title: 'Hobbies Hut', section: 'Creative Work & Hobbies',
@@ -73,15 +73,15 @@ export const portfolioSpots: PortfolioSpot[] = [
       { title: 'Off the clock', detail: 'Travel, animation content, and YouTube experiments.' },
       { title: 'Fox avatar', detail: 'The character goes by “Niro” or “creepy”.' },
     ],
-    position: [14.4, 1.45, -2.9],
+    position: [17.8, 1.45, -3.5],
   },
   {
-    id: 'signal-station', title: 'Signal Station', section: 'Contact, Links & CV',
-    description: 'Professional contact links and a résumé download belong here.',
+    id: 'signal-station', title: 'Signal Station', section: 'Contact & Career',
+    description: 'A London-based data analyst building toward cloud data engineering and data platform roles.',
     entries: [
-      { title: 'Based in London', detail: 'London, United Kingdom.' },
-      { title: 'Contact links to add', detail: 'Email address, professional profile, CV file, and project repositories were not included yet.' },
+      { title: 'Based in London', detail: 'London, United Kingdom · Indian heritage.' },
+      { title: 'Career direction', detail: 'Cloud Data Engineer and Data Platform Engineer roles, with a focus on scalable systems.' },
     ],
-    position: [0.3, 0.35, 0.2],
+    position: [0.5, 0.35, 1.3],
   },
 ]
