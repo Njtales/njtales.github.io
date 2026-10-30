@@ -216,7 +216,7 @@ export function CoastalIslands({ grassMap, sandMap }: CoastalIslandsProps) {
     grass: new THREE.MeshStandardMaterial({ map: grassMap, color: '#ffffff', roughness: 1 }),
     sand: new THREE.MeshStandardMaterial({ map: sandMap, color: '#ffffff', roughness: 1 }),
     lip: new THREE.MeshBasicMaterial({ color: '#527635', side: THREE.DoubleSide }),
-    foam: new THREE.MeshBasicMaterial({ color: '#d9ecdb', transparent: true, opacity: 0.56, depthWrite: false, side: THREE.DoubleSide }),
+    foam: new THREE.MeshBasicMaterial({ color: '#d9ecdb', transparent: true, opacity: 0.56, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true }),
     foliage: new THREE.MeshBasicMaterial({vertexColors:true,toneMapped:false,side:THREE.DoubleSide}),
   }), [grassMap, sandMap])
   useEffect(() => () => {

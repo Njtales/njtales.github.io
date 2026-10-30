@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { createSmoothRoof } from './smoothRoof'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 type Point = [number, number, number]
@@ -122,21 +123,15 @@ export function makeClocktowerGeometry() {
     pieces.push(paint(new THREE.SphereGeometry(0.037,6,4),palette.brass,
       [-.16+Math.sin(a)*1.09,5.22+Math.cos(a)*1.09,1.335]))
 
-  // Swept, asymmetric roof. A dark continuous shell shows between broad painted tiles.
+  // Keep the swept silhouette with a continuous, closed roof and finished eaves.
   const roofPath:[number,number][]=[[-1.55,6.76],[-1.26,6.90],[-0.83,7.40],[-0.53,7.96],
     [-0.37,8.37],[-0.14,8.04],[0.40,7.51],[1.05,7.08],[1.61,6.98],[1.73,7.09]]
   profile([[-1.16,6.57],[1.19,6.57],[-.37,8.28]],1.91,[0,0,-.96],palette.light)
-  for(let i=0;i<roofPath.length-1;i++) {
-    const [x0,y0]=roofPath[i],[x1,y1]=roofPath[i+1]
-    quad([[x0,y0,-1.23],[x1,y1,-1.23],[x1,y1,1.26],[x0,y0,1.26]],palette.edge)
-    for(let col=0;col<6;col++) {
-      const z0=-1.25+col*0.42,z1=z0+0.405
-      const color=[palette.roof,palette.tile,palette.tileLight,palette.tile][(i*7+col*3)%4]
-      quad([[x0,y0+0.035,z0],[x1,y1+0.035,z0],[x1,y1+0.035,z1],[x0,y0+0.035,z1]],color)
-    }
-    beam([x0,y0,1.30],[x1,y1,1.30],0.13,palette.timber,0.15)
-    beam([x0,y0,-1.26],[x1,y1,-1.26],0.11,palette.timber,0.13)
-  }
+  const roof=createSmoothRoof(roofPath,2.52)
+  pieces.push(paint(roof.surface,palette.roof,[0,0,.015]))
+  pieces.push(paint(roof.fascia,palette.timber,[0,0,.015]))
+  for(const [x,y]of [roofPath[0],roofPath[roofPath.length-1]])
+    beam([x,y-.035,-1.27],[x,y-.035,1.30],.13,palette.timber)
   beam([-.37,8.40,-1.33],[-.37,8.40,1.40],0.17,palette.tileLight)
   beam([-.37,8.40,1.40],[-.50,8.65,1.44],0.14,palette.timber)
   // Exposed front gable timbers and a small teal dormer.
@@ -166,10 +161,6 @@ export function makeClocktowerGeometry() {
   for(const z of [.22,.59,.96,1.31]) beam([2.13,.37,z],[2.13,.93,z],.075)
   beam([2.13,.96,.08],[2.13,.96,1.49],.11)
   quad([[.95,2.80,-.12],[2.37,2.34,-.12],[2.37,2.34,1.65],[.95,2.80,1.65]],palette.roof)
-  for(let i=0;i<4;i++) {
-    const x=.95+i*.355,y=2.8-i*.115
-    beam([x,y,-.15],[x,y,1.69],.055,i%2?palette.tile:palette.tileLight,.055)
-  }
   beam([2.37,2.34,-.18],[2.37,2.34,1.71],.12)
   beam([.95,2.80,1.69],[2.37,2.34,1.69],.12)
   box([1.35,3.58,-.12],[1.13,.17,1.22])

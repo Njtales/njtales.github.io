@@ -6,10 +6,16 @@ import { groundHeightAt } from './groundContours'
 import { buildingFootprints } from './buildingLayout'
 import { makeVillageBuilding,type VillageBuildingId } from './villageBuildingGeometry'
 import { ForgeEffects } from './ForgeEffects'
+import { LandmarkSign, useLandmarkFeedback } from './LandmarkFeedback'
 
 function Landmark({id,model,materials,onOpen}:{id:VillageBuildingId;model:ReturnType<typeof makeVillageBuilding>;
   materials:{body:THREE.Material;panes:THREE.Material};onOpen:(spot:PortfolioSpot)=>void}){
   const spot=portfolioSpots.find(spot=>spot.id===id)!,root=useRef<THREE.Group>(null)
+  const feedback=useLandmarkFeedback(id)
+  const bodyMaterial=useMemo(()=>(materials.body as THREE.MeshStandardMaterial).clone(),[materials.body])
+  useEffect(()=>()=>bodyMaterial.dispose(),[bodyMaterial])
+  useEffect(()=>{bodyMaterial.emissive.set('#b69b51');bodyMaterial.emissiveIntensity=feedback.active?.13:0},[bodyMaterial,feedback.active])
+  const entrance=buildingFootprints.find(building=>building.id===id)!.entrance
   const scene=useThree(state=>state.scene)
   useLayoutEffect(()=>{
     if(!root.current)return
@@ -26,10 +32,11 @@ function Landmark({id,model,materials,onOpen}:{id:VillageBuildingId;model:Return
     root.current.position.y=height-.08
   },[scene,id,spot])
   return <group ref={root} name={spot.title} position={[spot.position[0],groundHeightAt(spot.position[0],spot.position[2])-.08,spot.position[2]]}
-    onClick={event=>{event.stopPropagation();onOpen(spot)}} dispose={null}>
-    <mesh geometry={model.body} material={materials.body} castShadow receiveShadow/>
+    onClick={event=>{event.stopPropagation();onOpen(spot)}} {...feedback.events} dispose={null}>
+    <mesh geometry={model.body} material={bodyMaterial} userData={{niroOccluder:true}} castShadow receiveShadow/>
     {model.panes&&<mesh geometry={model.panes} material={materials.panes}/>}
     {id==='cloud-forge'&&<ForgeEffects/>}
+    <LandmarkSign spot={spot} position={[entrance[0],2.4,entrance[1]]} shown={feedback.showSign}/>
   </group>
 }
 

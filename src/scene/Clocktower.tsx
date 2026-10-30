@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { makeClocktowerGeometry } from './clocktowerGeometry'
 import { portfolioSpots, type PortfolioSpot } from './portfolioData'
 import { groundHeightAt } from './groundContours'
+import { LandmarkSign, useLandmarkFeedback } from './LandmarkFeedback'
 
 function makeDial() {
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512
@@ -41,14 +42,16 @@ function makeDial() {
 
 export function Clocktower({onOpen}:{onOpen:(spot:PortfolioSpot)=>void}) {
   const spot=portfolioSpots.find(s=>s.id==='clocktower')!
+  const feedback=useLandmarkFeedback(spot.id)
   const model=useMemo(makeClocktowerGeometry,[])
   const dial=useMemo(makeDial,[])
   useEffect(()=>()=>{Object.values(model).forEach(g=>g.dispose());dial.dispose()},[model,dial])
   return <group name="Clocktower B" position={[spot.position[0],groundHeightAt(spot.position[0],spot.position[2]),spot.position[2]]}
-    onClick={event=>{event.stopPropagation();onOpen(spot)}}>
-    <mesh geometry={model.body} castShadow receiveShadow>
-      <meshStandardMaterial vertexColors roughness={.95} side={THREE.DoubleSide}/>
+    onClick={event=>{event.stopPropagation();onOpen(spot)}} {...feedback.events}>
+    <mesh geometry={model.body} userData={{niroOccluder:true}} castShadow receiveShadow>
+      <meshStandardMaterial vertexColors roughness={.95} side={THREE.DoubleSide} emissive="#b69b51" emissiveIntensity={feedback.active?.13:0}/>
     </mesh>
+    <LandmarkSign spot={spot} position={[0,2.4,2.7]} shown={feedback.showSign}/>
     <mesh geometry={model.panes}>
       <meshStandardMaterial vertexColors emissive="#deb66c" emissiveIntensity={.22} roughness={.8}/>
     </mesh>

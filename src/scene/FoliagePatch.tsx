@@ -12,10 +12,10 @@ function vertex(data: PaintMesh, point: Point, color: THREE.Color) {
 
 function palm(data: PaintMesh, variation: number) {
   const sides = 9
-  const levels = 25
+  const levels = 19
   const start = data.positions.length / 3
-  const dark = new THREE.Color('#675334')
-  const light = new THREE.Color('#bb9554')
+  const dark = new THREE.Color('#705238')
+  const light = new THREE.Color('#c09b66')
   for (let ring = 0; ring <= levels; ring++) {
     const t = ring / levels
     const y = -0.045 + t * 2.29
@@ -24,8 +24,8 @@ function palm(data: PaintMesh, variation: number) {
       const angle = side / sides * Math.PI * 2
       const lit = 0.5 + Math.cos(angle + 0.8) * 0.28
       const color = dark.clone().lerp(light, lit)
-      if (ring % 3 === 1) color.multiplyScalar(0.74)
-      vertex(data, [0.27 * t * t + Math.cos(angle) * radius, y,
+      if (ring % 3 === 1) color.multiplyScalar(0.86)
+      vertex(data, [0.32 * t * t + Math.sin(t * Math.PI) * 0.06 + Math.cos(angle) * radius, y,
         -0.13 * t * t + Math.sin(angle) * radius], color)
     }
     if (ring === 0) continue
@@ -38,26 +38,28 @@ function palm(data: PaintMesh, variation: number) {
     }
   }
 
-  const leafDark = new THREE.Color('#1b4838')
-  const leafMid = new THREE.Color('#527f37')
-  const leafLight = new THREE.Color('#b1ca50')
+  const leafDark = new THREE.Color('#214c3d')
+  const leafMid = new THREE.Color('#4d803e')
+  const leafLight = new THREE.Color('#b6ca65')
   for (let frond = 0; frond < 8; frond++) {
-    const angle = frond / 8 * Math.PI * 2 + 0.19 * Math.sin(frond * 2.3 + variation)
-    const length = 1.91 + Math.sin(frond * 1.73 + variation + 0.8) * 0.30
-    const width = 0.47 + Math.cos(frond * 1.9 + variation) * 0.075
+    const angle = frond / 8 * Math.PI * 2 + 0.26 * Math.sin(frond * 2.3 + variation * 0.7)
+    const length = 1.76 + Math.sin(frond * 1.73 + variation + 0.8) * 0.28 + (frond % 3 === 0 ? 0.08 : 0)
+    const width = 0.46 + Math.cos(frond * 1.9 + variation) * 0.06
     const dx = Math.cos(angle), dz = Math.sin(angle)
     const sections = 7
     function leafPoint(step: number, side: number): Point {
       const u = step / sections
-      const arch = Math.sin(u * Math.PI) * 0.57 - u * u * (0.46 + frond % 3 * 0.065)
+      const arch = Math.sin(u * Math.PI) * (0.58 + Math.cos(frond * 1.4 + variation) * 0.07)
+        - u * u * (0.60 + frond % 3 * 0.12)
       const notch = (step === 4 && side === (frond % 2 ? -1 : 1))
-        || (step === 6 && side === (frond % 2 ? 1 : -1)) ? 0.68 : 1
-      const bladeWidth = Math.pow(Math.sin(u * Math.PI), 0.72) * width * notch
-      const bend = Math.sin(u * Math.PI) * Math.sin(frond * 2.4) * 0.12
+        || (step === 6 && side === (frond % 2 ? 1 : -1)) ? 0.84 : 1
+      const bladeWidth = Math.pow(Math.sin(Math.pow(u, 0.80) * Math.PI), 0.80) * width * notch
+      const bend = (Math.sin(u * Math.PI) * 0.14 + u * u * 0.12) * Math.sin(frond * 2.4 + variation * 0.8)
       const lateral = side * bladeWidth + bend
       const fold = side === 0 ? Math.sin(u * Math.PI) * 0.17 : -bladeWidth * 0.17
-      return [0.27 + dx * length * u - dz * lateral,
-        2.24 + arch + fold + Math.sin(frond * 2.6 + variation) * 0.14,
+      // All fronds meet the trunk; uneven droop develops away from the crown.
+      return [0.32 + dx * length * u - dz * lateral,
+        2.24 + arch + fold + Math.sin(frond * 2.6 + variation) * Math.sin(u * Math.PI) * 0.10,
         -0.13 + dz * length * u + dx * lateral]
     }
     // Each half keeps one clear painted tone across its width. This makes
@@ -65,11 +67,12 @@ function palm(data: PaintMesh, variation: number) {
     for (const side of [-1, 1]) {
       const start = data.positions.length / 3
       for (let step = 0; step <= sections; step++) {
-        const tone = side === -1 ? leafDark.clone().lerp(leafMid, 0.48)
-          : leafMid.clone().lerp(leafLight, 0.76)
+        const tone = side === -1 ? leafDark.clone().lerp(leafMid, 0.40)
+          : leafMid.clone().lerp(leafLight, 0.64)
         const u = step / sections
         const patch = Math.sin(u * Math.PI) * 0.17 + Math.sin(frond * 2.7 + variation + step * 1.2) * 0.055
         tone.lerp(side === -1 ? leafMid : leafLight, Math.max(0, patch))
+        tone.lerp(leafMid, THREE.MathUtils.smoothstep(u, 0.65, 1) * 0.20)
         tone.multiplyScalar(0.88 + Math.sin(angle + variation) * 0.08 + Math.sin(u * Math.PI) * 0.10)
         vertex(data, leafPoint(step, 0), tone.clone().lerp(leafLight, 0.20))
         vertex(data, leafPoint(step, side), tone)

@@ -2,6 +2,8 @@ export type PortfolioEntry = {
   title: string
   detail: string
   tags?: string[]
+  status?: string
+  link?: {label:string;href:string}
 }
 
 export type PortfolioSpot = {
@@ -38,11 +40,14 @@ export const portfolioSpots: PortfolioSpot[] = [
   },
   {
     id: 'data-tower', title: 'Data Tower', section: 'Projects & GitHub',
-    description: 'Two engineering project tracks focused on dependable pipelines and repeatable cloud infrastructure.',
+    description: 'Selected work in data pipelines, orchestration, and interactive web experiences.',
     entries: [
-      { title: 'Automated Data Pipeline', detail: 'API ingestion → Amazon S3 → data warehouse. The design focuses on repeatable extraction, traceable transformations, and a documented architecture.', tags: ['API', 'Amazon S3', 'Data warehouse'] },
-      { title: 'Infrastructure Automation', detail: 'Automate production-like infrastructure with Infrastructure as Code, focusing on repeatable deployments, clear environment boundaries, and safe operations.', tags: ['Infrastructure as Code', 'Automation'] },
-      { title: 'Project standard', detail: 'Every published project will include a GitHub repository, a clear README, and an architecture diagram.' },
+      { title: 'S&P 500 Data Pipeline', status:'Practice project', detail: 'An Airflow project documenting stock-data extraction, processing, and warehouse loading. Includes Python code and a Docker-based setup.', tags: ['Airflow', 'Python', 'Docker'],
+        link:{label:'View code and setup',href:'https://github.com/Njtales/Data_pipelines/tree/main/Airflow%20Pipeline%20S%26P%20500%20index'} },
+      { title: 'PostgreSQL Data Warehouse', status:'Practice project', detail: 'A local learning environment combining Airflow, PostgreSQL, and pgAdmin, with the Instacart dataset used for pipeline and SQL practice.', tags: ['PostgreSQL', 'Airflow', 'Docker Compose'],
+        link:{label:'View code and setup',href:'https://github.com/Njtales/Data_pipelines/tree/main/DW%20with%20PSQL'} },
+      { title: 'Coastlight Village', status:'Personal project', detail: 'This interactive portfolio: a walkable island, a terrain-aware fox guide, and seven landmarks. Built with React and Three.js, with shared geometry and lightweight painted detail.', tags: ['React', 'Three.js', 'TypeScript'],
+        link:{label:'Explore the source',href:'https://github.com/Njtales/njtales.github.io'} },
     ],
     position: [6.9, 0.35, -5.8],
   },
@@ -71,7 +76,7 @@ export const portfolioSpots: PortfolioSpot[] = [
     description: 'Creative experiments and interests beyond day-to-day data work.',
     entries: [
       { title: 'Off the clock', detail: 'Travel, animation content, and YouTube experiments.' },
-      { title: 'Fox avatar', detail: 'The character goes by “Niro” or “creepy”.' },
+      { title: 'Meet Niro', detail: 'The golden fox guiding this little island. Walk with him, tap the ground, or use the map to explore each part of the portfolio.' },
     ],
     position: [17.8, 1.45, -3.5],
   },

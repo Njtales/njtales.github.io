@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 export type GroundRockProps = {
   /** Position of the terrain surface; the bottom of the stone sits below it. */
@@ -125,4 +126,31 @@ export function GroundRock({ position, size = 1, variant = 0, rotation = 0 }: Gr
       <mesh geometry={geometry.stone} material={stoneMaterial} castShadow receiveShadow />
     </group>
   )
+}
+
+/** Static town stones keep their individual shapes but share two submissions. */
+export function createRockScatter(rocks: GroundRockProps[]) {
+  const stones: THREE.BufferGeometry[] = [], contacts: THREE.BufferGeometry[] = []
+  const transform = new THREE.Object3D()
+  for (const {position,size=1,variant=0,rotation=0} of rocks) {
+    const shape = ((Math.trunc(variant)%4)+4)%4
+    const geometry = makeGeometry(shape)
+    transform.position.set(...position); transform.rotation.set(0,rotation,0)
+    transform.scale.setScalar(size); transform.updateMatrix()
+    stones.push(geometry.stone.clone().applyMatrix4(transform.matrix))
+    contacts.push(geometry.contact.clone().applyMatrix4(transform.matrix))
+  }
+  const stone = mergeGeometries(stones)!, contact = mergeGeometries(contacts)!
+  for(const geometry of [...stones,...contacts])geometry.dispose()
+  stone.computeBoundingSphere();contact.computeBoundingSphere()
+  return {stone,contact}
+}
+
+export function RockScatter({rocks}:{rocks:GroundRockProps[]}) {
+  const geometry=useMemo(()=>createRockScatter(rocks),[rocks])
+  useEffect(()=>()=>{geometry.stone.dispose();geometry.contact.dispose()},[geometry])
+  return <group dispose={null}>
+    <mesh name="Town stone contact patches" geometry={geometry.contact} material={contactMaterial} raycast={()=>{}} />
+    <mesh name="Town scattered stones" geometry={geometry.stone} material={stoneMaterial} castShadow receiveShadow raycast={()=>{}} />
+  </group>
 }

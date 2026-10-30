@@ -4,11 +4,11 @@ type GroundKind = 'grass' | 'sand'
 type Pigment = readonly [number, number, number]
 
 const grassPigments = {
-  clearing: [103, 161, 45] as Pigment,
-  sunlight: [139, 177, 51] as Pigment,
-  olive: [101, 143, 42] as Pigment,
-  shelter: [54, 106, 43] as Pigment,
-  dryPaint: [148, 174, 65] as Pigment,
+  clearing: [108, 151, 61] as Pigment,
+  sunlight: [146, 172, 78] as Pigment,
+  olive: [102, 136, 64] as Pigment,
+  shelter: [54, 100, 63] as Pigment,
+  dryPaint: [160, 169, 96] as Pigment,
 }
 
 const sandPigments = {
@@ -67,15 +67,15 @@ function grassColor(x: number, y: number): Pigment {
   const brokenPaint = noise(px / 2.2 + (small - 0.5) * 0.52, py / 2.2 + (grain - 0.5) * 0.24, 4759)
   const paintField = brokenPaint * 0.79 + small * 0.21
 
-  // Only the outer portion becomes deeper green. This is color variation,
-  // not a baked shadow; live object shadows remain the material's job.
+  // Broad sheltered pigment reaches into the clearing without painting hard
+  // shadow shapes. The perimeter keeps the strongest cool green variation.
   const radius = Math.hypot(x / 26.8, (y - 0.4) / 12.8)
   const perimeter = smoothstep(0.45, 1.08, radius)
   const shelterField = noise(px / 5.8 + 21.2, py / 5.8 - 7.5, 3559)
-  const shelter = perimeter * smoothstep(0.31, 0.79, shelterField)
-  const sunny = smoothstep(0.24, 0.83, broad) * 0.64
+  const shelter = (0.18 + perimeter * 0.82) * smoothstep(0.31, 0.79, shelterField)
+  const sunny = smoothstep(0.24, 0.83, broad) * 0.55
   let color = blend(grassPigments.clearing, grassPigments.sunlight, sunny)
-  color = blend(color, grassPigments.olive, smoothstep(0.48, 0.84, middle) * (0.12 + perimeter * 0.31))
+  color = blend(color, grassPigments.olive, smoothstep(0.43, 0.82, middle) * (0.27 + perimeter * 0.23))
   color = blend(color, grassPigments.shelter, shelter * 0.70)
   // Smaller pigment regions have a readable irregular boundary instead of
   // being another blurred light gradient. Keep these restrained at spawn.
@@ -120,7 +120,7 @@ function addFlecks(context: CanvasRenderingContext2D, type: GroundKind, width: n
       const angle = random() * Math.PI * 2
       const cos = Math.cos(angle)
       const sin = Math.sin(angle)
-      context.fillStyle = random() < 0.56 ? 'rgba(192,194,95,0.34)' : 'rgba(62,104,38,0.25)'
+      context.fillStyle = random() < 0.56 ? 'rgba(193,191,119,0.28)' : 'rgba(65,105,61,0.22)'
       context.beginPath()
       context.moveTo(x, y)
       context.bezierCurveTo(
@@ -177,7 +177,7 @@ export function createGroundPaintTexture(type: GroundKind): THREE.CanvasTexture 
       context.imageSmoothingQuality = 'high'
       context.drawImage(paint, 0, 0, canvas.width, canvas.height)
     } else {
-      context.fillStyle = type === 'grass' ? '#67a12d' : '#f4e2bc'
+      context.fillStyle = type === 'grass' ? '#6c973d' : '#f4e2bc'
       context.fillRect(0, 0, canvas.width, canvas.height)
     }
     addFlecks(context, type, canvas.width, canvas.height)

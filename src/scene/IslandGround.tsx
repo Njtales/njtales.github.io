@@ -16,7 +16,7 @@ function surfaceGeometry(shape: THREE.Shape, bounds: [number, number, number, nu
   return geometry
 }
 
-function coastBand(points: THREE.Vector2[], inner: number, outer: number, y: number, variation: number, colors?: [string, string]) {
+function coastBand(points: THREE.Vector2[], inner: number, outer: number, y: number, variation: number, colors?: [string, string], broken=false, weathered=false) {
   const positions: number[] = []
   const pigment: number[] = []
   const indices: number[] = []
@@ -28,7 +28,13 @@ function coastBand(points: THREE.Vector2[], inner: number, outer: number, y: num
     const weight = 1 + Math.sin(i * 0.31 + 1.1) * variation + Math.sin(i * 0.87) * variation * 0.3
     for (const [offset, color] of [[inner * weight, insideColor], [outer * weight, outsideColor]] as const) {
       positions.push(point.x + normal.x * offset, y, -point.y - normal.y * offset)
-      pigment.push(color.r, color.g, color.b)
+      const wash=weathered?.18+(.5+Math.sin(i*.11)*.35+Math.sin(i*.37)*.15)*.42:0
+      const shade=color.clone().lerp(insideColor,wash)
+      pigment.push(shade.r, shade.g, shade.b)
+      if(broken) {
+        const tide=.5+Math.sin(i*.105+.6)*.30+Math.sin(i*.29)*.20
+        pigment.push(THREE.MathUtils.smoothstep(tide,.22,.68)*(color===insideColor?.92:.16))
+      }
     }
     const next = ((i + 1) % points.length) * 2
     const current = i * 2
@@ -36,7 +42,7 @@ function coastBand(points: THREE.Vector2[], inner: number, outer: number, y: num
   }
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(pigment, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(pigment, broken?4:3))
   geometry.setIndex(indices)
   geometry.computeVertexNormals()
   return geometry
@@ -46,11 +52,11 @@ export type GroundPaints = { grass: THREE.Texture; sand: THREE.Texture }
 
 function shallowWater(points: THREE.Vector2[]) {
   const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const offsets = [0.015, 0.15, 0.5, 1.05, 1.8]
-  const opacity = [0.24, 0.35, 0.25, 0.12, 0]
-  const pale = new THREE.Color('#c8e6d3')
-  const turquoise = new THREE.Color('#74d8ce')
-  const deep = new THREE.Color('#489da7')
+  const offsets = [0.015, 0.22, 0.7, 1.6, 2.7]
+  const opacity = [0.22, 0.52, 0.36, 0.15, 0]
+  const pale = new THREE.Color('#c0e6d3')
+  const turquoise = new THREE.Color('#59c6bd')
+  const deep = new THREE.Color('#237e91')
   const coral = new THREE.Color('#c0a0a6')
   for (let index = 0; index < points.length; index++) {
     const point = points[index], normal = outwardNormal(points, index)
@@ -88,8 +94,8 @@ export function IslandGround({ paints }: { paints: GroundPaints }) {
     return {
       grass, sand, grassBase, sandBase,
       grassLip: coastBand(grassContour, -0.045, 0.015, GRASS_HEIGHT + 0.002, 0.34, ['#5a762d', '#304b29']),
-      sandRim: coastBand(sandContour, -0.065, 0.012, SAND_HEIGHT + 0.002, 0.28, ['#b19b73', '#5b5541']),
-      foam: coastBand(sandContour, 0.025, 0.12, 0.06, 0.55),
+      sandRim: coastBand(sandContour, -0.045, 0.008, SAND_HEIGHT + 0.002, 0.60, ['#c1af8c', '#8b8264'], false, true),
+      foam: coastBand(sandContour, 0.02, 0.095, 0.06, 0.40, undefined, true),
       shallows: shallowWater(sandContour),
     }
   }, [])
@@ -102,7 +108,7 @@ export function IslandGround({ paints }: { paints: GroundPaints }) {
       {/* Submerged sides and a low grass lip seat both surfaces in the water. */}
       <mesh geometry={ground.sandBase} rotation={[-Math.PI / 2, 0, 0]} position={[0, SAND_HEIGHT - 0.302, 0]}>
         <meshStandardMaterial attach="material-0" color="#c4b28c" roughness={1} />
-        <meshStandardMaterial attach="material-1" color="#6e694e" roughness={1} />
+        <meshStandardMaterial attach="material-1" color="#9b8e70" roughness={1} />
       </mesh>
       <mesh geometry={ground.grassBase} rotation={[-Math.PI / 2, 0, 0]} position={[0, GRASS_HEIGHT - 0.542, 0]}>
         <meshStandardMaterial attach="material-0" color="#6f9536" roughness={1} />
@@ -130,10 +136,10 @@ export function IslandGround({ paints }: { paints: GroundPaints }) {
         <meshBasicMaterial vertexColors side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={ground.shallows}>
-        <meshBasicMaterial vertexColors transparent depthWrite={false} side={THREE.DoubleSide} />
+          <meshBasicMaterial vertexColors transparent depthWrite={false} side={THREE.DoubleSide} forceSinglePass />
       </mesh>
       <mesh geometry={ground.foam}>
-        <meshBasicMaterial color="#d9ecdb" transparent opacity={0.68} depthWrite={false} side={THREE.DoubleSide} />
+          <meshBasicMaterial color="#e1efe0" vertexColors transparent opacity={0.78} depthWrite={false} side={THREE.DoubleSide} forceSinglePass />
       </mesh>
     </group>
   )

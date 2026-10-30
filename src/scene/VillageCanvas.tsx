@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { VillageWorld } from './VillageWorld'
 import type { PortfolioSpot } from './portfolioData'
 import { initialRenderDpr } from './renderQuality'
@@ -31,10 +31,16 @@ export default function VillageCanvas({
   onPlayerPosition: (x: number, z: number) => void
   quality: ScenePreferences['quality']; reducedMotion: boolean; panelOpen: boolean
 }) {
+  const [visible, setVisible] = useState(() => !document.hidden)
+  useEffect(() => {
+    const update = () => setVisible(!document.hidden)
+    document.addEventListener('visibilitychange', update)
+    return () => document.removeEventListener('visibilitychange', update)
+  }, [])
   return (
     <Canvas
       shadows
-      frameloop={panelOpen ? 'demand' : 'always'}
+      frameloop={panelOpen || !visible ? 'demand' : 'always'}
       dpr={initialRenderDpr(window.innerWidth, window.innerHeight, window.devicePixelRatio, isCompact)}
       camera={{ position: [0, 8.8, 33], fov: 42, near: 0.1, far: 180 }}
       gl={{ antialias: true, toneMapping: 3, powerPreference: 'high-performance' }}
@@ -47,12 +53,13 @@ export default function VillageCanvas({
       <SceneReady onReady={onReady} />
       <color attach="background" args={['#70d4e8']} />
       <fog attach="fog" args={['#b8e8e9', 48, 105]} />
-      <ambientLight intensity={1.5} />
+      <hemisphereLight args={['#e2eee7','#9b9178',1.65]} />
       <directionalLight
         castShadow
         position={[-10, 22, 12]}
-        intensity={2.1}
-        color="#fff2ce"
+        intensity={1.9}
+        color="#fff6e2"
+        shadow-intensity={0.70}
         shadow-mapSize={quality === 'light' ? [512, 512] : [1024, 1024]}
         shadow-normalBias={0.025}
         shadow-bias={-0.0001}

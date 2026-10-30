@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { createSmoothRoof } from './smoothRoof'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 export type Point3=[number,number,number]
@@ -85,19 +86,14 @@ export class BuildingGeometryKit {
     }
   }
   roof(path:[number,number][],depth:number,color:string=P.roof,x=0,z=0){
-    const base=new THREE.Color(color)
-    const colours=[base.getStyle(),base.clone().lerp(new THREE.Color(color===P.teal?P.tealLight:P.tileLight),.25).getStyle(),
-      base.clone().lerp(new THREE.Color(P.wood),.10).getStyle()]
-    for(let i=0;i<path.length-1;i++){
-      const [x0,y0]=path[i],[x1,y1]=path[i+1]
-      this.quad([[x+x0,y0,z-depth/2],[x+x1,y1,z-depth/2],[x+x1,y1,z+depth/2],[x+x0,y0,z+depth/2]],P.ink)
-      for(let tile=0;tile<6;tile++){
-        const a=z-depth/2+tile*depth/6,b=a+depth/6-.007
-        this.quad([[x+x0,y0+.028,a],[x+x1,y1+.028,a],[x+x1,y1+.028,b],[x+x0,y0+.028,b]],colours[(i+Math.floor(tile/3))%3])
-      }
-      for(const end of [-1,1])this.beam([x+x0,y0,z+end*depth/2],[x+x1,y1,z+end*depth/2],.115,P.wood)
-    }
+    const roof=createSmoothRoof(path,depth)
+    this.add(roof.surface,color,[x,0,z])
+    this.add(roof.fascia,P.wood,[x,0,z])
+    // Close both long eaves with a single finishing strip, merged into the body.
+    for(const [px,py]of [path[0],path[path.length-1]])
+      this.beam([x+px,py-.035,z-depth/2-.025],[x+px,py-.035,z+depth/2+.025],.13,P.wood)
   }
+
   banner(p:Point3,width=.48,height=.85,color:string=P.teal,symbol:'star'|'cloud'|'ring'='star'){
     this.profile([[-width/2,0],[width/2,0],[width/2,-height],[0,-height+.13],[-width/2,-height]],.025,p,color)
     this.beam([p[0]-width*.7,p[1]+.04,p[2]],[p[0]+width*.7,p[1]+.04,p[2]],.055,P.brass)

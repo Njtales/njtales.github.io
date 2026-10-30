@@ -109,6 +109,10 @@ export default function App() {
     window.matchMedia('(max-width: 700px)').matches || window.matchMedia('(pointer: coarse)').matches
   ))
   const dialogRef = useRef<HTMLElement>(null)
+  const previousFocus = useRef<HTMLElement | null>(null)
+  const panelOpen = Boolean(selected)
+  const selectedIndex = portfolioSpots.findIndex(spot => spot.id === selected?.id)
+  const adjacent = (offset: number) => portfolioSpots[(selectedIndex + offset + portfolioSpots.length) % portfolioSpots.length]
   const playerMarker = useRef<HTMLSpanElement>(null)
   const updatePosition = useCallback((x: number, z: number) => {
     if (!playerMarker.current) return
@@ -134,8 +138,8 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!selected) return
-    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    if (!panelOpen) return
+    previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const dialog = dialogRef.current
     const closeButton = dialog?.querySelector<HTMLButtonElement>('[data-dialog-close]')
     closeButton?.focus()
@@ -163,12 +167,17 @@ export default function App() {
     window.addEventListener('keydown', handleDialogKeys, true)
     return () => {
       window.removeEventListener('keydown', handleDialogKeys, true)
-      previousFocus?.focus()
+      previousFocus.current?.focus()
     }
-  }, [selected])
+  }, [panelOpen])
+
+  useEffect(() => {
+    if (!selected) return
+    dialogRef.current?.scrollTo({ top: 0 })
+  }, [selected?.id])
 
   return (
-    <main className="app-shell" data-panel-open={Boolean(selected)} data-scene-unavailable={sceneUnavailable}>
+    <main className="app-shell" data-panel-open={Boolean(selected)} data-scene-unavailable={sceneUnavailable} data-scene-ready={sceneReady} data-reduced-motion={preferences.reducedMotion}>
       <SceneBoundary onUnavailable={handleUnavailable}><Suspense fallback={null}>
         <VillageCanvas isCompact={isCompact} onReady={markReady} onOpen={setSelected} onPlayerPosition={updatePosition}
           quality={preferences.quality} reducedMotion={preferences.reducedMotion} panelOpen={Boolean(selected)} />
@@ -193,14 +202,16 @@ export default function App() {
         <div className="panel-backdrop" role="presentation" onClick={() => setSelected(null)}>
           <section ref={dialogRef} className="portfolio-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" onClick={(event) => event.stopPropagation()}>
             <div className="panel-topline"><span>{selected.section}</span><button data-dialog-close type="button" aria-label="Close panel" onClick={() => setSelected(null)}>×</button></div>
-            <h2 id="panel-title">{selected.title}</h2>
+            <div className="panel-landmark" aria-hidden="true">{String(selectedIndex + 1).padStart(2, '0')}<span>COASTLIGHT FIELD NOTES</span></div>
+            <h2 id="panel-title" aria-live="polite">{selected.title}</h2>
             <p>{selected.description}</p>
             <div className="portfolio-entries">
               {selected.entries.map((entry) => (
                 <article className="portfolio-entry" key={entry.title}>
-                  <h3>{entry.title}</h3>
+                  <div className="entry-heading"><h3>{entry.title}</h3>{entry.status&&<span className="entry-status">{entry.status}</span>}</div>
                   <p>{entry.detail}</p>
                   {entry.tags && <div className="entry-tags">{entry.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
+                  {entry.link&&<a className="entry-link" href={entry.link.href} target="_blank" rel="noopener noreferrer">{entry.link.label}<span aria-hidden="true"> ↗</span></a>}
                 </article>
               ))}
             </div>
@@ -209,6 +220,14 @@ export default function App() {
               <a href="https://www.linkedin.com/in/nikhil-jatale/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
               <a href="https://github.com/Njtales" target="_blank" rel="noopener noreferrer">GitHub</a>
             </nav>}
+            <nav className="panel-navigation" aria-label="Explore another section">
+              <button type="button" aria-label={`Previous section: ${sectionNames[adjacent(-1).id]}`} onClick={() => setSelected(adjacent(-1))}>
+                <span aria-hidden="true">←</span><span><small>Previous</small>{sectionNames[adjacent(-1).id]}</span>
+              </button>
+              <button type="button" aria-label={`Next section: ${sectionNames[adjacent(1).id]}`} onClick={() => setSelected(adjacent(1))}>
+                <span><small>Next</small>{sectionNames[adjacent(1).id]}</span><span aria-hidden="true">→</span>
+              </button>
+            </nav>
             <p className="panel-close-hint"><span className="desktop-controls">Press E or Escape to return to the island.</span>
               <span className="touch-controls">Close this card to return to the island.</span></p>
             <div className="panel-footer"><span>COASTLIGHT VILLAGE</span><span>{portfolioSpots.findIndex((spot) => spot.id === selected.id) + 1} / {portfolioSpots.length}</span></div>

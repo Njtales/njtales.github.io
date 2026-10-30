@@ -44,7 +44,8 @@ function PlantBatch({ plants, geometry, material }: {
     batch.current.computeBoundingBox()
   }, [scene, plants])
 
-  return <instancedMesh ref={batch} args={[geometry, material, plants.length]} castShadow dispose={null} />
+  return <instancedMesh ref={batch} args={[geometry, material, plants.length]}
+    userData={{niroOccluder:plants[0]?.kind!=='palm'&&plants[0]?.kind!=='flowers'}} castShadow dispose={null} />
 }
 
 export function MapFoliage() {

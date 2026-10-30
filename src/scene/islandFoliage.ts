@@ -16,15 +16,16 @@ function tree(palm:boolean){
   const trunk=new THREE.CylinderGeometry(palm?.065:.055,palm?.11:.085,palm?1.5:.85,6,3)
   const tp=trunk.attributes.position
   for(let i=0;i<tp.count;i++)tp.setX(i,tp.getX(i)+Math.max(0,tp.getY(i))**2*.14)
-  trunk.computeVertexNormals();parts.push(paint(trunk,'#9b8049',new THREE.Vector3(0,palm?.74:.41,0),new THREE.Vector3(1,1,1)))
+  trunk.computeVertexNormals();parts.push(paint(trunk,palm?'#b08c5c':'#9b8049',new THREE.Vector3(0,palm?.74:.41,0),new THREE.Vector3(1,1,1)))
   if(palm){
     for(let leaf=0;leaf<7;leaf++){
-      const a=leaf/7*Math.PI*2,dx=Math.cos(a),dz=Math.sin(a)
+      const a=leaf/7*Math.PI*2+Math.sin(leaf*2.3)*.19,dx=Math.cos(a),dz=Math.sin(a)
       for(const side of [-1,1]){
         const points:number[]=[],colors:number[]=[],indices:number[]=[]
         for(let step=0;step<=3;step++){
-          const t=step/3,len=1.14*t,w=Math.sin(t*Math.PI)*.23*side,y=1.5+Math.sin(t*Math.PI)*.35-t*t*.12
-          const colour=new THREE.Color(side<0?'#315f39':'#afc951')
+          const t=step/3,len=(1.05+Math.sin(leaf*1.73)*.10)*t,w=Math.sin(t*Math.PI)*.23*side,
+            y=1.5+Math.sin(t*Math.PI)*.35-t*t*(.32+leaf%3*.055)
+          const colour=new THREE.Color(side<0?'#305a3d':'#a8bc60')
           points.push(.10+dx*len,y+.035,dz*len,.10+dx*len-dz*w,y-Math.abs(w)*.18,dz*len+dx*w)
           for(let j=0;j<2;j++)colors.push(colour.r,colour.g,colour.b)
           if(step){const i=(step-1)*2;indices.push(i,i+1,i+2,i+1,i+3,i+2)}

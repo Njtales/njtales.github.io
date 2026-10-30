@@ -5,80 +5,44 @@ import * as THREE from 'three'
 import type { PortfolioSpot } from './portfolioData'
 import { IslandGround, type GroundPaints } from './IslandGround'
 import { CoastalIslands } from './CoastalIslands'
-import { GroundRock } from './GroundRocks'
+import { RockScatter, type GroundRockProps } from './GroundRocks'
+import { OceanWaveBands } from './OceanWaveBands'
+import { createContactShadowMask } from './SoftContactShadow'
 import { groundHeightAt } from './groundContours'
 import { canWalkTo } from './worldNavigation'
 import { createGroundPaintTexture } from './groundPaint'
 import { createIslandComposition } from './groundComposition'
 import { ShoreDock } from './ShoreDock'
+import { OceanDetails } from './OceanDetails'
 import { MapFoliage } from './MapFoliage'
 import { NiroModel } from './NiroModel'
+import { NiroVisibility } from './NiroVisibility'
 import { Clocktower } from './Clocktower'
 import { VillageBuildings } from './VillageBuildings'
 import { SkyClouds } from './SkyClouds'
-import { useAmbientTime, useScenePreferences } from './ScenePreferences'
+import { useScenePreferences } from './ScenePreferences'
 import { findWalkingPath, type WalkPoint } from './walkingPath'
 import { buildingFootprints,findNearbyLandmark } from './buildingLayout'
 import { NIRO,createNiroRig } from './niroRig'
 import { NiroWalker,integrateNiroHeight,surfaceSample,type GroundSampler,type VerticalState } from './NiroMotion'
 
+const townStones: GroundRockProps[] = [
+  ...[[-10.5,14,1.05],[-9.8,14.5,.53],[-3.4,15.1,.72],[-12.5,7.2,.76],
+    [6.8,7.8,.83],[13,-1,.67],[-17.2,-2.8,.8],[10.6,9.9,1.06]].map(([x,z,size],i)=>({
+      position:[x,groundHeightAt(x,z),z] as [number,number,number],size,variant:i,rotation:i*1.17})),
+  ...[[-21.2,11.4,.78],[-14.8,13.2,.72],[-5.7,13.2,.65],
+    [7.9,12.4,.67],[19.2,8.8,.74],[22.6,6.6,.61]].map(([x,z,size],i)=>({
+      position:[x,groundHeightAt(x,z),z] as [number,number,number],size,variant:i+1,rotation:i*.61})),
+  ...[[-26.8,2.6,2.35],[-27.4,3.4,1.35],[26.1,.5,2.15],[26.8,1.6,1.3]].map(([x,z,size],i)=>({
+      position:[x,groundHeightAt(x,z),z] as [number,number,number],size,variant:i,rotation:i*.8})),
+]
+
 function BeachDetails() {
-  return (
-    <group>
-      {[
-        [-10.5, 14, 1.05], [-9.8, 14.5, 0.53], [-3.4, 15.1, 0.72],
-        [-12.5, 7.2, 0.76], [6.8, 7.8, 0.83], [13, -1, 0.67],
-        [-17.2, -2.8, 0.8], [10.6, 9.9, 1.06],
-      ].map(([x, z, size], i) => (
-        <GroundRock key={`ground-rock-${i}`} position={[x, groundHeightAt(x, z), z]} size={size} variant={i} rotation={i * 1.17} />
-      ))}
-      <ShoreDock />
-      <Starfish position={[5.4, groundHeightAt(5.4, 14) + 0.006, 14]} />
-      <TideLine />
-      <Dock />
-    </group>
-  )
-}
-
-function TideLine() {
-  const stones = [
-    [-21.2, 11.4, 0.78], [-14.8, 13.2, 0.72], [-5.7, 13.2, 0.65],
-    [7.9, 12.4, 0.67], [19.2, 8.8, 0.74], [22.6, 6.6, 0.61],
-  ]
-  return (
-    <group>
-      {stones.map(([x, z, size], i) => (
-        <GroundRock key={`tide-stone-${i}`} position={[x, groundHeightAt(x, z), z]} size={size} variant={i + 1} rotation={i * 0.61} />
-      ))}
-    </group>
-  )
-}
-
-function Starfish({ position }: { position: [number, number, number] }) {
-  const geometry = useMemo(() => {
-    const shape = new THREE.Shape()
-    for (let i = 0; i < 10; i += 1) {
-      const angle = Math.PI / 2 + (i * Math.PI) / 5
-      const radius = i % 2 === 0 ? 0.62 : 0.25
-      const x = Math.cos(angle) * radius
-      const y = Math.sin(angle) * radius
-      if (i === 0) shape.moveTo(x, y)
-      else shape.lineTo(x, y)
-    }
-    shape.closePath()
-    return new THREE.ShapeGeometry(shape, 1)
-  }, [])
-  return (
-    <group position={position} rotation={[-Math.PI / 2, 0.18, 0]}>
-      <mesh geometry={geometry} castShadow>
-        <meshStandardMaterial color="#d56f5a" roughness={1} side={THREE.DoubleSide} />
-      </mesh>
-      <mesh position={[0, 0.026, 0]}>
-        <circleGeometry args={[0.12, 12]} />
-        <meshStandardMaterial color="#f0b083" roughness={1} />
-      </mesh>
-    </group>
-  )
+  return <group>
+    <RockScatter rocks={townStones} />
+    <ShoreDock />
+    <Dock />
+  </group>
 }
 
 function Dock() {
@@ -112,19 +76,6 @@ function Dock() {
   )
 }
 
-function MapEdgeFraming() {
-  return (
-    <group>
-      {[
-        [-26.8, 2.6, 2.35], [-27.4, 3.4, 1.35],
-        [26.1, 0.5, 2.15], [26.8, 1.6, 1.3],
-      ].map(([x, z, size], i) => (
-        <GroundRock key={`shore-rock-${i}`} position={[x, groundHeightAt(x, z), z]} size={size} variant={i} rotation={i * 0.8} />
-      ))}
-    </group>
-  )
-}
-
 function HeroCharacter({ onOpen, onPlayerPosition }: { onOpen: (spot: PortfolioSpot) => void; onPlayerPosition: (x: number, z: number) => void }) {
   const { panelOpen } = useScenePreferences()
   const walkingPath = useRef<WalkPoint[]>([]), destination = useRef<WalkPoint | null>(null)
@@ -134,6 +85,8 @@ function HeroCharacter({ onOpen, onPlayerPosition }: { onOpen: (spot: PortfolioS
   const root = useRef<THREE.Group>(null)
   const niroRig=useMemo(createNiroRig,[])
   const contactShadow=useRef<THREE.Mesh>(null)
+  const contactMask=useMemo(createContactShadowMask,[])
+  useEffect(()=>()=>contactMask.dispose(),[contactMask])
   const pressed = useRef<Record<string, boolean>>({})
   const velocity = useRef(new THREE.Vector2())
   const nearestId = useRef<string | null>(null)
@@ -146,6 +99,10 @@ function HeroCharacter({ onOpen, onPlayerPosition }: { onOpen: (spot: PortfolioS
   const promptAnchor=useRef<THREE.Group>(null)
   const promptPlacement=useRef({position:new THREE.Vector3(),x:NaN,z:NaN})
   const promptGround=useMemo(surfaceSample,[])
+  const cameraAim = useMemo(() => new THREE.Vector3(), [])
+  const cameraTarget = useMemo(() => new THREE.Vector3(), [])
+  const cameraDestination = useMemo(() => new THREE.Vector3(), [])
+  const cameraInitialized = useRef(false)
   const previousPosition=useMemo(()=>new THREE.Vector3(),[])
   const inputDirection=useMemo(()=>new THREE.Vector3(),[])
   const ground=useMemo(surfaceSample,[])
@@ -209,7 +166,7 @@ function HeroCharacter({ onOpen, onPlayerPosition }: { onOpen: (spot: PortfolioS
       if ((code === 'KeyE' || code === 'Enter') && nearby) onOpen(nearby)
     }
     const up = (event: KeyboardEvent) => { pressed.current[event.code] = false }
-    const resetMovement = () => { pressed.current = {} }
+    const resetMovement = () => { pressed.current = {}; walkingPath.current = []; destination.current = null; velocity.current.set(0,0) }
     const resetWhenHidden = () => { if (document.hidden) resetMovement() }
     const pad = (event: Event) => {
       const { code, down: isDown } = (event as CustomEvent<{ code: string; down: boolean }>).detail
@@ -303,7 +260,10 @@ function HeroCharacter({ onOpen, onPlayerPosition }: { onOpen: (spot: PortfolioS
       const shadowMaterial=contactShadow.current.material as THREE.MeshBasicMaterial
       shadowMaterial.opacity=Math.max(0.03,0.20-height*0.20)
     }
-    if (destinationRing.current && destination.current) destinationRing.current.position.copy(destinationGround.position).addScaledVector(destinationGround.normal, .025)
+    if (destinationRing.current && destination.current) {
+      destinationRing.current.position.copy(destinationGround.position).addScaledVector(destinationGround.normal, .025)
+      destinationRing.current.quaternion.setFromUnitVectors(shadowNormal, destinationGround.normal)
+    }
     markerTime.current += delta
     if (markerTime.current > .1) { onPlayerPosition(player.x, player.z); markerTime.current = 0 }
 
@@ -338,11 +298,18 @@ function HeroCharacter({ onOpen, onPlayerPosition }: { onOpen: (spot: PortfolioS
     // At the far/northern edge, aim past Niro toward the island interior so
     // the follow view doesn't devote half its frame to open water.
     const northernCoastBias = THREE.MathUtils.clamp((-player.z - 3) / 8, 0, 1)
-    const target = new THREE.Vector3(focusX, player.y + 1.0, focusZ - 6.5)
-    target.z = focusZ - 5.5 + northernCoastBias * 7.5
-    const cameraPosition = new THREE.Vector3(focusX, player.y + 11.4, focusZ + 24)
-    camera.position.lerp(cameraPosition, 1 - Math.exp(-3.2 * delta))
-    camera.lookAt(target)
+    cameraTarget.set(focusX, player.y + 1.0, focusZ - 5.5 + northernCoastBias * 7.5)
+    cameraDestination.set(focusX, player.y + 11.4, focusZ + 24)
+    if (!cameraInitialized.current) {
+      camera.position.copy(cameraDestination); cameraAim.copy(cameraTarget)
+      cameraInitialized.current = true
+    }
+    // Ease position and aim together: steering and slopes no longer jerk the view.
+    // Clamp resumed frames so returning from another tab cannot fling the camera.
+    const follow = 1 - Math.exp(-3.2 * frameDelta)
+    camera.position.lerp(cameraDestination, follow)
+    cameraAim.lerp(cameraTarget, follow)
+    camera.lookAt(cameraAim)
 
     const closest=findNearbyLandmark(player.x,player.z)
     if(closest){
@@ -357,6 +324,8 @@ function HeroCharacter({ onOpen, onPlayerPosition }: { onOpen: (spot: PortfolioS
     }
     if (nearestId.current !== (closest?.id ?? null)) {
       nearestId.current = closest?.id ?? null
+      document.documentElement.dataset.nearbyLandmark=closest?.id??''
+      window.dispatchEvent(new CustomEvent('coastlight:nearby',{detail:closest?.id??null}))
       setNearby(closest)
     }
   })
@@ -366,12 +335,13 @@ function HeroCharacter({ onOpen, onPlayerPosition }: { onOpen: (spot: PortfolioS
     <group ref={root} position={[-3, groundHeightAt(-3, 5.5), 5.5]}>
       <mesh ref={contactShadow} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.010, 0]}>
         <circleGeometry args={[0.58, 24]} />
-        <meshBasicMaterial color="#294a32" transparent opacity={0.2} depthWrite={false} />
+        <meshBasicMaterial color="#294a32" map={contactMask} transparent opacity={0.2} depthWrite={false} />
       </mesh>
       <group ref={bob}>
         <NiroModel rig={niroRig}/>
       </group>
     </group>
+      <NiroVisibility target={root}/>
       <mesh ref={destinationRing} visible={false} rotation={[-Math.PI / 2, 0, 0]} raycast={() => {}}>
         <ringGeometry args={[.15, .22, 24]} /><meshBasicMaterial color="#fff5dc" transparent opacity={.85} depthWrite={false} />
       </mesh>
@@ -437,7 +407,7 @@ function PaintedHorizon() {
   }, [])
 
   return (
-    <mesh position={[0, 1.2, -56]}>
+    <mesh position={[0, 1.2, -56]} visible={Boolean(texture)}>
       <planeGeometry args={[154, 34]} />
       {texture && (
         <meshBasicMaterial
@@ -447,113 +417,10 @@ function PaintedHorizon() {
           fog={false}
           depthWrite={false}
           side={THREE.DoubleSide}
+          forceSinglePass
         />
       )}
     </mesh>
-  )
-}
-
-function OceanGlints() {
-  const ambient = useAmbientTime()
-  const { quality } = useScenePreferences()
-  const glints = useRef<THREE.Group>(null)
-  const streaks = useMemo(() => [
-    [-36, -18, 1.5], [-31, -25, 1.5], [-24, -20, 2.2], [-15, -29, 1.2], [-7, -23, 1.8], [2, -32, 2.4],
-    [10, -25, 1.4], [18, -30, 2], [27, -22, 1.5], [-35, -34, 2.3], [-2, -18, 1.1], [22, -17, 1.3],
-    [35, -31, 1.8], [-29, -42, 1.8], [-20, -37, 1.3], [-12, -45, 2], [-3, -39, 1.4], [7, -44, 2.1],
-    [16, -38, 1.4], [26, -46, 1.9], [36, -40, 1.5], [-40, -28, 1.2], [-26, -49, 1.6], [-9, -34, 1.1],
-    [4, -19, 1.3], [19, -48, 1.4], [31, -36, 1.2], [42, -24, 1.6],
-  ] as const, [])
-  useFrame(() => {
-    if (!glints.current) return
-    glints.current.children.forEach((child, i) => {
-      child.position.x = streaks[i][0] + Math.sin(ambient.current * 0.12 + i * 1.4) * 0.24
-      const material = (child as THREE.Mesh).material as THREE.MeshBasicMaterial
-      material.opacity = 0.1 + (0.5 + 0.5 * Math.sin(ambient.current * 0.7 + i * 1.7)) * 0.16
-    })
-  })
-  if (quality === 'light') return null
-  return (
-    <group ref={glints}>
-      {streaks.map(([x, z, length], i) => (
-        <mesh key={`water-glint-${i}`} position={[x, 0.08, z]} rotation={[-Math.PI / 2, 0, Math.sin(i * 4.1) * 0.07]}>
-          <planeGeometry args={[length, 0.17 + (i % 3) * 0.07]} />
-          <meshBasicMaterial color={i % 3 ? '#9de0d5' : '#e1f0cf'} transparent opacity={0.46} depthWrite={false} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
-
-function OceanShallows() {
-  const ambient = useAmbientTime()
-  const { quality } = useScenePreferences()
-  const group = useRef<THREE.Group>(null)
-  const patches: [number, number, number, number, number, string][] = [
-    [-34, -16, 2.5, 0.38, -0.14, '#70c8c4'], [-25, -21, 3.4, 0.42, 0.08, '#2c8996'],
-    [-15, -18, 2.1, 0.32, -0.1, '#83d4cd'], [-5, -23, 3.2, 0.44, 0.13, '#388f9a'],
-    [8, -17, 2.8, 0.36, -0.08, '#75cbc5'], [19, -22, 3.6, 0.45, 0.1, '#2d8290'],
-    [31, -18, 2.3, 0.34, -0.12, '#80d1ca'], [-39, -27, 3.5, 0.46, 0.1, '#287b8a'],
-    [-29, -31, 2.6, 0.36, -0.12, '#7acbc5'], [-18, -28, 3.8, 0.48, 0.1, '#347f8e'],
-    [-7, -34, 2.6, 0.4, -0.12, '#80d0c9'], [5, -29, 3.3, 0.42, 0.08, '#2b7a89'],
-    [17, -34, 3.8, 0.46, -0.1, '#6fc4c1'], [29, -29, 2.5, 0.38, 0.12, '#337f8e'],
-    [39, -34, 3.1, 0.4, -0.08, '#77cbc5'], [-34, -41, 2.8, 0.4, 0.13, '#327e8b'],
-    [-22, -44, 3.6, 0.46, -0.1, '#6dbdc0'], [-9, -43, 2.5, 0.36, 0.12, '#2b7485'],
-    [7, -47, 3.3, 0.42, -0.08, '#65b4ba'], [24, -43, 3.7, 0.48, 0.1, '#2b7888'],
-    [39, -46, 2.5, 0.36, -0.12, '#63b6bb'],
-  ]
-  useFrame(() => {
-    if (!group.current) return
-    group.current.children.forEach((child, i) => {
-      const x = patches[i][0]
-      child.position.x = x + Math.sin(ambient.current * 0.045 + i * 1.6) * 0.22
-    })
-  })
-  if (quality === 'light') return null
-  return (
-    <group ref={group}>
-      {patches.map(([x, z, sx, sz, rotation, color], i) => (
-        <mesh key={`sea-shallow-${i}`} position={[x, 0.075, z]} rotation={[-Math.PI / 2, 0, rotation]} scale={[sx * 1.25, sz * 2.4, 1]}>
-          <circleGeometry args={[1, 11]} />
-          <meshBasicMaterial color={color} transparent opacity={0.31} depthWrite={false} side={THREE.DoubleSide} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
-
-function OceanWaveBands() {
-  const waves = useMemo(() => {
-    const rows = [
-      { z: -14, color: '#83d0ca' }, { z: -20.5, color: '#287f91' },
-      { z: -29, color: '#6abfc0' }, { z: -39, color: '#327f8c' },
-    ]
-    return rows.flatMap((row, rowIndex) => Array.from({ length: 5 }, (_, segment) => {
-      const phase = rowIndex * 1.31 + segment * 2.17
-      const startX = -42 + segment * 17.2 + Math.sin(phase) * 3.1
-      const length = 4.2 + (0.5 + 0.5 * Math.sin(phase * 1.7)) * 7.8
-      const points = Array.from({ length: 7 }, (_, i) => {
-        const x = startX + (i / 6) * length
-        const z = row.z + Math.sin(x * 0.19 + phase) * 0.76 + Math.sin(x * 0.061 + phase * 2) * 0.5
-        const y = 0.08 + Math.sin(x * 0.23 + phase) * 0.025
-        return new THREE.Vector3(x, y, z)
-      })
-      return {
-        geometry: new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.043, 5, false),
-        color: row.color,
-        opacity: 0.28 + (segment % 3) * 0.07,
-      }
-    }))
-  }, [])
-
-  return (
-    <group>
-      {waves.map((wave, i) => (
-        <mesh key={`ocean-wave-${i}`} geometry={wave.geometry}>
-          <meshBasicMaterial color={wave.color} transparent opacity={wave.opacity} depthWrite={false} />
-        </mesh>
-      ))}
-    </group>
   )
 }
 
@@ -571,8 +438,8 @@ function Ocean({ paints }: { paints: GroundPaints }) {
     const geometry = new THREE.PlaneGeometry(180, 180, 64, 80)
     const positions = geometry.attributes.position
     const colors: number[] = []
-    const near = new THREE.Color('#48b5bb')
-    const mid = new THREE.Color('#257f91')
+    const near = new THREE.Color('#258e9d')
+    const mid = new THREE.Color('#1b7188')
     const far = new THREE.Color('#164d66')
     for (let i = 0; i < positions.count; i += 1) {
       const x = positions.getX(i)
@@ -586,8 +453,8 @@ function Ocean({ paints }: { paints: GroundPaints }) {
         + Math.sin(x * 0.31 - y * 0.08 + 1.7) * 0.55
         + Math.sin(x * 0.073 - y * 0.22 + 2.8) * 0.38
       ) / 1.93
-      const tone = ripple > 0 ? new THREE.Color('#69c9c4') : new THREE.Color('#124c63')
-      color.lerp(tone, Math.abs(ripple) * 0.5)
+      const tone = ripple > 0 ? new THREE.Color('#53b8b7') : new THREE.Color('#124c63')
+      color.lerp(tone, Math.abs(ripple) * 0.38)
       colors.push(color.r, color.g, color.b)
     }
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
@@ -602,9 +469,8 @@ function Ocean({ paints }: { paints: GroundPaints }) {
         <meshStandardMaterial vertexColors roughness={0.4} metalness={0.02}
           transparent onBeforeCompile={blendSeaIntoSky} />
       </mesh>
-      <OceanShallows />
+      <OceanDetails />
       <OceanWaveBands />
-      <OceanGlints />
       <PaintedHorizon />
       <CoastalIslands grassMap={paints.grass} sandMap={paints.sand} />
       <SkyClouds />
@@ -639,7 +505,6 @@ export function VillageWorld({ onOpen, onPlayerPosition }: { onOpen: (spot: Port
       <IslandGround paints={islandPaints} />
       <MapFoliage />
       <BeachDetails />
-      <MapEdgeFraming />
       <Clocktower onOpen={onOpen} />
       <VillageBuildings onOpen={onOpen} />
       <HeroCharacter onOpen={onOpen} onPlayerPosition={onPlayerPosition} />
