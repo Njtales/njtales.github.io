@@ -173,11 +173,11 @@ canvas { display: block; }
   .view-settings { bottom: 14px; right: 12px; font-size: 11px; }
   .map-sections > div { grid-template-columns: 1fr; }
   .map-sections button { min-height: 44px; }
-  .title-card { top: clamp(12px, 3vh, 20px); right: calc(clamp(140px, 44vw, 174px) + 26px); left: 16px; }
-  .title-card h1 { font-size: clamp(20px, 5.5vw, 28px); line-height: 1.04; }
-  .title-card p { max-width: 30ch; font-size: clamp(10px, 2.8vw, 13px); line-height: 1.35; }
-  .portfolio-shortcuts { gap: 5px; max-width: 100%; margin-top: 9px; }
-  .portfolio-shortcuts button { min-height: 26px; padding: 4px 8px; font-size: 9px; }
+  .title-card { top: clamp(12px, 3vh, 20px); right: 106px; left: 16px; }
+  .title-card h1 { font-size: clamp(22px, 5.8vw, 28px); line-height: 1.04; }
+  .title-card p { max-width: 32ch; font-size: 11px; line-height: 1.4; }
+  .portfolio-shortcuts { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; width: calc(100vw - 32px); max-width: none; margin-top: 11px; }
+  .portfolio-shortcuts button { padding: 6px; font-size: 10px; }
   .eyebrow { font-size: clamp(8px, 2.2vw, 10px); letter-spacing: .14em; }
   .portfolio-map { top: clamp(12px, 3vh, 20px); right: 12px; width: clamp(140px, 44vw, 174px); padding: 9px 10px 7px; }
   .map-body { height: clamp(68px, 20vw, 80px); }
@@ -189,7 +189,7 @@ canvas { display: block; }
   .portfolio-panel h2 { font-size: clamp(23px, 7vw, 29px); }
 }
 @media (max-width: 900px) and (max-height: 520px) {
-  .title-card { top: 9px; left: 14px; right: 160px; }
+  .title-card { top: 9px; left: 14px; right: 106px; }
   .eyebrow { margin-bottom: 3px; font-size: 8px; }
   .title-card h1 { font-size: clamp(18px, 3vw, 24px); }
   .title-card p { max-width: 42ch; margin-top: 4px; font-size: 10px; }
@@ -215,7 +215,35 @@ canvas { display: block; }
   .control-hint i { margin: 0 3px; }
   .movement-pad { left: 10px; bottom: 10px; }
   .portfolio-map { right: 10px; }
-  .title-card { left: 12px; right: calc(clamp(140px, 44vw, 167px) + 22px); }
+  .title-card { left: 12px; right: 100px; }
   .panel-backdrop { padding: 8px; }
   .portfolio-panel { max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); padding: 15px; }
+}
+
+/* The phone map is a disclosure. Its large section buttons do the selecting;
+   the small island markers show Niro's position without overlapping targets. */
+.map-control[data-compact="true"] { position: absolute; z-index: 3; top: clamp(12px,3vh,20px); right: 12px; }
+.map-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 80px; min-height: 44px; padding: 8px 12px; border: 1.5px solid #85977b; border-radius: 13px; background: #fff2d4; box-shadow: 0 3px 0 #45513b1f; color: #355842; font: 700 12px 'DM Sans',sans-serif; cursor: pointer; touch-action: manipulation; }
+.map-toggle svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.map-toggle[aria-expanded="true"] { background: #e3e8cc; }
+.map-toggle:focus-visible, .map-close:focus-visible { outline: 3px solid #147e86; outline-offset: 3px; }
+.map-control[data-compact="true"] .portfolio-map { top: 52px; right: 0; width: min(320px,calc(100vw - 24px)); max-height: calc(100vh - 92px); max-height: calc(100dvh - 92px); overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px 14px; background: #fff5df; box-shadow: 0 8px 24px #173c3d26; }
+.portfolio-map[hidden] { display: none; }
+.map-control[data-compact="true"] .map-heading { min-height: 44px; font-size: 10px; }
+.map-close { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid #b59a71; border-radius: 50%; background: #f1dfbb; color: #66503a; font-size: 22px; cursor: pointer; touch-action: manipulation; }
+.map-control[data-compact="true"] .map-body { height: 110px; margin-top: 0; }
+.map-marker { cursor: default; pointer-events: none; }
+.map-section-picker p { margin: 10px 0 8px; font-size: 11px; font-weight: 600; }
+.map-control[data-compact="true"] .map-section-picker > div { grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 0; }
+.map-control[data-compact="true"] .map-section-picker button { min-height: 44px; gap: 7px; padding: 7px 9px; font-size: 11px; touch-action: manipulation; }
+.app-shell[data-compact="true"] .portfolio-shortcuts button { min-width: 44px; min-height: 44px; font-size: 10px; touch-action: manipulation; }
+.app-shell[data-compact="true"] .movement-pad { grid-template-columns: repeat(3,44px); grid-template-rows: repeat(2,44px); }
+.app-shell[data-compact="true"] .entry-link, .app-shell[data-compact="true"] .view-settings > summary { min-height: 44px; }
+.app-shell[data-compact="true"] .desktop-controls { display: none; }
+.app-shell[data-compact="true"] .touch-controls { display: inline; }
+@media (max-width: 900px) and (max-height: 520px) {
+  .map-control[data-compact="true"] { top: 8px; right: 10px; }
+  .map-control[data-compact="true"] .portfolio-map { max-height: calc(100vh - 76px); max-height: calc(100dvh - 76px); }
+  .map-control[data-compact="true"] .map-body { height: 66px; }
+  .control-hint { transform: none; justify-content: center; text-align: center; white-space: normal; font-size: 9px; }
 }

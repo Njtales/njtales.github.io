@@ -40,16 +40,40 @@ function MovementPad() {
 
 function PortfolioMap({ selectedId, onSelect, playerMarker, isCompact }: { selectedId: string | null; onSelect: (spot: PortfolioSpot) => void;
   playerMarker: RefObject<HTMLSpanElement | null>; isCompact: boolean }) {
+  const [expanded,setExpanded]=useState(false)
+  const control=useRef<HTMLDivElement>(null),toggle=useRef<HTMLButtonElement>(null)
+  const close=()=>{setExpanded(false);toggle.current?.focus()}
+  const select=(spot:PortfolioSpot)=>{
+    if(isCompact){setExpanded(false);toggle.current?.focus()}
+    onSelect(spot)
+  }
+  useEffect(()=>{setExpanded(false)},[isCompact,selectedId])
+  useEffect(()=>{
+    if(!isCompact||!expanded)return
+    const outside=(event:PointerEvent)=>{if(!control.current?.contains(event.target as Node))setExpanded(false)}
+    const escape=(event:KeyboardEvent)=>{
+      if(event.key!=='Escape')return
+      event.preventDefault();event.stopImmediatePropagation();setExpanded(false);toggle.current?.focus()
+    }
+    document.addEventListener('pointerdown',outside)
+    window.addEventListener('keydown',escape,true)
+    return()=>{document.removeEventListener('pointerdown',outside);window.removeEventListener('keydown',escape,true)}
+  },[isCompact,expanded])
+  const sections=<div>{portfolioSpots.map((spot,index)=><button key={spot.id} type="button" aria-label={`Open ${sectionNames[spot.id]}`}
+    aria-pressed={selectedId===spot.id} onClick={()=>select(spot)}><span>{index+1}</span>{sectionNames[spot.id]}</button>)}</div>
   return (
-    <aside className="portfolio-map" aria-label="Portfolio landmarks">
-      <div className="map-heading"><span>COASTLIGHT</span><small>7 LANDMARKS</small></div>
+    <div ref={control} className="map-control" data-compact={isCompact}>
+    {isCompact&&<button ref={toggle} type="button" className="map-toggle" aria-expanded={expanded} aria-controls="village-map"
+      onClick={()=>setExpanded(open=>!open)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16m6-14v16"/></svg>Map</button>}
+    <aside id="village-map" className="portfolio-map" aria-label="Portfolio landmarks" hidden={isCompact&&!expanded}>
+      <div className="map-heading"><span>COASTLIGHT</span>{isCompact?<button type="button" className="map-close" aria-label="Close map" onClick={close}>×</button>:<small>7 LANDMARKS</small>}</div>
       <div className="map-body">
         <svg viewBox="0 0 180 112" aria-hidden="true">
           <path d="M17 24 38 15 61 19 78 12 104 18 126 14 154 25 163 44 156 63 164 78 145 91 119 90 99 101 74 94 51 100 31 88 19 68 24 49Z" />
         </svg>
         {portfolioSpots.map((spot, index) => {
           const { left, top } = mapPosition(spot.position[0], spot.position[2])
-          return (
+          return isCompact?<span key={spot.id} className="map-pin map-marker" aria-hidden="true" style={{left:`${left}%`,top:`${top}%`}}>{index+1}</span>:(
             <button
               key={spot.id}
               type="button"
@@ -58,19 +82,19 @@ function PortfolioMap({ selectedId, onSelect, playerMarker, isCompact }: { selec
               title={`${sectionNames[spot.id]} · ${spot.title}`}
               aria-label={`Open ${spot.title}`}
               aria-pressed={selectedId === spot.id}
-              onClick={() => onSelect(spot)}
+              onClick={() => select(spot)}
             >{index + 1}</button>
           )
         })}
         <span ref={playerMarker} className="map-player" role="img" aria-label="Niro’s current position"
           style={{ left: `${mapPosition(-3, 5.5).left}%`, top: `${mapPosition(-3, 5.5).top}%` }}><span>Niro</span></span>
       </div>
-      <details className="map-sections" open={!isCompact}>
+      {isCompact?<nav className="map-sections map-section-picker" aria-label="Choose a section"><p>Where would you like to explore?</p>{sections}</nav>:<details className="map-sections" open>
         <summary>Explore sections</summary>
-        <div>{portfolioSpots.map((spot, index) => <button key={spot.id} type="button" aria-label={`Open ${sectionNames[spot.id]}`}
-          aria-pressed={selectedId === spot.id} onClick={() => onSelect(spot)}><span>{index + 1}</span>{sectionNames[spot.id]}</button>)}</div>
-      </details>
+        {sections}
+      </details>}
     </aside>
+    </div>
   )
 }
 
@@ -106,7 +130,7 @@ export default function App() {
   const [sceneUnavailable, setSceneUnavailable] = useState(false)
   const [preferences, setPreferences] = useState(readViewPreferences)
   const [isCompact, setIsCompact] = useState(() => typeof window !== 'undefined' && (
-    window.matchMedia('(max-width: 700px)').matches || window.matchMedia('(pointer: coarse)').matches
+    window.matchMedia('(max-width: 700px), (max-width: 900px) and (max-height: 520px), (pointer: coarse)').matches
   ))
   const dialogRef = useRef<HTMLElement>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
@@ -125,15 +149,12 @@ export default function App() {
   useEffect(() => { try { localStorage.setItem('coastlight-view', JSON.stringify(preferences)) } catch { /* private browsing */ } }, [preferences])
 
   useEffect(() => {
-    const smallViewport = window.matchMedia('(max-width: 700px)')
-    const coarsePointer = window.matchMedia('(pointer: coarse)')
-    const updateViewport = () => setIsCompact(smallViewport.matches || coarsePointer.matches)
+    const compactViewport = window.matchMedia('(max-width: 700px), (max-width: 900px) and (max-height: 520px), (pointer: coarse)')
+    const updateViewport = () => setIsCompact(compactViewport.matches)
     updateViewport()
-    smallViewport.addEventListener('change', updateViewport)
-    coarsePointer.addEventListener('change', updateViewport)
+    compactViewport.addEventListener('change', updateViewport)
     return () => {
-      smallViewport.removeEventListener('change', updateViewport)
-      coarsePointer.removeEventListener('change', updateViewport)
+      compactViewport.removeEventListener('change', updateViewport)
     }
   }, [])
 
@@ -167,7 +188,8 @@ export default function App() {
     window.addEventListener('keydown', handleDialogKeys, true)
     return () => {
       window.removeEventListener('keydown', handleDialogKeys, true)
-      previousFocus.current?.focus()
+      if(previousFocus.current?.getClientRects().length)previousFocus.current.focus()
+      else document.querySelector<HTMLButtonElement>('.map-toggle')?.focus()
     }
   }, [panelOpen])
 
@@ -177,7 +199,7 @@ export default function App() {
   }, [selected?.id])
 
   return (
-    <main className="app-shell" data-panel-open={Boolean(selected)} data-scene-unavailable={sceneUnavailable} data-scene-ready={sceneReady} data-reduced-motion={preferences.reducedMotion}>
+    <main className="app-shell" data-compact={isCompact} data-panel-open={Boolean(selected)} data-scene-unavailable={sceneUnavailable} data-scene-ready={sceneReady} data-reduced-motion={preferences.reducedMotion}>
       <SceneBoundary onUnavailable={handleUnavailable}><Suspense fallback={null}>
         <VillageCanvas isCompact={isCompact} onReady={markReady} onOpen={setSelected} onPlayerPosition={updatePosition}
           quality={preferences.quality} reducedMotion={preferences.reducedMotion} panelOpen={Boolean(selected)} />
