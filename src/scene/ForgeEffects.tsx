@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { buildingPoint } from './villageBuildingGeometry'
 import { useAmbientTime, useScenePreferences } from './ScenePreferences'
 
 export const FORGE_EFFECT_BUDGET = { cloudPuffs: 32, embers: 5, flames: 6, drawCalls: 3 }
@@ -88,7 +87,7 @@ function fireGeometry() {
 
 function fireMaterial() {
   return new THREE.ShaderMaterial({
-    side: THREE.DoubleSide, depthWrite: false, toneMapped: false,
+    side: THREE.DoubleSide, transparent: true, depthWrite: false, toneMapped: false,
     uniforms: { uTime: { value: 0 }, uOrange: { value: new THREE.Color('#ee7528') },
       uGold: { value: new THREE.Color('#ffc44b') }, uCream: { value: new THREE.Color('#fff0a2') } },
     vertexShader: `
@@ -125,12 +124,14 @@ export function createForgeEffectResources(light = false) {
     smokeMaterial: particleMaterial(false), sparkMaterial: particleMaterial(true), fireMaterial: fireMaterial() }
 }
 
-export function ForgeEffects() {
+export type ForgePaintedAnchors={chimney:[number,number,number];hearth:[number,number,number];flameWidth:number;flameHeight:number}
+
+export function ForgeEffects({anchors}:{anchors:ForgePaintedAnchors}) {
   const { quality } = useScenePreferences(), ambient = useAmbientTime(), light = quality === 'light'
   const flames = useRef<THREE.InstancedMesh>(null)
+  const smoke=useRef<THREE.InstancedMesh>(null),billboard=useRef<THREE.Group>(null)
   const effects = useMemo(() => createForgeEffectResources(light), [light])
-  const chimney = useMemo(() => buildingPoint('cloud-forge', .94, 5.34, -.78), [])
-  const hearth = useMemo(() => buildingPoint('cloud-forge', -.60, .99, 1.555), [])
+  const chimney=useMemo(()=>new THREE.Vector3(...anchors.chimney),[anchors])
   useLayoutEffect(() => {
     if (!flames.current) return
     const matrix = new THREE.Object3D()
@@ -143,20 +144,23 @@ export function ForgeEffects() {
     })
     flames.current.instanceMatrix.needsUpdate = true
   }, [effects])
-  useFrame(() => {
+  useFrame(({camera}) => {
+    // Match the atlas sprite's camera-facing plane, including its chimney tip.
+    if(billboard.current)billboard.current.quaternion.copy(camera.quaternion)
+    if(smoke.current)smoke.current.position.copy(chimney).applyQuaternion(camera.quaternion)
     effects.smokeMaterial.uniforms.uTime.value = ambient.current
     effects.sparkMaterial.uniforms.uTime.value = ambient.current
     effects.fireMaterial.uniforms.uTime.value = ambient.current
   })
   useEffect(() => () => Object.values(effects).forEach(resource => resource.dispose()), [effects])
   return <group dispose={null}>
-    <instancedMesh name="Cloud Forge chimney clouds" position={chimney}
+    <instancedMesh ref={smoke} name="Cloud Forge chimney clouds" position={anchors.chimney}
       args={[effects.smoke, effects.smokeMaterial, light ? 18 : FORGE_EFFECT_BUDGET.cloudPuffs]} frustumCulled={false} raycast={() => {}} />
-    <group position={hearth}>
-      <instancedMesh name="Cloud Forge live furnace" ref={flames}
+    <group ref={billboard}><group position={anchors.hearth} scale={[anchors.flameWidth/1.04,anchors.flameHeight/1.3,1]}>
+      <instancedMesh name="Cloud Forge live furnace" ref={flames} renderOrder={2}
         args={[effects.fire, effects.fireMaterial, FORGE_EFFECT_BUDGET.flames]} frustumCulled={false} raycast={() => {}} />
-      <instancedMesh name="Cloud Forge embers" position={[0, .06, .024]}
+      <instancedMesh name="Cloud Forge embers" position={[0, .06, .024]} renderOrder={3}
         args={[effects.sparks, effects.sparkMaterial, light ? 3 : FORGE_EFFECT_BUDGET.embers]} frustumCulled={false} raycast={() => {}} />
-    </group>
+    </group></group>
   </group>
 }

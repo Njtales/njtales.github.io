@@ -15,10 +15,12 @@ export function NiroVisibility({target}:{target:RefObject<THREE.Group|null>}) {
   const lastHidden=useRef(false)
   const anchor=useRef<THREE.Group>(null),elapsed=useRef(0),blockedSamples=useRef(0)
   const boxes=useRef<THREE.Box3[]>([])
-  const scratch=useMemo(()=>({ray:new THREE.Ray(),point:new THREE.Vector3(),hit:new THREE.Vector3(),matrix:new THREE.Matrix4(),local:new THREE.Matrix4()}),[])
+  const painted=useRef<THREE.Sprite[]>([])
+  const scratch=useMemo(()=>({ray:new THREE.Ray(),point:new THREE.Vector3(),hit:new THREE.Vector3(),matrix:new THREE.Matrix4(),local:new THREE.Matrix4(),paintedRay:new THREE.Raycaster(),paintedHits:[] as THREE.Intersection[]}),[])
   useLayoutEffect(()=>{
-    scene.updateMatrixWorld(true);boxes.current=[]
+    scene.updateMatrixWorld(true);boxes.current=[];painted.current=[]
     scene.traverse(object=>{
+      if(object instanceof THREE.Sprite&&object.userData.niroPaintedOccluder)painted.current.push(object)
       if(!object.userData.niroOccluder||!(object instanceof THREE.Mesh))return
       object.geometry.computeBoundingBox()
       if(object instanceof THREE.InstancedMesh) {
@@ -41,7 +43,13 @@ export function NiroVisibility({target}:{target:RefObject<THREE.Group|null>}) {
       scratch.point.set(position.x,position.y+height,position.z)
       const distance=camera.position.distanceTo(scratch.point)
       scratch.ray.origin.copy(camera.position);scratch.ray.direction.subVectors(scratch.point,camera.position).normalize()
-      if(!sightlineBlocked(scratch.ray,distance,boxes.current,scratch.hit)){obscured=false;break}
+      let blocked=sightlineBlocked(scratch.ray,distance,boxes.current,scratch.hit)
+      if(!blocked){
+        scratch.paintedRay.ray.copy(scratch.ray);scratch.paintedRay.camera=camera;scratch.paintedRay.far=Math.max(0,distance-.12)
+        scratch.paintedHits.length=0
+        for(const sprite of painted.current){sprite.raycast(scratch.paintedRay,scratch.paintedHits);if(scratch.paintedHits.length){blocked=true;break}}
+      }
+      if(!blocked){obscured=false;break}
     }
     blockedSamples.current=obscured?blockedSamples.current+1:0
     const next=blockedSamples.current>=2

@@ -32,13 +32,9 @@ export function Clocktower({onOpen}:{onOpen:(spot:PortfolioSpot)=>void}){
       <planeGeometry args={[5.1,2.5]}/>
       <meshBasicMaterial map={resources.shadow} transparent opacity={.20} color="#3b3523" depthWrite={false} polygonOffset polygonOffsetFactor={-1}/>
     </mesh>
-    <sprite name="Approved painted clocktower artwork" scale={[WIDTH,HEIGHT,1]} center={[.5,.055]} raycast={resources.raycast}>
+    <sprite name="Approved painted clocktower artwork" scale={[WIDTH,HEIGHT,1]} center={[.5,.055]} raycast={resources.raycast} userData={{niroPaintedOccluder:true}}>
       <spriteMaterial map={resources.map} transparent alphaTest={ALPHA_CUTOFF} alphaToCoverage depthWrite toneMapped={false} fog={false}/>
     </sprite>
-    <mesh visible={false} position={[0,5.15,-.15]} userData={{niroOccluder:true}} raycast={()=>{}}>
-      <boxGeometry args={[3.2,10.3,1.8]}/>
-      <meshBasicMaterial/>
-    </mesh>
     <LandmarkSign spot={spot} position={[-1.15,2.4,2.65]} shown={feedback.showSign}/>
   </group>
 }

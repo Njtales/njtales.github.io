@@ -4,12 +4,12 @@ type BuildingLayout={id:string;x:number;z:number;rectangles:readonly(readonly[nu
   entrance:readonly[number,number];path:readonly[number,number]}
 const localLayouts=[
   {id:'clocktower',rectangles:[[-2.20,2.20,-1.10,1.10],[-1.90,-.40,1.10,2.0]],entrance:[-1.15,2.65],path:[-1.15,2.08]},
-  {id:'cloud-forge',rectangles:[[-1.94,1.94,-1.55,1.55],[-2.82,-1.7,-1.28,1.4],[.45,1.75,1.55,2.33]],entrance:[1.10,2.85],path:[1.10,2.35]},
-  {id:'data-tower',rectangles:[[-1.48,1.48,-1.42,1.42],[-.70,.70,1.42,2.28]],entrance:[0,2.8],path:[0,2.30]},
-  {id:'learning-lab',rectangles:[[-1.67,1.1,-1.5,1.5],[.8,2.27,-1.38,1.60],[-.98,.4,1.5,2.28]],entrance:[-.30,2.85],path:[-.30,2.35]},
-  {id:'hobbies-hut',rectangles:[[-1.80,1.80,-1.44,1.46],[.04,1.32,1.46,2.18]],entrance:[.68,2.7],path:[.68,2.20]},
-  {id:'signal-station',rectangles:[[-1.72,1.72,-1.51,1.51],[-.20,1.20,1.51,2.15]],entrance:[.5,2.9],path:[.5,2.42]},
-  {id:'about-cottage',rectangles:[[-1.86,1.86,-1.51,1.51],[-.9,.5,1.51,2.31],[.2,1.65,1.51,2.18]],entrance:[-.2,2.9],path:[-.2,2.4]},
+  {id:'cloud-forge',rectangles:[[-2.90,2.65,-1.50,1.55],[.10,1.55,1.55,2.30]],entrance:[.80,3.0],path:[.80,2.45]},
+  {id:'data-tower',rectangles:[[-2.05,2.05,-1.38,1.42],[.0,1.40,1.42,2.28]],entrance:[.70,2.85],path:[.70,2.34]},
+  {id:'learning-lab',rectangles:[[-2.45,2.45,-1.40,1.45],[-1.40,.05,1.45,2.25]],entrance:[-.65,2.90],path:[-.65,2.38]},
+  {id:'hobbies-hut',rectangles:[[-2.20,2.25,-1.30,1.40],[.0,1.45,1.40,2.18]],entrance:[.70,2.80],path:[.70,2.28]},
+  {id:'signal-station',rectangles:[[-2.45,2.45,-1.50,1.50],[.05,1.50,1.50,2.30]],entrance:[.75,3.0],path:[.75,2.44]},
+  {id:'about-cottage',rectangles:[[-2.15,2.15,-1.40,1.50],[-.05,1.40,1.50,2.30]],entrance:[.65,2.95],path:[.65,2.42]},
 ] as const
 export const buildingFootprints:BuildingLayout[]=localLayouts.map(layout=>{
   const spot=portfolioSpots.find(spot=>spot.id===layout.id)!
