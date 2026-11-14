@@ -7,6 +7,7 @@ import { buildingFootprints } from './buildingLayout'
 import { makeVillageBuilding,type VillageBuildingId } from './villageBuildingGeometry'
 import { ForgeEffects } from './ForgeEffects'
 import { LandmarkSign, useLandmarkFeedback } from './LandmarkFeedback'
+import {getBuildingPaint} from './buildingPaint'
 
 function Landmark({id,model,materials,onOpen}:{id:VillageBuildingId;model:ReturnType<typeof makeVillageBuilding>;
   materials:{body:THREE.Material;panes:THREE.Material};onOpen:(spot:PortfolioSpot)=>void}){
@@ -45,7 +46,7 @@ export function VillageBuildings({onOpen}:{onOpen:(spot:PortfolioSpot)=>void}){
     const ids:VillageBuildingId[]=['cloud-forge','data-tower','learning-lab','hobbies-hut','signal-station','about-cottage']
     return ids.map(id=>({id,model:makeVillageBuilding(id)}))
   },[])
-  const materials=useMemo(()=>({body:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.95,side:THREE.DoubleSide}),
+  const materials=useMemo(()=>({body:new THREE.MeshStandardMaterial({vertexColors:true,map:getBuildingPaint(),roughness:.95,side:THREE.DoubleSide}),
     panes:new THREE.MeshBasicMaterial({vertexColors:true,toneMapped:false,side:THREE.DoubleSide})}),[])
   useEffect(()=>()=>{models.forEach(({model})=>{model.body.dispose();model.panes?.dispose()});Object.values(materials).forEach(m=>m.dispose())},[models,materials])
   return <group>{models.map(({id,model})=><Landmark key={id} id={id} model={model} materials={materials} onOpen={onOpen}/>)}</group>

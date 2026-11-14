@@ -3,9 +3,9 @@ import { createSmoothRoof } from './smoothRoof'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 export type Point3=[number,number,number]
-export const villagePalette={plaster:'#dfc99b',light:'#eddbb6',stone:'#b9aa88',stoneShade:'#8d8d73',
-  wood:'#795033',grain:'#a77b49',ink:'#483b2d',roof:'#b65336',tile:'#d47346',tileLight:'#df8a53',
-  teal:'#397c7c',tealLight:'#56958f',tealDark:'#285658',brass:'#bd9450',gold:'#d3ad60',glass:'#83bbb4'}
+export const villagePalette={plaster:'#bea172',light:'#d9bb88',stone:'#aca083',stoneShade:'#81735b',
+  wood:'#6a462e',grain:'#9a7045',ink:'#46372b',roof:'#a95139',tile:'#b85f42',tileLight:'#cd8056',
+  teal:'#39736e',tealLight:'#56958f',tealDark:'#285658',brass:'#a88045',gold:'#c99d50',glass:'#deb66b'}
 const P=villagePalette
 
 /** Broad painted forms merged once; no individual trim objects in the scene graph. */
@@ -15,22 +15,42 @@ export class BuildingGeometryKit {
   add(g:THREE.BufferGeometry,color:string,p:Point3=[0,0,0],r:Point3=[0,0,0],glow=false,scale:Point3=[1,1,1]) {
     const pigment=new THREE.Color(color),colors=new Float32Array(g.attributes.position.count*3)
     for(let i=0;i<g.attributes.position.count;i++){
-      const light=glow?1:.90+Math.max(0,g.attributes.normal.getY(i))*.10
+      const normal=g.attributes.normal,point=g.attributes.position
+      const wash=Math.sin((point.getX(i)+p[0])*1.7+(point.getY(i)+p[1])*.9)*.025
+      const light=glow?1:.85+Math.max(0,normal.getY(i))*.13-Math.max(0,-normal.getY(i))*.16+wash
       colors.set([pigment.r*light,pigment.g*light,pigment.b*light],i*3)
     }
     if(!g.index)g.setIndex(Array.from({length:g.attributes.position.count},(_,i)=>i))
-    g.setAttribute('color',new THREE.BufferAttribute(colors,3));g.deleteAttribute('uv')
+    g.setAttribute('color',new THREE.BufferAttribute(colors,3))
     g.scale(...scale);g.rotateX(r[0]);g.rotateY(r[1]);g.rotateZ(r[2]);g.translate(...p)
+    const uv=new Float32Array(g.attributes.position.count*2),points=g.attributes.position,normals=g.attributes.normal
+    for(let i=0;i<points.count;i++){
+      uv[i*2]=(Math.abs(normals.getX(i))>.6?points.getZ(i):points.getX(i))*.65
+      uv[i*2+1]=(Math.abs(normals.getY(i))>.65?points.getZ(i):points.getY(i))*.65
+    }
+    g.setAttribute('uv',new THREE.BufferAttribute(uv,2))
     ;(glow?this.light:this.solid).push(g)
   }
   box(p:Point3,size:Point3,color:string=P.wood,r:Point3=[0,0,0]){this.add(new THREE.BoxGeometry(...size),color,p,r)}
+  stoneBlock(p:Point3,size:Point3,color:string=P.stone,r:Point3=[0,0,0]){
+    const [w,h,d]=size,b=Math.min(w,h,d)*.19,s=new THREE.Shape()
+    s.moveTo(-w/2+b,-h/2+b);s.lineTo(w/2-b*.6,-h/2+b*1.3)
+    s.lineTo(w/2-b*1.5,h/2-b);s.lineTo(-w/2+b*.4,h/2-b*1.6);s.closePath()
+    const g=new THREE.ExtrudeGeometry(s,{depth:d-b*2,bevelEnabled:true,bevelThickness:b,bevelSize:b,bevelSegments:1,steps:1})
+    g.translate(0,0,-d/2+b);this.add(g,color,p,r)
+  }
   cylinder(p:Point3,top:number,bottom:number,height:number,color:string=P.plaster,sides=12,r:Point3=[0,0,0]){
     this.add(new THREE.CylinderGeometry(top,bottom,height,sides),color,p,r)
   }
   sphere(p:Point3,size:Point3,color:string=P.brass,glow=false){this.add(new THREE.SphereGeometry(1,12,8),color,p,[0,0,0],glow,size)}
   beam(a:Point3,b:Point3,width=.12,color:string=P.wood,depth=width){
     const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b),axis=end.clone().sub(start)
-    const g=new THREE.BoxGeometry(width,axis.length(),depth)
+    const length=axis.length(),g=new THREE.BoxGeometry(width,length,depth,1,width>=.14?2:1,1)
+    if(width>=.14){
+      const v=g.attributes.position
+      for(let i=0;i<v.count;i++)v.setX(i,v.getX(i)+Math.sin((v.getY(i)/length+.5)*Math.PI)*width*.16)
+      g.computeVertexNormals()
+    }
     g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),axis.normalize()))
     this.add(g,color,start.add(end).multiplyScalar(.5).toArray() as Point3)
   }
@@ -92,6 +112,31 @@ export class BuildingGeometryKit {
     // Close both long eaves with a single finishing strip, merged into the body.
     for(const [px,py]of [path[0],path[path.length-1]])
       this.beam([x+px,py-.035,z-depth/2-.025],[x+px,py-.035,z+depth/2+.025],.13,P.wood)
+    // Chunky overlapping clay tiles follow the closed shell. Their chipped lips
+    // and staggered ends are baked into the same mesh, never separate objects.
+    const curve=new THREE.CatmullRomCurve3(path.map(([px,py])=>new THREE.Vector3(px,py,0)),false,'centripetal')
+    const count=(path.length-1)*2,samples=Array.from({length:count+1},(_,i)=>curve.getPoint(i/count))
+    const at=(t:number)=>{const i=Math.min(count-1,Math.floor(t));return samples[i].clone().lerp(samples[i+1],t-i)}
+    const base=new THREE.Color(color)
+    for(let row=0;row<count;row+=2)for(let column=0;column<5;column++){
+      const shift=(row%4===0?-.22:.20)*depth/5
+      const z0=Math.max(-depth/2-.045,-depth/2+column*depth/5+shift+.014)
+      const z1=Math.min(depth/2+.045,-depth/2+(column+1)*depth/5+shift-.014)
+      const shade=base.clone().lerp(new THREE.Color(P.tileLight),.10+((row*7+column*3)%5)*.052)
+      const start=row+.08+((column+row)%3)*.025,end=Math.min(count-.04,row+1.91)
+      const stops=[start,Math.min(row+1,end),end]
+      const lift=.09+((row+column*3)%4)*.014
+      for(let part=0;part<2;part++){
+        const a=at(stops[part]),b=at(stops[part+1])
+        this.quad([[x+a.x,a.y+lift,z+z0],[x+b.x,b.y+lift,z+z0],
+          [x+b.x,b.y+lift,z+z1],[x+a.x,a.y+lift,z+z1]],`#${shade.getHexString()}`)
+        for(const edge of column===0?[z0]:column===4?[z1]:[])this.quad([[x+a.x,a.y+.035,z+edge],[x+b.x,b.y+.035,z+edge],
+          [x+b.x,b.y+lift,z+edge],[x+a.x,a.y+lift,z+edge]],color)
+      }
+      const a=at(start),b=at(end)
+      for(const edge of[a.y<b.y?a:b])this.quad([[x+edge.x,edge.y+.035,z+z0],[x+edge.x,edge.y+.035,z+z1],
+        [x+edge.x,edge.y+lift,z+z1],[x+edge.x,edge.y+lift,z+z0]],color)
+    }
   }
 
   banner(p:Point3,width=.48,height=.85,color:string=P.teal,symbol:'star'|'cloud'|'ring'='star'){

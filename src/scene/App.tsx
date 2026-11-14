@@ -3,8 +3,10 @@ import { portfolioSpots, type PortfolioSpot } from './portfolioData'
 import { mapPosition, sectionNames } from './portfolioUi'
 import { readViewPreferences, ViewSettings } from './ViewSettings'
 import { SceneBoundary } from './SceneBoundary'
+import {profile} from './profileData'
 
 const VillageCanvas = lazy(() => import('./VillageCanvas'))
+const COMPACT_QUERY='(max-width: 760px), (max-width: 900px) and (max-height: 520px), (pointer: coarse)'
 
 const padButtons = [
   { code: 'KeyW', direction: 'up', label: 'Move forward' },
@@ -120,6 +122,7 @@ function PortfolioShortcuts({ selectedId, onSelect }: { selectedId: string | nul
           >{label}</button>
         )
       })}
+      <a className="profile-link" href={profile.cvUrl??'/profile/'} aria-label={profile.cvUrl?'Open CV':'Read or print the plain profile'}>{profile.cvUrl?'CV':'Profile'}<span aria-hidden="true"> ↗</span></a>
     </nav>
   )
 }
@@ -128,9 +131,11 @@ export default function App() {
   const [selected, setSelected] = useState<PortfolioSpot | null>(null)
   const [sceneReady, setSceneReady] = useState(false)
   const [sceneUnavailable, setSceneUnavailable] = useState(false)
+  const [hasWalked,setHasWalked]=useState(false)
+  const walked=useRef(false)
   const [preferences, setPreferences] = useState(readViewPreferences)
   const [isCompact, setIsCompact] = useState(() => typeof window !== 'undefined' && (
-    window.matchMedia('(max-width: 700px), (max-width: 900px) and (max-height: 520px), (pointer: coarse)').matches
+    window.matchMedia(COMPACT_QUERY).matches
   ))
   const dialogRef = useRef<HTMLElement>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
@@ -143,13 +148,14 @@ export default function App() {
     const position = mapPosition(x, z)
     playerMarker.current.style.left = `${position.left}%`; playerMarker.current.style.top = `${position.top}%`
     playerMarker.current.dataset.worldX = x.toFixed(2); playerMarker.current.dataset.worldZ = z.toFixed(2)
+    if(!walked.current&&Math.hypot(x+3,z-5.5)>.25){walked.current=true;setHasWalked(true)}
   }, [])
   const markReady = useCallback(() => setSceneReady(true), [])
   const handleUnavailable = useCallback(() => { setSceneReady(true); setSceneUnavailable(true) }, [])
   useEffect(() => { try { localStorage.setItem('coastlight-view', JSON.stringify(preferences)) } catch { /* private browsing */ } }, [preferences])
 
   useEffect(() => {
-    const compactViewport = window.matchMedia('(max-width: 700px), (max-width: 900px) and (max-height: 520px), (pointer: coarse)')
+    const compactViewport = window.matchMedia(COMPACT_QUERY)
     const updateViewport = () => setIsCompact(compactViewport.matches)
     updateViewport()
     compactViewport.addEventListener('change', updateViewport)
@@ -199,7 +205,7 @@ export default function App() {
   }, [selected?.id])
 
   return (
-    <main className="app-shell" data-compact={isCompact} data-panel-open={Boolean(selected)} data-scene-unavailable={sceneUnavailable} data-scene-ready={sceneReady} data-reduced-motion={preferences.reducedMotion}>
+    <main className="app-shell" data-compact={isCompact} data-has-walked={hasWalked} data-panel-open={Boolean(selected)} data-scene-unavailable={sceneUnavailable} data-scene-ready={sceneReady} data-reduced-motion={preferences.reducedMotion}>
       <SceneBoundary onUnavailable={handleUnavailable}><Suspense fallback={null}>
         <VillageCanvas isCompact={isCompact} onReady={markReady} onOpen={setSelected} onPlayerPosition={updatePosition}
           quality={preferences.quality} reducedMotion={preferences.reducedMotion} panelOpen={Boolean(selected)} />
@@ -207,9 +213,10 @@ export default function App() {
       {!sceneReady && <div className="scene-loading" role="status" aria-live="polite">Preparing your world</div>}
       <div inert={Boolean(selected)}>
       <div className="title-card">
-        <span className="eyebrow">Nikhil Jatale · London, UK</span>
-        <h1>Coastlight Village</h1>
-        <p>Enterprise data analyst building toward cloud data platforms.</p>
+        <span className="eyebrow">Coastlight Village · {profile.location}</span>
+        <h1>{profile.name}</h1>
+        <p className="hero-role">{profile.role}</p>
+        <p className="hero-summary">{profile.summary}</p>
         <PortfolioShortcuts selectedId={selected?.id ?? null} onSelect={setSelected} />
       </div>
       <PortfolioMap selectedId={selected?.id ?? null} onSelect={setSelected} playerMarker={playerMarker} isCompact={isCompact} />
@@ -225,22 +232,24 @@ export default function App() {
           <section ref={dialogRef} className="portfolio-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" onClick={(event) => event.stopPropagation()}>
             <div className="panel-topline"><span>{selected.section}</span><button data-dialog-close type="button" aria-label="Close panel" onClick={() => setSelected(null)}>×</button></div>
             <div className="panel-landmark" aria-hidden="true">{String(selectedIndex + 1).padStart(2, '0')}<span>COASTLIGHT FIELD NOTES</span></div>
-            <h2 id="panel-title" aria-live="polite">{selected.title}</h2>
+            <h2 id="panel-title" aria-live="polite">{sectionNames[selected.id]}</h2>
             <p>{selected.description}</p>
             <div className="portfolio-entries">
               {selected.entries.map((entry) => (
                 <article className="portfolio-entry" key={entry.title}>
                   <div className="entry-heading"><h3>{entry.title}</h3>{entry.status&&<span className="entry-status">{entry.status}</span>}</div>
                   <p>{entry.detail}</p>
+                  {entry.highlights&&<dl className="entry-highlights">{entry.highlights.map(item=><div key={item.label}><dt>{item.label}</dt><dd>{item.detail}</dd></div>)}</dl>}
                   {entry.tags && <div className="entry-tags">{entry.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
                   {entry.link&&<a className="entry-link" href={entry.link.href} target="_blank" rel="noopener noreferrer">{entry.link.label}<span aria-hidden="true"> ↗</span></a>}
                 </article>
               ))}
             </div>
             {selected.id === 'signal-station' && <nav className="contact-actions" aria-label="Contact links">
-              <a href="mailto:nikhiljatale@gmail.com">Email Nikhil</a>
-              <a href="https://www.linkedin.com/in/nikhil-jatale/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-              <a href="https://github.com/Njtales" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href={`mailto:${profile.email}`}>Email Nikhil</a>
+              <a href={profile.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+              <a href={profile.github} target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href={profile.cvUrl??'/profile/'}>{profile.cvUrl?'CV':'Read / print profile'}</a>
             </nav>}
             <nav className="panel-navigation" aria-label="Explore another section">
               <button type="button" aria-label={`Previous section: ${sectionNames[adjacent(-1).id]}`} onClick={() => setSelected(adjacent(-1))}>

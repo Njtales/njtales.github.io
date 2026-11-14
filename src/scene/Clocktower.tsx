@@ -1,63 +1,44 @@
-import { useEffect, useMemo } from 'react'
+import {useEffect,useMemo} from 'react'
+import {useTexture} from '@react-three/drei'
 import * as THREE from 'three'
-import { makeClocktowerGeometry } from './clocktowerGeometry'
-import { portfolioSpots, type PortfolioSpot } from './portfolioData'
-import { groundHeightAt } from './groundContours'
-import { LandmarkSign, useLandmarkFeedback } from './LandmarkFeedback'
+import {portfolioSpots,type PortfolioSpot} from './portfolioData'
+import {groundHeightAt} from './groundContours'
+import {LandmarkSign,useLandmarkFeedback} from './LandmarkFeedback'
+import {createContactShadowMask} from './SoftContactShadow'
+import {createAlphaSpriteRaycast} from './paintedSpritePicking'
 
-function makeDial() {
-  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512
-  const ctx=canvas.getContext('2d')!
-  const wash=ctx.createRadialGradient(215,190,20,256,256,260)
-  wash.addColorStop(0,'#f2e3bc');wash.addColorStop(.72,'#e5d2a6');wash.addColorStop(1,'#b69c70')
-  ctx.fillStyle=wash;ctx.fillRect(0,0,512,512)
-  // Sparse painted pigment, legible markings and hands, baked once at startup.
-  for(let i=0;i<130;i++) {
-    const x=(i*173.17)%512,y=(i*97.31)%512
-    ctx.fillStyle=i%2?'rgba(125,98,60,.035)':'rgba(255,246,213,.11)'
-    ctx.beginPath();ctx.ellipse(x,y,5+i%17,3+i%7,i*.7,0,Math.PI*2);ctx.fill()
-  }
-  ctx.strokeStyle='#9d8359';ctx.lineWidth=2
-  for(const r of [231,178]) {ctx.beginPath();ctx.arc(256,256,r,0,Math.PI*2);ctx.stroke()}
-  const roman=['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']
-  ctx.fillStyle='#493d31';ctx.font='bold 30px Georgia';ctx.textAlign='center';ctx.textBaseline='middle'
-  for(let i=0;i<60;i++) {
-    const a=i/60*Math.PI*2
-    ctx.save();ctx.translate(256,256);ctx.rotate(a)
-    ctx.fillRect(-1.2,-226,2.4,i%5===0?12:5);ctx.restore()
-    if(i%5===0)ctx.fillText(roman[i/5],256+Math.sin(a)*202,256-Math.cos(a)*202)
-  }
-  function hand(angle:number,length:number,width:number) {
-    ctx.save();ctx.translate(256,256);ctx.rotate(angle)
-    ctx.fillStyle='#37484a';ctx.strokeStyle='#283538';ctx.lineWidth=2
-    ctx.beginPath();ctx.moveTo(0,-length);ctx.lineTo(width,-length+23);ctx.lineTo(width*.38,-26)
-    ctx.lineTo(width*.7,27);ctx.lineTo(-width*.7,27);ctx.lineTo(-width*.38,-26);ctx.lineTo(-width,-length+23)
-    ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()
-  }
-  hand(Math.PI/3,165,10);hand(-Math.PI/3,122,12)
-  ctx.fillStyle='#bd9450';ctx.beginPath();ctx.arc(256,256,13,0,Math.PI*2);ctx.fill()
-  const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;map.anisotropy=4
-  return map
-}
+const CLOCK_ART='/assets/buildings/clocktower-painted-v1.png'
+const HEIGHT=10.8,WIDTH=HEIGHT*2/3,ALPHA_CUTOFF=.55
 
-export function Clocktower({onOpen}:{onOpen:(spot:PortfolioSpot)=>void}) {
-  const spot=portfolioSpots.find(s=>s.id==='clocktower')!
-  const feedback=useLandmarkFeedback(spot.id)
-  const model=useMemo(makeClocktowerGeometry,[])
-  const dial=useMemo(makeDial,[])
-  useEffect(()=>()=>{Object.values(model).forEach(g=>g.dispose());dial.dispose()},[model,dial])
-  return <group name="Clocktower B" position={[spot.position[0],groundHeightAt(spot.position[0],spot.position[2]),spot.position[2]]}
+/** The approved painted silhouette is the visible building. A hidden volume
+ * supplies the existing Niro locator without rendering a second model. */
+export function Clocktower({onOpen}:{onOpen:(spot:PortfolioSpot)=>void}){
+  const spot=portfolioSpots.find(s=>s.id==='clocktower')!,feedback=useLandmarkFeedback(spot.id)
+  const source=useTexture(CLOCK_ART)
+  const resources=useMemo(()=>{
+    const map=source.clone();map.colorSpace=THREE.SRGBColorSpace;map.anisotropy=4;map.needsUpdate=true
+    // A tiny pick mask excludes transparent corners and the open bell chamber.
+    const canvas=document.createElement('canvas');canvas.width=128;canvas.height=192
+    const context=canvas.getContext('2d')!;context.drawImage(source.image as HTMLImageElement,0,0,128,192)
+    const rgba=context.getImageData(0,0,128,192).data,alpha=new Uint8Array(128*192)
+    for(let i=0;i<alpha.length;i++)alpha[i]=rgba[i*4+3]
+    return{map,shadow:createContactShadowMask(),raycast:createAlphaSpriteRaycast(alpha,128,192,ALPHA_CUTOFF)}
+  },[source])
+  useEffect(()=>()=>{resources.map.dispose();resources.shadow.dispose()},[resources])
+  const height=groundHeightAt(spot.position[0],spot.position[2])
+  return <group name="Painted Clocktower" position={[spot.position[0],height,spot.position[2]]}
     onClick={event=>{event.stopPropagation();onOpen(spot)}} {...feedback.events}>
-    <mesh geometry={model.body} userData={{niroOccluder:true}} castShadow receiveShadow>
-      <meshStandardMaterial vertexColors roughness={.95} side={THREE.DoubleSide} emissive="#b69b51" emissiveIntensity={feedback.active?.13:0}/>
+    <mesh rotation={[-Math.PI/2,0,0]} position={[0,.018,0]} raycast={()=>{}}>
+      <planeGeometry args={[5.1,2.5]}/>
+      <meshBasicMaterial map={resources.shadow} transparent opacity={.20} color="#3b3523" depthWrite={false} polygonOffset polygonOffsetFactor={-1}/>
     </mesh>
-    <LandmarkSign spot={spot} position={[0,2.4,2.7]} shown={feedback.showSign}/>
-    <mesh geometry={model.panes}>
-      <meshStandardMaterial vertexColors emissive="#deb66c" emissiveIntensity={.22} roughness={.8}/>
+    <sprite name="Approved painted clocktower artwork" scale={[WIDTH,HEIGHT,1]} center={[.5,.055]} raycast={resources.raycast}>
+      <spriteMaterial map={resources.map} transparent alphaTest={ALPHA_CUTOFF} alphaToCoverage depthWrite toneMapped={false} fog={false}/>
+    </sprite>
+    <mesh visible={false} position={[0,5.15,-.15]} userData={{niroOccluder:true}} raycast={()=>{}}>
+      <boxGeometry args={[3.2,10.3,1.8]}/>
+      <meshBasicMaterial/>
     </mesh>
-    <mesh position={[-.16,5.22,1.345]}>
-      <circleGeometry args={[.975,48]}/>
-      <meshStandardMaterial map={dial} roughness={1}/>
-    </mesh>
+    <LandmarkSign spot={spot} position={[-1.15,2.4,2.65]} shown={feedback.showSign}/>
   </group>
 }

@@ -1,9 +1,12 @@
+import {profile} from './profileData'
+
 export type PortfolioEntry = {
   title: string
   detail: string
   tags?: string[]
   status?: string
   link?: {label:string;href:string}
+  highlights?:{label:string;detail:string}[]
 }
 
 export type PortfolioSpot = {
@@ -20,21 +23,26 @@ export type PortfolioSpot = {
 export const portfolioSpots: PortfolioSpot[] = [
   {
     id: 'clocktower', title: 'Clocktower', section: 'Experience & Career',
-    description: 'From enterprise analytics toward cloud data engineering and platform work.',
+    description: 'A focus on data engineering, practical automation and the systems behind reliable data workflows.',
     entries: [
-      { title: 'Enterprise Data Analyst', detail: 'Current role · London, UK', tags: ['Data systems', 'Infrastructure'] },
-      { title: 'Career direction', detail: 'Building toward Cloud Data Engineer and Data Platform Engineer roles, with a focus on scalable systems.', tags: ['Cloud data', 'Platform engineering'] },
-      { title: 'Working principles', detail: 'Engineering excellence over basic analytics; competence, independence, disciplined thinking, and logical reasoning.' },
+      { title: profile.role, detail: 'Professional focus · London, UK. Data pipelines, orchestration and cloud platform concepts.', tags: ['Data engineering', 'Automation'] },
+      { title: 'Work you can inspect', detail: 'Python and Airflow pipeline practice, PostgreSQL loading, Docker environments and this interactive TypeScript portfolio.',
+        link:{label:'Explore the project repositories',href:'https://github.com/Njtales/Data_pipelines'} },
+      { title: 'How I approach systems', detail: 'Understand how data moves, make dependencies explicit, and build workflows that are easier to inspect and operate.' },
     ],
     position: [-5.9, 0.34, -8.2],
   },
   {
     id: 'cloud-forge', title: 'Cloud Forge', section: 'Skills & Tech Stack',
-    description: 'The cloud, data, and engineering tools used to build production-minded systems.',
+    description: 'Tools demonstrated in the linked projects, alongside the cloud concepts I am studying.',
     entries: [
-      { title: 'AWS foundations', detail: 'Core services: EC2, S3, Lambda, and IAM.', tags: ['AWS', 'Cloud'] },
-      { title: 'Data engineering', detail: 'Python processing, API ingestion, and ETL pipeline development.', tags: ['Python', 'ETL'] },
-      { title: 'Platform engineering', detail: 'Infrastructure as Code, automation, and data platform architecture; advancing into Kafka/Kinesis streaming and production-scale deployments.', tags: ['IaC', 'Automation', 'Kafka / Kinesis'] },
+      { title: 'Data pipelines', status:'Project work', detail: 'Python and pandas processing, Airflow task dependencies, CSV handoffs and PostgreSQL loading.', tags: ['Python', 'SQL', 'Airflow', 'PostgreSQL'],
+        link:{label:'See the pipeline code',href:'https://github.com/Njtales/Data_pipelines'} },
+      { title: 'Local environments', status:'Project work', detail: 'Docker Compose environments for Airflow, PostgreSQL and pgAdmin.', tags: ['Docker', 'Docker Compose'],
+        link:{label:'See the environment setup',href:'https://github.com/Njtales/Data_pipelines/tree/main/DW%20with%20PSQL'} },
+      { title: 'Interactive software', status:'Project work', detail: 'React, TypeScript and Three.js power the village, navigation, accessible panels and responsive controls.', tags: ['React', 'TypeScript', 'Three.js'],
+        link:{label:'Explore Coastlight Village source',href:'https://github.com/Njtales/njtales.github.io'} },
+      { title: 'Cloud and platform concepts', status:'Current study', detail: 'AWS EC2, S3, Lambda and IAM; Infrastructure as Code and streaming concepts with Kafka and Kinesis.', tags: ['AWS', 'IaC', 'Streaming'] },
     ],
     position: [-11.8, 0.34, -2.1],
   },
@@ -42,12 +50,26 @@ export const portfolioSpots: PortfolioSpot[] = [
     id: 'data-tower', title: 'Data Tower', section: 'Projects & GitHub',
     description: 'Selected work in data pipelines, orchestration, and interactive web experiences.',
     entries: [
-      { title: 'S&P 500 Data Pipeline', status:'Practice project', detail: 'An Airflow project documenting stock-data extraction, processing, and warehouse loading. Includes Python code and a Docker-based setup.', tags: ['Airflow', 'Python', 'Docker'],
+      { title: 'Coastlight Village', status:'Personal project', detail: 'A portfolio you can read immediately or explore as a small coastal world with Niro, a walking fox guide.', tags: ['React', 'Three.js', 'TypeScript'],
+        highlights:[
+          {label:'Built',detail:'Seven portfolio landmarks, a live map, keyboard controls and collision-aware click-to-walk navigation.'},
+          {label:'Engineering',detail:'Terrain-aware walking, bounded render resolution, shared geometry and lighter graphics settings. Continuous rendering pauses when the tab is hidden or a portfolio panel is open.'},
+          {label:'Access',detail:'Direct section shortcuts, touch controls, reduced motion, keyboard-managed dialogs and a plain HTML profile.'},
+        ],link:{label:'Explore the source',href:'https://github.com/Njtales/njtales.github.io'} },
+      { title: 'S&P 500 Data Pipeline', status:'Practice project', detail: 'An Airflow ETL exercise using Yahoo Finance price data for a selected list of S&P 500 companies.', tags: ['Airflow', 'Python', 'pandas', 'PostgreSQL', 'Docker'],
+        highlights:[
+          {label:'Flow',detail:'Download prices → save CSV → clean and calculate metrics → load PostgreSQL with SQLAlchemy.'},
+          {label:'Processing',detail:'Removes missing and duplicate rows, then calculates daily returns and 5- and 20-period moving averages.'},
+          {label:'Learning focus',detail:'Task dependencies, retry configuration and the trade-offs of CSV handoffs and full-table replacement loads.'},
+        ],
         link:{label:'View code and setup',href:'https://github.com/Njtales/Data_pipelines/tree/main/Airflow%20Pipeline%20S%26P%20500%20index'} },
-      { title: 'PostgreSQL Data Warehouse', status:'Practice project', detail: 'A local learning environment combining Airflow, PostgreSQL, and pgAdmin, with the Instacart dataset used for pipeline and SQL practice.', tags: ['PostgreSQL', 'Airflow', 'Docker Compose'],
+      { title: 'PostgreSQL Data Warehouse', status:'Practice · in progress', detail: 'A local Airflow and PostgreSQL exercise using Instacart CSV datasets, with pgAdmin for database inspection.', tags: ['PostgreSQL', 'Airflow', 'Docker Compose'],
+        highlights:[
+          {label:'Source',detail:'The DAG defines tables for aisles, products, departments, orders and order-product datasets, followed by CSV load tasks.'},
+          {label:'Learning focus',detail:'Relational schemas, PostgreSQL COPY-based loading and explicit extraction → table creation → loading dependencies.'},
+          {label:'Status',detail:'A practice implementation in progress; the extraction task remains a placeholder in the published code.'},
+        ],
         link:{label:'View code and setup',href:'https://github.com/Njtales/Data_pipelines/tree/main/DW%20with%20PSQL'} },
-      { title: 'Coastlight Village', status:'Personal project', detail: 'This interactive portfolio: a walkable island, a terrain-aware fox guide, and seven landmarks. Built with React and Three.js, with shared geometry and lightweight painted detail.', tags: ['React', 'Three.js', 'TypeScript'],
-        link:{label:'Explore the source',href:'https://github.com/Njtales/njtales.github.io'} },
     ],
     position: [6.9, 0.35, -5.8],
   },
@@ -55,7 +77,7 @@ export const portfolioSpots: PortfolioSpot[] = [
     id: 'learning-lab', title: 'Learning Lab', section: 'Learning & Certifications',
     description: 'Current study across advanced data engineering, cloud credentials, and creative communication.',
     entries: [
-      { title: 'AWS certifications', detail: 'Preparing for Professional and Specialty-level certifications.' },
+      { title: 'AWS foundations', status:'Current study', detail: 'Core cloud services, access management and cloud architecture concepts for data workflows.' },
       { title: 'Data engineering', detail: 'Developing advanced practices for reliable, scalable pipelines and data platforms.' },
       { title: 'Creative practice', detail: 'Exploring audience dynamics and storytelling for side projects.' },
     ],
@@ -63,9 +85,9 @@ export const portfolioSpots: PortfolioSpot[] = [
   },
   {
     id: 'about-cottage', title: 'About Cottage', section: 'About Me',
-    description: 'A London-based data analyst focused on building useful systems and long-term independence.',
+    description: 'I enjoy understanding how systems fit together, making useful things, and bringing some personality to the work.',
     entries: [
-      { title: 'Nikhil Jatale', detail: 'Enterprise Data Analyst in London, UK · Indian heritage.' },
+      { title: 'Nikhil Jatale', detail: `${profile.role} · London, UK · Indian heritage. My project work combines data pipelines, practical tooling and interactive software.` },
       { title: 'Personal philosophy', detail: '“Skill → Income → Investment → Freedom.”' },
       { title: 'Long-term mission', detail: 'Build wealth and time freedom while creating security for family.' },
     ],
@@ -82,11 +104,8 @@ export const portfolioSpots: PortfolioSpot[] = [
   },
   {
     id: 'signal-station', title: 'Signal Station', section: 'Contact & Career',
-    description: 'A London-based data analyst building toward cloud data engineering and data platform roles.',
-    entries: [
-      { title: 'Based in London', detail: 'London, United Kingdom · Indian heritage.' },
-      { title: 'Career direction', detail: 'Cloud Data Engineer and Data Platform Engineer roles, with a focus on scalable systems.' },
-    ],
+    description: 'Let’s talk about data pipelines, cloud platforms, interesting systems — or your feedback on the village. Based in London, UK.',
+    entries: [],
     position: [0.5, 0.35, 1.3],
   },
 ]
