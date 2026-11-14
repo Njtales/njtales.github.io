@@ -107,7 +107,9 @@ canvas { display: block; }
 .map-sections button > span { display: grid; width: 16px; height: 16px; place-items: center; border-radius: 50%; background: #745e45; color: #fff8e7; font-size: 9px; }
 .map-sections button:focus-visible, .view-settings summary:focus-visible, .view-settings select:focus-visible, .contact-actions a:focus-visible { outline: 3px solid #147e86; outline-offset: 2px; }
 .view-settings { position: absolute; z-index: 2; bottom: 24px; right: 26px; color: #355447; font-size: 12px; }
-.view-settings > summary { padding: 11px 13px; border: 1.5px solid #85977b; border-radius: 12px; background: #fff2d4; cursor: pointer; font-weight: 700; }
+.view-settings > summary { display: grid; place-items: center; width: 44px; height: 44px; padding: 9px; list-style: none; border: 1.5px solid #85977b; border-radius: 12px; background: #fff2d4; cursor: pointer; }
+.view-settings > summary::-webkit-details-marker { display: none; }
+.view-settings > summary svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
 .view-settings-menu { position: absolute; right: 0; bottom: 52px; display: grid; gap: 10px; width: 220px; padding: 15px; border: 1.5px solid #85977b; border-radius: 14px; background: #fff2d4; box-shadow: 0 5px 0 #31564222; }
 .view-settings-menu select { width: 100%; min-height: 38px; border: 1px solid #a8a783; border-radius: 6px; background: #fff9eb; color: #355447; font: inherit; }
 .view-settings-menu .motion-setting { display: flex; align-items: center; gap: 8px; min-height: 38px; }

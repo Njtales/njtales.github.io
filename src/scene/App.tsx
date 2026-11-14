@@ -91,8 +91,8 @@ function PortfolioMap({ selectedId, onSelect, playerMarker, isCompact }: { selec
         <span ref={playerMarker} className="map-player" role="img" aria-label="Niro’s current position"
           style={{ left: `${mapPosition(-3, 5.5).left}%`, top: `${mapPosition(-3, 5.5).top}%` }}><span>Niro</span></span>
       </div>
-      {isCompact?<nav className="map-sections map-section-picker" aria-label="Choose a section"><p>Where would you like to explore?</p>{sections}</nav>:<details className="map-sections" open>
-        <summary>Explore sections</summary>
+      {isCompact?<nav className="map-sections map-section-picker" aria-label="Choose a section"><p>Where would you like to explore?</p>{sections}</nav>:<details className="map-sections">
+        <summary>Explore all sections</summary>
         {sections}
       </details>}
     </aside>
