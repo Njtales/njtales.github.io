@@ -1,9 +1,9 @@
 import type {VillageBuildingId} from './villageBuildingGeometry'
 
 type PaintedBuilding={crop:readonly[number,number,number,number];height:number;shadowWidth:number;shadowDepth:number}
-export const PAINTED_ATLAS={url:'/assets/buildings/village-distinct-atlas-v2.png',width:1536,height:1024}
+export const PAINTED_ATLAS={url:'/assets/buildings/village-distinct-atlas-v3.png',width:1536,height:1024}
 export const PAINTED_BASELINE=.04
-// Pixel bounds include an 8px transparent gutter around each painted silhouette.
+// Crop bounds retain transparent gutters around the matte painted silhouettes.
 export const paintedBuildings:Record<VillageBuildingId,PaintedBuilding>={
   'cloud-forge':{crop:[39,93,488,353],height:4.8,shadowWidth:5.8,shadowDepth:2.6},
   'data-tower':{crop:[574,39,428,410],height:5.5,shadowWidth:4.8,shadowDepth:2.4},

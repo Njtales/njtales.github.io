@@ -33,7 +33,7 @@ Both `dev` and `build` first run `scripts/build-profile.mjs`. It generates the i
 
 ## Engineering
 
-The world includes terrain-aware two-legged walking, collision-aware pathfinding, a following camera, mixed foliage, distant islands and a Forge with lightweight fire and chimney particles. Most environmental detail is merged into shared geometry. All seven landmarks use painted 2.5D artwork. The six buildings around the Clocktower share one atlas: an anvil-roof Forge, chart-wheel Data Tower, domed Learning Lab, balcony Cottage, wave-roof Hobbies Hut and lantern Signal Station. Transparent parts of the artwork let clicks and Niro's visibility checks pass through.
+The world includes terrain-aware two-legged walking, collision-aware pathfinding, a following camera, mixed foliage, distant islands and a Forge with lightweight fire and chimney particles. Most environmental detail is merged into shared geometry. All seven landmarks use painted 2.5D artwork. The six buildings around the Clocktower share one atlas: an anvil-roof Forge, chart-wheel Data Tower, domed Learning Lab, balcony Cottage, wave-roof Hobbies Hut and lantern Signal Station. Their matte stone, timber and aged metal finish follows the Clocktower while retaining distinct shapes. Transparent parts of the artwork let clicks and Niro's visibility checks pass through.
 
 The canvas loads lazily. Framebuffer resolution is bounded above native CSS resolution, and remains fixed during movement to avoid crawling edges. Lighter graphics reduce shadows and effects. Continuous rendering pauses when a section panel is open or the tab is hidden. Reduced-motion preferences are supported.
 
