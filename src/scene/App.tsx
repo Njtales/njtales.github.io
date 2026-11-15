@@ -1,12 +1,19 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type MouseEvent, type RefObject } from 'react'
 import { portfolioSpots, type PortfolioSpot } from './portfolioData'
 import { mapPosition, sectionNames } from './portfolioUi'
 import { readViewPreferences, ViewSettings } from './ViewSettings'
 import { SceneBoundary } from './SceneBoundary'
 import {profile} from './profileData'
+import {navigatePortfolio,projectHref,sectionHref,selectionForHash} from './portfolioRoutes'
 
 const VillageCanvas = lazy(() => import('./VillageCanvas'))
 const COMPACT_QUERY='(max-width: 760px), (max-width: 900px) and (max-height: 520px), (pointer: coarse)'
+
+function followPortfolioLink(event:MouseEvent<HTMLAnchorElement>){
+  if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return
+  event.preventDefault()
+  navigatePortfolio(event.currentTarget.hash)
+}
 
 const padButtons = [
   { code: 'KeyW', direction: 'up', label: 'Move forward' },
@@ -117,6 +124,7 @@ function PortfolioShortcuts({ selectedId, onSelect }: { selectedId: string | nul
           <button
             key={id}
             type="button"
+            data-section={id}
             data-active={selectedId === id ? 'true' : undefined}
             onClick={() => onSelect(spot)}
           >{label}</button>
@@ -128,7 +136,21 @@ function PortfolioShortcuts({ selectedId, onSelect }: { selectedId: string | nul
 }
 
 export default function App() {
-  const [selected, setSelected] = useState<PortfolioSpot | null>(null)
+  const [selection,setSelection]=useState(()=>selectionForHash(window.location.hash))
+  const selected=selection.spot
+  const setSelected=useCallback((spot:PortfolioSpot|null)=>navigatePortfolio(spot?sectionHref(spot):''),[])
+  useEffect(()=>{
+    const sync=()=>setSelection(selectionForHash(window.location.hash))
+    window.addEventListener('hashchange',sync)
+    window.addEventListener('popstate',sync)
+    window.addEventListener('coastlight:navigate',sync)
+    sync()
+    return()=>{
+      window.removeEventListener('hashchange',sync)
+      window.removeEventListener('popstate',sync)
+      window.removeEventListener('coastlight:navigate',sync)
+    }
+  },[])
   const [sceneReady, setSceneReady] = useState(false)
   const [sceneUnavailable, setSceneUnavailable] = useState(false)
   const [hasWalked,setHasWalked]=useState(false)
@@ -194,15 +216,24 @@ export default function App() {
     window.addEventListener('keydown', handleDialogKeys, true)
     return () => {
       window.removeEventListener('keydown', handleDialogKeys, true)
-      if(previousFocus.current?.getClientRects().length)previousFocus.current.focus()
-      else document.querySelector<HTMLButtonElement>('.map-toggle')?.focus()
+      const previous=previousFocus.current
+      if(previous&&previous!==document.body&&previous.isConnected&&previous.getClientRects().length)previous.focus()
+      else (document.querySelector<HTMLButtonElement>(`.portfolio-shortcuts button[data-section="${selected?.id}"]`)
+        ??document.querySelector<HTMLButtonElement>('.map-toggle')
+        ??document.querySelector<HTMLButtonElement>('.portfolio-shortcuts button'))?.focus()
     }
-  }, [panelOpen])
+  }, [panelOpen,setSelected])
 
   useEffect(() => {
     if (!selected) return
+    if(selection.projectId){
+      const entry=document.getElementById(`project-${selection.projectId}`)
+      entry?.scrollIntoView({block:'start'})
+      entry?.focus({preventScroll:true})
+      return
+    }
     dialogRef.current?.scrollTo({ top: 0 })
-  }, [selected?.id])
+  }, [selected?.id,selection.projectId])
 
   return (
     <main className="app-shell" data-compact={isCompact} data-has-walked={hasWalked} data-panel-open={Boolean(selected)} data-scene-unavailable={sceneUnavailable} data-scene-ready={sceneReady} data-reduced-motion={preferences.reducedMotion}>
@@ -236,15 +267,21 @@ export default function App() {
             <p>{selected.description}</p>
             <div className="portfolio-entries">
               {selected.entries.map((entry) => (
-                <article className="portfolio-entry" key={entry.title}>
+                <article className="portfolio-entry" key={entry.title} id={entry.id?`project-${entry.id}`:undefined} tabIndex={entry.id?-1:undefined}>
                   <div className="entry-heading"><h3>{entry.title}</h3>{entry.status&&<span className="entry-status">{entry.status}</span>}</div>
                   <p>{entry.detail}</p>
                   {entry.highlights&&<dl className="entry-highlights">{entry.highlights.map(item=><div key={item.label}><dt>{item.label}</dt><dd>{item.detail}</dd></div>)}</dl>}
                   {entry.tags && <div className="entry-tags">{entry.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
+                  <div className="entry-actions">
+                  {entry.proofProject&&<a className="entry-link" href={projectHref(entry.proofProject)} onClick={followPortfolioLink}
+                    aria-label={`Read project evidence for ${entry.title}`}>See supporting project</a>}
                   {entry.link&&<a className="entry-link" href={entry.link.href} target="_blank" rel="noopener noreferrer">{entry.link.label}<span aria-hidden="true"> ↗</span></a>}
+                  {entry.id&&<a className="entry-link entry-permalink" href={projectHref(entry.id)} onClick={followPortfolioLink} aria-label={`Link to ${entry.title} case study`}>Project link</a>}
+                  </div>
                 </article>
               ))}
             </div>
+            <a className="entry-link" href={sectionHref(selected)} onClick={followPortfolioLink} aria-label={`Link to ${sectionNames[selected.id]}`}>Link to this section</a>
             {selected.id === 'signal-station' && <nav className="contact-actions" aria-label="Contact links">
               <a href={`mailto:${profile.email}`}>Email Nikhil</a>
               <a href={profile.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>

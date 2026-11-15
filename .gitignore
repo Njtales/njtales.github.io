@@ -4,5 +4,6 @@ dist/
 .DS_Store
 .codex-backups/
 .codex-remote-attachments/
+.codex-attachments/
 artifacts/
 design-qa.md

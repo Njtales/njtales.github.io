@@ -26,6 +26,7 @@ Both `dev` and `build` first run `scripts/build-profile.mjs`. It generates the i
 
 - Seven landmarks represent Experience, Skills, Projects, Learning, About, Hobbies and Contact.
 - The header shortcuts and map open sections immediately; walking is optional.
+- Share a section with `/#projects` or `/#skills`, or an individual case study with `/#project-coastlight-village`. Browser Back/Forward restores the selected section. Skills link to their supporting projects; those links also work in the plain profile.
 - Click/tap the ground to walk, or steer with WASD/arrow keys. Touch devices also have a movement pad.
 - Near a landmark, press **E** to open or close its card. Escape, the Close button and the backdrop also close it.
 - Dialogs manage focus and background interaction. Section navigation remains available if the 3D scene fails.

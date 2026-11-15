@@ -21,10 +21,14 @@ canvas { display: block; }
 .entry-status { padding: 4px 7px; border-radius: 5px; background: #e5e4c8; color: #455338; font-size: 11px; font-weight: 600; }
 .entry-link { display: inline-flex; align-items: center; min-height: 44px; margin-top: 5px; color: #285d58; font-size: 13px; font-weight: 700; text-underline-offset: 3px; }
 .entry-link:focus-visible { outline: 3px solid #287e81; outline-offset: 3px; border-radius: 3px; }
+.entry-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; }
+.portfolio-entry[id] { scroll-margin-top: 16px; }
+.portfolio-entry:focus { outline: 3px solid #287e81; outline-offset: 3px; }
 .app-shell[data-panel-open="true"] .landmark-sign, .app-shell[data-panel-open="true"] .niro-locator { display: none; }
 .app-shell canvas { transition: opacity .4s ease-out; }
 .app-shell[data-scene-ready="false"] canvas { opacity: 0; }
 .app-shell[data-reduced-motion="true"] canvas { transition: none; }
+.app-shell[data-reduced-motion="true"] .scene-loading::before { animation: none; }
 @media (prefers-reduced-motion: reduce) { .app-shell canvas { transition: none; } }
 .scene-loading {
   position: absolute;

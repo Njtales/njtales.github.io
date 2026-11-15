@@ -1,11 +1,13 @@
 import {profile} from './profileData'
 
 export type PortfolioEntry = {
+  id?: string
   title: string
   detail: string
   tags?: string[]
   status?: string
   link?: {label:string;href:string}
+  proofProject?: string
   highlights?:{label:string;detail:string}[]
 }
 
@@ -27,6 +29,7 @@ export const portfolioSpots: PortfolioSpot[] = [
     entries: [
       { title: profile.role, detail: 'Professional focus · London, UK. Data pipelines, orchestration and cloud platform concepts.', tags: ['Data engineering', 'Automation'] },
       { title: 'Work you can inspect', detail: 'Python and Airflow pipeline practice, PostgreSQL loading, Docker environments and this interactive TypeScript portfolio.',
+        proofProject:'sp500-pipeline',
         link:{label:'Explore the project repositories',href:'https://github.com/Njtales/Data_pipelines'} },
       { title: 'How I approach systems', detail: 'Understand how data moves, make dependencies explicit, and build workflows that are easier to inspect and operate.' },
     ],
@@ -37,10 +40,13 @@ export const portfolioSpots: PortfolioSpot[] = [
     description: 'Tools demonstrated in the linked projects, alongside the cloud concepts I am studying.',
     entries: [
       { title: 'Data pipelines', status:'Project work', detail: 'Python and pandas processing, Airflow task dependencies, CSV handoffs and PostgreSQL loading.', tags: ['Python', 'SQL', 'Airflow', 'PostgreSQL'],
+        proofProject:'sp500-pipeline',
         link:{label:'See the pipeline code',href:'https://github.com/Njtales/Data_pipelines'} },
       { title: 'Local environments', status:'Project work', detail: 'Docker Compose environments for Airflow, PostgreSQL and pgAdmin.', tags: ['Docker', 'Docker Compose'],
+        proofProject:'postgresql-warehouse',
         link:{label:'See the environment setup',href:'https://github.com/Njtales/Data_pipelines/tree/main/DW%20with%20PSQL'} },
       { title: 'Interactive software', status:'Project work', detail: 'React, TypeScript and Three.js power the village, navigation, accessible panels and responsive controls.', tags: ['React', 'TypeScript', 'Three.js'],
+        proofProject:'coastlight-village',
         link:{label:'Explore Coastlight Village source',href:'https://github.com/Njtales/njtales.github.io'} },
       { title: 'Cloud and platform concepts', status:'Current study', detail: 'AWS EC2, S3, Lambda and IAM; Infrastructure as Code and streaming concepts with Kafka and Kinesis.', tags: ['AWS', 'IaC', 'Streaming'] },
     ],
@@ -50,20 +56,22 @@ export const portfolioSpots: PortfolioSpot[] = [
     id: 'data-tower', title: 'Data Tower', section: 'Projects & GitHub',
     description: 'Selected work in data pipelines, orchestration, and interactive web experiences.',
     entries: [
-      { title: 'Coastlight Village', status:'Personal project', detail: 'A portfolio you can read immediately or explore as a small coastal world with Niro, a walking fox guide.', tags: ['React', 'Three.js', 'TypeScript'],
+      { id:'coastlight-village', title: 'Coastlight Village', status:'Personal project', detail: 'A portfolio you can read immediately or explore as a small coastal world with Niro, a walking fox guide.', tags: ['React', 'Three.js', 'TypeScript'],
         highlights:[
           {label:'Built',detail:'Seven portfolio landmarks, a live map, keyboard controls and collision-aware click-to-walk navigation.'},
           {label:'Engineering',detail:'Terrain-aware walking, bounded render resolution, shared geometry and lighter graphics settings. Continuous rendering pauses when the tab is hidden or a portfolio panel is open.'},
           {label:'Access',detail:'Direct section shortcuts, touch controls, reduced motion, keyboard-managed dialogs and a plain HTML profile.'},
+          {label:'Design trade-off',detail:'Camera-facing painted buildings share one texture sheet, preserving their illustrated detail with very little geometry. They suit the following camera; a freely rotating camera would need a different approach.'},
+          {label:'What to inspect',detail:'Movement and collision logic, transparent artwork picking, responsive controls and the shared content generator for the interactive and plain profiles.'},
         ],link:{label:'Explore the source',href:'https://github.com/Njtales/njtales.github.io'} },
-      { title: 'S&P 500 Data Pipeline', status:'Practice project', detail: 'An Airflow ETL exercise using Yahoo Finance price data for a selected list of S&P 500 companies.', tags: ['Airflow', 'Python', 'pandas', 'PostgreSQL', 'Docker'],
+      { id:'sp500-pipeline', title: 'S&P 500 Data Pipeline', status:'Practice project', detail: 'An Airflow ETL exercise using Yahoo Finance price data for a selected list of S&P 500 companies.', tags: ['Airflow', 'Python', 'pandas', 'PostgreSQL', 'Docker'],
         highlights:[
           {label:'Flow',detail:'Download prices → save CSV → clean and calculate metrics → load PostgreSQL with SQLAlchemy.'},
           {label:'Processing',detail:'Removes missing and duplicate rows, then calculates daily returns and 5- and 20-period moving averages.'},
           {label:'Learning focus',detail:'Task dependencies, retry configuration and the trade-offs of CSV handoffs and full-table replacement loads.'},
         ],
         link:{label:'View code and setup',href:'https://github.com/Njtales/Data_pipelines/tree/main/Airflow%20Pipeline%20S%26P%20500%20index'} },
-      { title: 'PostgreSQL Data Warehouse', status:'Practice · in progress', detail: 'A local Airflow and PostgreSQL exercise using Instacart CSV datasets, with pgAdmin for database inspection.', tags: ['PostgreSQL', 'Airflow', 'Docker Compose'],
+      { id:'postgresql-warehouse', title: 'PostgreSQL Data Warehouse', status:'Practice · in progress', detail: 'A local Airflow and PostgreSQL exercise using Instacart CSV datasets, with pgAdmin for database inspection.', tags: ['PostgreSQL', 'Airflow', 'Docker Compose'],
         highlights:[
           {label:'Source',detail:'The DAG defines tables for aisles, products, departments, orders and order-product datasets, followed by CSV load tasks.'},
           {label:'Learning focus',detail:'Relational schemas, PostgreSQL COPY-based loading and explicit extraction → table creation → loading dependencies.'},
